@@ -1,26 +1,318 @@
+@import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;500;700&display=swap");
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 :root {
+  /* Gi Properties Brand Colors */
+
+  /* Primary Colors */
+  --gi-dark-green: #1f4b32;
+  --gi-dark-gray: #585959;
+
+  /* Secondary Colors - Pantone 625 C (Green tone) */
+  --gi-green-100: #4a8b6f;
+  --gi-green-80: #6ba08a;
+  --gi-green-60: #8db5a5;
+  --gi-green-40: #aecabf;
+  --gi-green-20: #d6e5df;
+
+  /* Secondary Colors - Pantone 7407 C (Gold tone) */
+  --gi-gold-100: #c5a572;
+  --gi-gold-80: #d1b78e;
+  --gi-gold-60: #ddc9aa;
+  --gi-gold-40: #e9dbc7;
+  --gi-gold-20: #f4ede3;
+
+  /* Secondary Colors - Pantone 186 C (Red tone) */
+  --gi-red-100: #c8102e;
+  --gi-red-80: #d34058;
+  --gi-red-60: #de7082;
+  --gi-red-40: #e99fab;
+  --gi-red-20: #f4cfd5;
+
+  /* Secondary Colors - Pantone 1375 C (Orange tone) */
+  --gi-orange-100: #ff8200;
+  --gi-orange-80: #ff9b33;
+  --gi-orange-60: #ffb566;
+  --gi-orange-40: #ffce99;
+  --gi-orange-20: #ffe7cc;
+
+  /* Secondary Colors - Pantone 7530 C (Beige tone) */
+  --gi-beige-100: #b7a99a;
+  --gi-beige-80: #c5baae;
+  --gi-beige-60: #d3cbc2;
+  --gi-beige-40: #e1ddd6;
+  --gi-beige-20: #f0eeeb;
+
+  /* Typography */
+  --font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --font-size: 16px;
+  --font-weight-light: 300;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  /* Application Theme Colors */
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: var(--gi-dark-gray);
+  --card: #ffffff;
+  --card-foreground: var(--gi-dark-gray);
+  --popover: #ffffff;
+  --popover-foreground: var(--gi-dark-gray);
+  --primary: var(--gi-dark-green);
+  --primary-foreground: #ffffff;
+  --secondary: var(--gi-green-20);
+  --secondary-foreground: var(--gi-dark-green);
+  --muted: var(--gi-beige-20);
+  --muted-foreground: var(--gi-dark-gray);
+  --accent: var(--gi-gold-20);
+  --accent-foreground: var(--gi-dark-green);
+  --destructive: var(--gi-red-100);
+  --destructive-foreground: #ffffff;
+  --border: rgba(31, 75, 50, 0.1);
+  --input: transparent;
+  --input-background: var(--gi-beige-20);
+  --switch-background: var(--gi-green-40);
+  --ring: var(--gi-dark-green);
+
+  /* Chart Colors */
+  --chart-1: var(--gi-dark-green);
+  --chart-2: var(--gi-green-100);
+  --chart-3: var(--gi-gold-100);
+  --chart-4: var(--gi-orange-100);
+  --chart-5: var(--gi-beige-100);
+
+  --radius: 0.5rem;
+
+  /* Sidebar */
+  --sidebar: var(--gi-dark-green);
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: var(--gi-green-100);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--gi-green-80);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-ring: var(--gi-gold-100);
+}
+
+.dark {
+  --background: #0f1419;
+  --foreground: #e8eaed;
+  --card: #1a1f26;
+  --card-foreground: #e8eaed;
+  --popover: #1a1f26;
+  --popover-foreground: #e8eaed;
+  --primary: var(--gi-green-80);
+  --primary-foreground: #ffffff;
+  --secondary: #2a3441;
+  --secondary-foreground: #e8eaed;
+  --muted: #2a3441;
+  --muted-foreground: #9ca3af;
+  --accent: var(--gi-gold-80);
+  --accent-foreground: #0f1419;
+  --destructive: var(--gi-red-80);
+  --destructive-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.05);
+  --input-background: #2a3441;
+  --ring: var(--gi-green-80);
+
+  /* Sidebar for dark mode */
+  --sidebar: #1a1f26;
+  --sidebar-foreground: #e8eaed;
+  --sidebar-primary: var(--gi-green-80);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2a3441;
+  --sidebar-accent-foreground: #e8eaed;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: var(--gi-gold-80);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: var(--font-family);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-family);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/**
+ * Gi Properties Typography System
+ * Based on Open Sans with proper line-height for readability (1.4-1.6)
+ */
+@layer base {
+  :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) {
+    h1 {
+      font-size: 2rem;
+      font-weight: var(--font-weight-bold);
+      line-height: 1.4;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: var(--font-weight-bold);
+      line-height: 1.4;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: var(--font-weight-bold);
+      line-height: 1.5;
+    }
+
+    h4 {
+      font-size: 1.125rem;
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h5 {
+      font-size: 1rem;
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    h6 {
+      font-size: 0.875rem;
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    p {
+      font-size: 1rem;
+      font-weight: var(--font-weight-light);
+      line-height: 1.6;
+    }
+
+    label {
+      font-size: 0.875rem;
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    button {
+      font-size: 1rem;
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    input,
+    textarea,
+    select {
+      font-size: 1rem;
+      font-weight: var(--font-weight-light);
+      line-height: 1.5;
+    }
+  }
+}
+
+html {
+  font-size: var(--font-size);
+}
+
+/* Gi Properties Brand Utility Classes */
+.gi-text-light {
+  font-weight: var(--font-weight-light);
+}
+
+.gi-text-medium {
+  font-weight: var(--font-weight-medium);
+}
+
+.gi-text-bold {
+  font-weight: var(--font-weight-bold);
+}
+
+.gi-bg-dark-green {
+  background-color: var(--gi-dark-green);
+}
+
+.gi-bg-dark-gray {
+  background-color: var(--gi-dark-gray);
+}
+
+.gi-text-dark-green {
+  color: var(--gi-dark-green);
+}
+
+.gi-text-dark-gray {
+  color: var(--gi-dark-gray);
+}
+
+/* Dark mode specific enhancements */
+.dark .recharts-cartesian-grid-horizontal line,
+.dark .recharts-cartesian-grid-vertical line {
+  stroke: rgba(255, 255, 255, 0.08);
+}
+
+.dark .recharts-text {
+  fill: #9ca3af;
+}
+
+.dark .recharts-legend-item-text {
+  color: #e8eaed !important;
+}
+
+.dark .recharts-tooltip-wrapper {
+  outline: none;
+}
+
+.dark .recharts-default-tooltip {
+  background-color: #1a1f26 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px;
+}
+
+.dark .recharts-tooltip-label {
+  color: #e8eaed !important;
+}
+
+.dark .recharts-tooltip-item {
+  color: #9ca3af !important;
 }
