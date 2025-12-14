@@ -1,0 +1,45 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
+import { AppLayout } from "@/components/AppLayout";
+import { CEODealView } from "@/components/CEODealView";
+
+export default function CEODealViewPage() {
+  const router = useRouter();
+  const params = useParams();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const auth = sessionStorage.getItem("isAuthenticated");
+    const role = sessionStorage.getItem("userRole");
+
+    if (auth !== "true" || role !== "ceo") {
+      router.push("/login");
+    } else {
+      setIsLoading(false);
+    }
+  }, [router]);
+
+  const dealId = params?.id as string;
+
+  const handleBack = () => {
+    router.push("/deals");
+  };
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-600">Loading...</div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  return (
+    <AppLayout>
+      <CEODealView dealId={dealId} onBack={handleBack} />
+    </AppLayout>
+  );
+}

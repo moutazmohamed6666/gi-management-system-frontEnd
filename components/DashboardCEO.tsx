@@ -4,8 +4,30 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { DateRangeFilter } from "./DateRangeFilter";
 import { mockDeals } from "@/lib/mockData";
-import { TrendingUp, Users, Building2, DollarSign, Target, Award, ArrowUpRight, Trophy } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
+import {
+  TrendingUp,
+  Users,
+  Building2,
+  DollarSign,
+  Target,
+  Award,
+  ArrowUpRight,
+  Trophy,
+} from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 
 export function DashboardCEO() {
   const [startDate, setStartDate] = useState("");
@@ -19,7 +41,7 @@ export function DashboardCEO() {
   // Filter deals by date range
   let filteredDeals = mockDeals;
   if (startDate && endDate) {
-    filteredDeals = mockDeals.filter(deal => {
+    filteredDeals = mockDeals.filter((deal) => {
       if (!deal.dealCloseDate) return false;
       const dealDate = new Date(deal.dealCloseDate);
       const start = new Date(startDate);
@@ -28,15 +50,23 @@ export function DashboardCEO() {
     });
   }
 
-  const totalPipeline = filteredDeals.filter(d => d.status !== "Closed").reduce((sum, d) => sum + d.sellingPrice, 0);
-  const closedDeals = filteredDeals.filter(d => d.status === "Closed").length;
-  const totalRevenue = filteredDeals.filter(d => d.totalCommission).reduce((sum, d) => sum + (d.totalCommission || 0), 0);
-  const avgDealSize = filteredDeals.length > 0 ? filteredDeals.reduce((sum, d) => sum + d.sellingPrice, 0) / filteredDeals.length : 0;
+  const totalPipeline = filteredDeals
+    .filter((d) => d.status !== "Closed")
+    .reduce((sum, d) => sum + d.sellingPrice, 0);
+  const closedDeals = filteredDeals.filter((d) => d.status === "Closed").length;
+  const totalRevenue = filteredDeals
+    .filter((d) => d.totalCommission)
+    .reduce((sum, d) => sum + (d.totalCommission || 0), 0);
+  const avgDealSize =
+    filteredDeals.length > 0
+      ? filteredDeals.reduce((sum, d) => sum + d.sellingPrice, 0) /
+        filteredDeals.length
+      : 0;
 
   // Agent performance
   const agentPerformance = [
     { name: "Sarah Johnson", deals: 3, commission: 296400, revenue: 12400000 },
-    { name: "Mike Thompson", deals: 2, commission: 116100, revenue: 3950000 }
+    { name: "Mike Thompson", deals: 2, commission: 116100, revenue: 3950000 },
   ];
 
   // Developer performance
@@ -45,22 +75,22 @@ export function DashboardCEO() {
     { name: "Damac", deals: 1, value: 2750000, commission: 82500 },
     { name: "Meraas", deals: 1, value: 8200000, commission: 246000 },
     { name: "Nakheel", deals: 1, value: 2150000, commission: 64500 },
-    { name: "Dubai Properties", deals: 1, value: 1800000, commission: 54000 }
+    { name: "Dubai Properties", deals: 1, value: 1800000, commission: 54000 },
   ];
 
   // Monthly revenue trend
   const monthlyRevenue = [
     { month: "Jan", revenue: 95000, deals: 2 },
     { month: "Feb", revenue: 208000, deals: 3 },
-    { month: "Mar", revenue: 133500, deals: 2 }
+    { month: "Mar", revenue: 133500, deals: 2 },
   ];
 
   // Property type distribution
-  const propertyTypes = [
+  const propertyTypes: { name: string; value: number; color: string }[] = [
     { name: "Apartment", value: 2, color: "#3b82f6" },
     { name: "Villa", value: 1, color: "var(--gi-dark-green)" },
     { name: "Townhouse", value: 1, color: "#f59e0b" },
-    { name: "Penthouse", value: 1, color: "#8b5cf6" }
+    { name: "Penthouse", value: 1, color: "#8b5cf6" },
   ];
 
   return (
@@ -70,7 +100,7 @@ export function DashboardCEO() {
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -mr-32 -mt-32"></div>
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-5 rounded-full blur-3xl -ml-24 -mb-24"></div>
-        
+
         <div className="relative z-10">
           <div className="flex items-start justify-between">
             <div>
@@ -97,14 +127,18 @@ export function DashboardCEO() {
         {/* Total Pipeline */}
         <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-blue-50 to-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm text-gray-700">Total Pipeline</CardTitle>
+            <CardTitle className="text-sm text-gray-700">
+              Total Pipeline
+            </CardTitle>
             <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
               <TrendingUp className="h-5 w-5 text-blue-600" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline gap-2">
-              <div className="text-2xl text-gray-900">AED {(totalPipeline / 1000000).toFixed(1)}M</div>
+              <div className="text-2xl text-gray-900">
+                AED {(totalPipeline / 1000000).toFixed(1)}M
+              </div>
               <div className="flex items-center gap-1 text-green-600 text-sm">
                 <ArrowUpRight className="h-4 w-4" />
                 <span>18%</span>
@@ -117,7 +151,9 @@ export function DashboardCEO() {
         {/* Closed Deals */}
         <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-green-50 to-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm text-gray-700">Closed Deals</CardTitle>
+            <CardTitle className="text-sm text-gray-700">
+              Closed Deals
+            </CardTitle>
             <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
               <Target className="h-5 w-5 text-green-600" />
             </div>
@@ -133,14 +169,18 @@ export function DashboardCEO() {
         {/* Total Revenue */}
         <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-emerald-50 to-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm text-gray-700">Total Revenue</CardTitle>
+            <CardTitle className="text-sm text-gray-700">
+              Total Revenue
+            </CardTitle>
             <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center">
               <DollarSign className="h-5 w-5 text-emerald-600" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline gap-2">
-              <div className="text-2xl text-gray-900">AED {(totalRevenue / 1000).toFixed(0)}K</div>
+              <div className="text-2xl text-gray-900">
+                AED {(totalRevenue / 1000).toFixed(0)}K
+              </div>
             </div>
             <p className="text-sm text-gray-600 mt-1">Commission earned</p>
           </CardContent>
@@ -149,14 +189,18 @@ export function DashboardCEO() {
         {/* Avg Deal Size */}
         <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-purple-50 to-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm text-gray-700">Avg Deal Size</CardTitle>
+            <CardTitle className="text-sm text-gray-700">
+              Avg Deal Size
+            </CardTitle>
             <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
               <Award className="h-5 w-5 text-purple-600" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline gap-2">
-              <div className="text-2xl text-gray-900">AED {(avgDealSize / 1000000).toFixed(2)}M</div>
+              <div className="text-2xl text-gray-900">
+                AED {(avgDealSize / 1000000).toFixed(2)}M
+              </div>
             </div>
             <p className="text-sm text-gray-600 mt-1">Per transaction</p>
           </CardContent>
@@ -165,7 +209,9 @@ export function DashboardCEO() {
         {/* Active Agents */}
         <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-cyan-50 to-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm text-gray-700">Active Agents</CardTitle>
+            <CardTitle className="text-sm text-gray-700">
+              Active Agents
+            </CardTitle>
             <div className="h-10 w-10 rounded-full bg-cyan-100 flex items-center justify-center">
               <Users className="h-5 w-5 text-cyan-600" />
             </div>
@@ -212,34 +258,50 @@ export function DashboardCEO() {
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={monthlyRevenue}>
                 <defs>
-                  <linearGradient id="colorRevenueCEO" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                  <linearGradient
+                    id="colorRevenueCEO"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis 
-                  dataKey="month" 
+                <XAxis
+                  dataKey="month"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#6b7280', fontSize: 12 }}
+                  tick={{ fill: "#6b7280", fontSize: 12 }}
                 />
-                <YAxis 
+                <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#6b7280', fontSize: 12 }}
+                  tick={{ fill: "#6b7280", fontSize: 12 }}
                   tickFormatter={(value) => `${value / 1000}K`}
                 />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'white', 
-                    border: 'none', 
-                    borderRadius: '8px', 
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' 
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                   }}
-                  formatter={(value: number) => [`AED ${value.toLocaleString()}`, 'Revenue']}
+                  formatter={(value: number) => [
+                    `AED ${value.toLocaleString()}`,
+                    "Revenue",
+                  ]}
                 />
-                <Line type="monotone" dataKey="revenue" stroke="#22c55e" strokeWidth={3} name="Revenue (AED)" fill="url(#colorRevenueCEO)" />
+                <Line
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#22c55e"
+                  strokeWidth={3}
+                  name="Revenue (AED)"
+                  fill="url(#colorRevenueCEO)"
+                />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -256,7 +318,12 @@ export function DashboardCEO() {
                 <PieChart>
                   <defs>
                     <filter id="shadowCEO" height="130%">
-                      <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.3"/>
+                      <feDropShadow
+                        dx="0"
+                        dy="2"
+                        stdDeviation="3"
+                        floodOpacity="0.3"
+                      />
                     </filter>
                   </defs>
                   <Pie
@@ -264,22 +331,24 @@ export function DashboardCEO() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                    label={({ name, value, percent }) =>
+                      `${name}: ${value} (${(percent ?? 1 * 100).toFixed(0)}%)`
+                    }
                     outerRadius={100}
                     fill="#8884d8"
                     dataKey="value"
-                    style={{ filter: 'url(#shadowCEO)' }}
+                    style={{ filter: "url(#shadowCEO)" }}
                   >
                     {propertyTypes.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'white', 
-                      border: 'none', 
-                      borderRadius: '8px', 
-                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' 
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                     }}
                   />
                 </PieChart>
@@ -289,7 +358,10 @@ export function DashboardCEO() {
               {propertyTypes.map((item, index) => (
                 <div key={index} className="text-center">
                   <div className="flex items-center justify-center gap-2 mb-1">
-                    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }}></div>
+                    <div
+                      className="h-3 w-3 rounded-full"
+                      style={{ backgroundColor: item.color }}
+                    ></div>
                   </div>
                   <div className="text-sm text-gray-600">{item.name}</div>
                   <div className="text-xl text-gray-900">{item.value}</div>
@@ -312,36 +384,44 @@ export function DashboardCEO() {
               <BarChart data={agentPerformance} layout="vertical">
                 <defs>
                   <linearGradient id="colorAgents" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.9}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.6}/>
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.9} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.6} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis 
+                <XAxis
                   type="number"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#6b7280', fontSize: 12 }}
+                  tick={{ fill: "#6b7280", fontSize: 12 }}
                   tickFormatter={(value) => `${value / 1000}K`}
                 />
-                <YAxis 
-                  dataKey="name" 
-                  type="category" 
+                <YAxis
+                  dataKey="name"
+                  type="category"
                   width={120}
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#6b7280', fontSize: 12 }}
+                  tick={{ fill: "#6b7280", fontSize: 12 }}
                 />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'white', 
-                    border: 'none', 
-                    borderRadius: '8px', 
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' 
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                   }}
-                  formatter={(value: number) => [`AED ${value.toLocaleString()}`, 'Commission']}
+                  formatter={(value: number) => [
+                    `AED ${value.toLocaleString()}`,
+                    "Commission",
+                  ]}
                 />
-                <Bar dataKey="commission" fill="url(#colorAgents)" radius={[0, 8, 8, 0]} name="Commission (AED)" />
+                <Bar
+                  dataKey="commission"
+                  fill="url(#colorAgents)"
+                  radius={[0, 8, 8, 0]}
+                  name="Commission (AED)"
+                />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -356,34 +436,56 @@ export function DashboardCEO() {
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={developerPerformance}>
                 <defs>
-                  <linearGradient id="colorDevelopers" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--gi-dark-green)" stopOpacity={0.9}/>
-                    <stop offset="95%" stopColor="var(--gi-dark-green)" stopOpacity={0.6}/>
+                  <linearGradient
+                    id="colorDevelopers"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop
+                      offset="5%"
+                      stopColor="var(--gi-dark-green)"
+                      stopOpacity={0.9}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor="var(--gi-dark-green)"
+                      stopOpacity={0.6}
+                    />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis 
+                <XAxis
                   dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#6b7280', fontSize: 12 }}
+                  tick={{ fill: "#6b7280", fontSize: 12 }}
                 />
-                <YAxis 
+                <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#6b7280', fontSize: 12 }}
+                  tick={{ fill: "#6b7280", fontSize: 12 }}
                   tickFormatter={(value) => `${value / 1000}K`}
                 />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'white', 
-                    border: 'none', 
-                    borderRadius: '8px', 
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' 
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                   }}
-                  formatter={(value: number) => [`AED ${value.toLocaleString()}`, 'Commission']}
+                  formatter={(value: number) => [
+                    `AED ${value.toLocaleString()}`,
+                    "Commission",
+                  ]}
                 />
-                <Bar dataKey="commission" fill="url(#colorDevelopers)" radius={[8, 8, 0, 0]} name="Commission (AED)" />
+                <Bar
+                  dataKey="commission"
+                  fill="url(#colorDevelopers)"
+                  radius={[8, 8, 0, 0]}
+                  name="Commission (AED)"
+                />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -403,24 +505,34 @@ export function DashboardCEO() {
           <CardContent>
             <div className="space-y-3">
               {agentPerformance.map((agent, index) => (
-                <div 
-                  key={agent.name} 
+                <div
+                  key={agent.name}
                   className="group relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-gray-50 to-white border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all duration-300"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        index === 0 ? "bg-gradient-to-br from-yellow-400 to-yellow-500" : "bg-gradient-to-br from-gray-400 to-gray-500"
-                      } text-white shadow-lg`}>
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          index === 0
+                            ? "bg-gradient-to-br from-yellow-400 to-yellow-500"
+                            : "bg-gradient-to-br from-gray-400 to-gray-500"
+                        } text-white shadow-lg`}
+                      >
                         {index + 1}
                       </div>
                       <div>
-                        <div className="text-gray-900 font-medium">{agent.name}</div>
-                        <div className="text-sm text-gray-600">{agent.deals} deals closed</div>
+                        <div className="text-gray-900 font-medium">
+                          {agent.name}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {agent.deals} deals closed
+                        </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg text-gray-900 font-semibold">AED {(agent.commission / 1000).toFixed(0)}K</div>
+                      <div className="text-lg text-gray-900 font-semibold">
+                        AED {(agent.commission / 1000).toFixed(0)}K
+                      </div>
                       <div className="text-sm text-gray-600">Commission</div>
                     </div>
                   </div>
@@ -438,21 +550,27 @@ export function DashboardCEO() {
           <CardContent>
             <div className="space-y-3">
               {developerPerformance.slice(0, 5).map((dev, index) => (
-                <div 
-                  key={dev.name} 
+                <div
+                  key={dev.name}
                   className="group relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-gray-50 to-white border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all duration-300"
                 >
-                  <div 
+                  <div
                     className="absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5"
-                    style={{ backgroundColor: 'var(--gi-dark-green)' }}
+                    style={{ backgroundColor: "var(--gi-dark-green)" }}
                   ></div>
                   <div className="flex items-center justify-between pl-3">
                     <div>
-                      <div className="text-gray-900 font-medium">{dev.name}</div>
-                      <div className="text-sm text-gray-600">{dev.deals} deals</div>
+                      <div className="text-gray-900 font-medium">
+                        {dev.name}
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {dev.deals} deals
+                      </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg text-gray-900 font-semibold">AED {(dev.value / 1000000).toFixed(2)}M</div>
+                      <div className="text-lg text-gray-900 font-semibold">
+                        AED {(dev.value / 1000000).toFixed(2)}M
+                      </div>
                       <div className="text-sm text-gray-600">Total value</div>
                     </div>
                   </div>
@@ -465,4 +583,3 @@ export function DashboardCEO() {
     </div>
   );
 }
-
