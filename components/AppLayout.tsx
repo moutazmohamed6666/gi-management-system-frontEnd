@@ -21,6 +21,7 @@ import {
   LogOut,
 } from "lucide-react";
 import Link from "next/link";
+import { getAuthToken, removeAuthToken } from "@/lib/api";
 
 type UserRole = "agent" | "finance" | "ceo" | "admin";
 
@@ -32,24 +33,39 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Check authentication
+    // Check authentication - verify both sessionStorage and token
     const auth = sessionStorage.getItem("isAuthenticated");
     const role = sessionStorage.getItem("userRole") as UserRole;
     const username = sessionStorage.getItem("username");
+    const token = getAuthToken();
 
-    if (auth === "true" && role && username) {
-      setIsAuthenticated(true);
-      setCurrentRole(role);
-      setCurrentUser(username);
+    if (auth === "true" && role && username && token) {
+      // Use setTimeout to avoid synchronous setState in effect
+      setTimeout(() => {
+        setIsAuthenticated(true);
+        setCurrentRole(role);
+        setCurrentUser(username);
+      }, 0);
     } else {
+      // Clear any stale data
+      sessionStorage.removeItem("isAuthenticated");
+      sessionStorage.removeItem("userRole");
+      sessionStorage.removeItem("username");
+      sessionStorage.removeItem("userId");
+      sessionStorage.removeItem("userRoleName");
+      removeAuthToken();
       router.push("/login");
     }
   }, [router]);
 
   const handleLogout = () => {
+    // Clear all session data
     sessionStorage.removeItem("isAuthenticated");
     sessionStorage.removeItem("userRole");
     sessionStorage.removeItem("username");
+    sessionStorage.removeItem("userId");
+    sessionStorage.removeItem("userRoleName");
+    removeAuthToken();
     router.push("/login");
   };
 
@@ -114,7 +130,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
 
     return (
-      <nav className="flex gap-2 px-6 py-3 bg-[var(--gi-green-20)] dark:bg-gray-800/95 dark:border-t dark:border-gray-700 transition-colors">
+      <nav className="flex gap-2 px-6 py-3 bg-[(--gi-green-20)] dark:bg-gray-800/95 dark:border-t dark:border-gray-700 transition-colors">
         {navItems.map((item) => {
           const isActive =
             pathname === item.view || pathname?.startsWith(item.view + "/");
@@ -125,7 +141,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 className={`flex items-center gap-2 transition-all ${
                   isActive
                     ? "gi-bg-dark-green text-white hover:opacity-90 dark:bg-[#4ade80] dark:hover:bg-[#22c55e] dark:text-white shadow-lg font-medium"
-                    : "gi-text-dark-green hover:bg-[var(--gi-green-40)] dark:text-white dark:bg-gray-700/50 dark:hover:bg-gray-600 dark:hover:text-white dark:border dark:border-gray-500"
+                    : "gi-text-dark-green hover:bg-[(--gi-green-40)] dark:text-white dark:bg-gray-700/50 dark:hover:bg-gray-600 dark:hover:text-white dark:border dark:border-gray-500"
                 }`}
               >
                 <item.icon className="h-4 w-4" />
@@ -152,7 +168,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     pathname?.includes("/deals/ceo/");
 
   return (
-    <div className="min-h-screen bg-[var(--gi-beige-20)] dark:bg-gray-900 transition-colors">
+    <div className="min-h-screen bg-[(--gi-beige-20)] dark:bg-gray-900 transition-colors">
       {/* Toast Notifications */}
       <Toaster position="top-right" richColors />
 
@@ -197,7 +213,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   <Button
                     variant="outline"
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-2 justify-center border-[var(--gi-dark-green)] gi-text-dark-green dark:border-green-600 dark:text-green-400 hover:gi-bg-dark-green hover:text-white dark:hover:bg-green-600"
+                    className="w-full flex items-center gap-2 justify-center border-[(--gi-dark-green)] gi-text-dark-green dark:border-green-600 dark:text-green-400 hover:gi-bg-dark-green hover:text-white dark:hover:bg-green-600"
                   >
                     <LogOut className="h-4 w-4" />
                     Logout

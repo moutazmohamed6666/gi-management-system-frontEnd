@@ -7,7 +7,13 @@ import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
 import { Switch } from "./ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 import { StyledDatePicker } from "./StyledDatePicker";
 import { mockDeals } from "@/lib/mockData";
 import { ArrowLeft, Save, Upload } from "lucide-react";
@@ -19,14 +25,14 @@ interface DealFormProps {
 }
 
 export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
-  const existingDeal = dealId ? mockDeals.find(d => d.id === dealId) : null;
+  const existingDeal = dealId ? mockDeals.find((d) => d.id === dealId) : null;
 
   const [formData, setFormData] = useState({
     // Deal Information
     bookingDate: existingDeal?.dealCloseDate || "",
     cfExpiry: "",
     dealType: "",
-    
+
     // Property Details
     developer: existingDeal?.developer || "",
     projectName: existingDeal?.project || "",
@@ -35,75 +41,79 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     unitType: existingDeal?.unitType || "",
     sizeSqFt: "",
     bedrooms: "",
-    
+
     // Seller Information
     sellerName: existingDeal?.sellerName || "",
     sellerPhone: existingDeal?.sellerContact || "",
     sellerNationality: "",
     sellerSource: "",
-    
+
     // Buyer Information
     buyerName: existingDeal?.buyerName || "",
     buyerPhone: existingDeal?.buyerContact || "",
     buyerNationality: "",
     buyerSource: "",
-    
+
     // Commission Details
     salesValue: "",
     commRate: "",
     hasExternalAgent: false,
     agencyName: "",
     agencyComm: "",
-    
+
     notes: existingDeal?.notes || "",
   });
 
-  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const handleChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: "" }));
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
   const validatePhone = (phone: string): boolean => {
     // Phone regex: allows international format with + and numbers, 10-15 digits
-    const phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,5}[-\s\.]?[0-9]{1,5}$/;
+    const phoneRegex =
+      /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,5}[-\s\.]?[0-9]{1,5}$/;
     return phoneRegex.test(phone);
   };
 
   const handlePhoneChange = (field: string, value: string) => {
     handleChange(field, value);
     if (value && !validatePhone(value)) {
-      setErrors(prev => ({ ...prev, [field]: "Invalid phone number format" }));
+      setErrors((prev) => ({
+        ...prev,
+        [field]: "Invalid phone number format",
+      }));
     }
   };
 
   const handleNumberOnly = (field: string, value: string) => {
     // Only allow numbers
-    const numericValue = value.replace(/[^0-9]/g, '');
+    const numericValue = value.replace(/[^0-9]/g, "");
     handleChange(field, numericValue);
   };
 
   const handleSave = () => {
     // Validate phones before saving
-    const newErrors: {[key: string]: string} = {};
-    
+    const newErrors: { [key: string]: string } = {};
+
     if (formData.sellerPhone && !validatePhone(formData.sellerPhone)) {
       newErrors.sellerPhone = "Invalid phone number format";
     }
     if (formData.buyerPhone && !validatePhone(formData.buyerPhone)) {
       newErrors.buyerPhone = "Invalid phone number format";
     }
-    
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       alert("Please fix the validation errors before saving");
       return;
     }
-    
+
     alert("Deal saved successfully!");
     onSave();
   };
@@ -115,7 +125,10 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Deals
         </Button>
-        <Button onClick={handleSave} className="gi-bg-dark-green flex items-center gap-2">
+        <Button
+          onClick={handleSave}
+          className="gi-bg-dark-green flex items-center gap-2"
+        >
           <Save className="h-4 w-4" />
           Save Deal
         </Button>
@@ -163,7 +176,9 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Primary Sale">Primary Sale</SelectItem>
-                    <SelectItem value="Secondary Sale">Secondary Sale</SelectItem>
+                    <SelectItem value="Secondary Sale">
+                      Secondary Sale
+                    </SelectItem>
                     <SelectItem value="Lease">Lease</SelectItem>
                     <SelectItem value="Off-Plan">Off-Plan</SelectItem>
                   </SelectContent>
@@ -195,7 +210,9 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                     <SelectItem value="Meraas">Meraas</SelectItem>
                     <SelectItem value="Nakheel">Nakheel</SelectItem>
                     <SelectItem value="Aldar">Aldar Properties</SelectItem>
-                    <SelectItem value="Dubai Properties">Dubai Properties</SelectItem>
+                    <SelectItem value="Dubai Properties">
+                      Dubai Properties
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -331,19 +348,27 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                   id="sellerPhone"
                   type="tel"
                   value={formData.sellerPhone}
-                  onChange={(e) => handlePhoneChange("sellerPhone", e.target.value)}
+                  onChange={(e) =>
+                    handlePhoneChange("sellerPhone", e.target.value)
+                  }
                   placeholder="+971 50 123 4567"
-                  className={`mt-1 ${errors.sellerPhone ? "border-red-500" : ""}`}
+                  className={`mt-1 ${
+                    errors.sellerPhone ? "border-red-500" : ""
+                  }`}
                 />
                 {errors.sellerPhone && (
-                  <p className="text-red-500 text-sm mt-1">{errors.sellerPhone}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.sellerPhone}
+                  </p>
                 )}
               </div>
               <div>
                 <Label htmlFor="sellerNationality">Nationality</Label>
                 <Select
                   value={formData.sellerNationality}
-                  onValueChange={(value) => handleChange("sellerNationality", value)}
+                  onValueChange={(value) =>
+                    handleChange("sellerNationality", value)
+                  }
                 >
                   <SelectTrigger className="w-full mt-1">
                     <SelectValue placeholder="Select nationality" />
@@ -377,7 +402,9 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                     <SelectItem value="Social Media">Social Media</SelectItem>
                     <SelectItem value="Exhibition">Exhibition</SelectItem>
                     <SelectItem value="Cold Call">Cold Call</SelectItem>
-                    <SelectItem value="Property Portal">Property Portal</SelectItem>
+                    <SelectItem value="Property Portal">
+                      Property Portal
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -408,19 +435,27 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                   id="buyerPhone"
                   type="tel"
                   value={formData.buyerPhone}
-                  onChange={(e) => handlePhoneChange("buyerPhone", e.target.value)}
+                  onChange={(e) =>
+                    handlePhoneChange("buyerPhone", e.target.value)
+                  }
                   placeholder="+971 50 123 4567"
-                  className={`mt-1 ${errors.buyerPhone ? "border-red-500" : ""}`}
+                  className={`mt-1 ${
+                    errors.buyerPhone ? "border-red-500" : ""
+                  }`}
                 />
                 {errors.buyerPhone && (
-                  <p className="text-red-500 text-sm mt-1">{errors.buyerPhone}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.buyerPhone}
+                  </p>
                 )}
               </div>
               <div>
                 <Label htmlFor="buyerNationality">Nationality</Label>
                 <Select
                   value={formData.buyerNationality}
-                  onValueChange={(value) => handleChange("buyerNationality", value)}
+                  onValueChange={(value) =>
+                    handleChange("buyerNationality", value)
+                  }
                 >
                   <SelectTrigger className="w-full mt-1">
                     <SelectValue placeholder="Select nationality" />
@@ -454,7 +489,9 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                     <SelectItem value="Social Media">Social Media</SelectItem>
                     <SelectItem value="Exhibition">Exhibition</SelectItem>
                     <SelectItem value="Cold Call">Cold Call</SelectItem>
-                    <SelectItem value="Property Portal">Property Portal</SelectItem>
+                    <SelectItem value="Property Portal">
+                      Property Portal
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -479,7 +516,9 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                   id="salesValue"
                   type="text"
                   value={formData.salesValue}
-                  onChange={(e) => handleNumberOnly("salesValue", e.target.value)}
+                  onChange={(e) =>
+                    handleNumberOnly("salesValue", e.target.value)
+                  }
                   placeholder="Enter sales value"
                   className="mt-1"
                 />
@@ -497,14 +536,19 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
               </div>
 
               {/* External Agent Toggle */}
-              <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: 'var(--gi-green-40)' }}>
+              <div
+                className="flex items-center justify-between pt-4 border-t"
+                style={{ borderColor: "var(--gi-green-40)" }}
+              >
                 <Label htmlFor="hasExternalAgent" className="text-gray-900">
                   External Agent
                 </Label>
                 <Switch
                   id="hasExternalAgent"
                   checked={formData.hasExternalAgent}
-                  onCheckedChange={(checked) => handleChange("hasExternalAgent", checked)}
+                  onCheckedChange={(checked) =>
+                    handleChange("hasExternalAgent", checked)
+                  }
                 />
               </div>
 
@@ -516,7 +560,9 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                     <Input
                       id="agencyName"
                       value={formData.agencyName}
-                      onChange={(e) => handleChange("agencyName", e.target.value)}
+                      onChange={(e) =>
+                        handleChange("agencyName", e.target.value)
+                      }
                       placeholder="Enter agency name"
                       className="mt-1"
                     />
@@ -527,7 +573,9 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                       id="agencyComm"
                       type="text"
                       value={formData.agencyComm}
-                      onChange={(e) => handleNumberOnly("agencyComm", e.target.value)}
+                      onChange={(e) =>
+                        handleNumberOnly("agencyComm", e.target.value)
+                      }
                       placeholder="Enter agency commission %"
                       className="mt-1"
                     />
@@ -536,12 +584,21 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                         <span className="font-semibold">Calculation:</span>
                       </p>
                       <p className="text-blue-800">
-                        Agency Commission Amount = Sales Value × (Agency Commission % / 100)
+                        Agency Commission Amount = Sales Value × (Agency
+                        Commission % / 100)
                       </p>
                       {formData.salesValue && formData.agencyComm && (
                         <p className="text-blue-900 mt-2 font-semibold">
-                          = AED {formData.salesValue} × {formData.agencyComm}% 
-                          = AED {(parseFloat(formData.salesValue) * parseFloat(formData.agencyComm) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          = AED {formData.salesValue} × {formData.agencyComm}% =
+                          AED{" "}
+                          {(
+                            (parseFloat(formData.salesValue) *
+                              parseFloat(formData.agencyComm)) /
+                            100
+                          ).toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
                         </p>
                       )}
                     </div>
@@ -577,9 +634,11 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-[var(--gi-dark-green)] transition-colors cursor-pointer">
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-[(--gi-dark-green)] transition-colors cursor-pointer">
               <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-2">Drag and drop files here, or click to browse</p>
+              <p className="text-gray-600 mb-2">
+                Drag and drop files here, or click to browse
+              </p>
               <Button variant="outline">Choose Files</Button>
             </div>
             <div className="text-gray-600">
@@ -598,4 +657,3 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     </div>
   );
 }
-

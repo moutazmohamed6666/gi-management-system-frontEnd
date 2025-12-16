@@ -125,7 +125,7 @@ export function DashboardCEO() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
         {/* Total Pipeline */}
-        <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-blue-50 to-white">
+        <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-linear-to-br from-blue-50 to-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-sm text-gray-700">
               Total Pipeline
@@ -149,7 +149,7 @@ export function DashboardCEO() {
         </Card>
 
         {/* Closed Deals */}
-        <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-green-50 to-white">
+        <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-linear-to-br from-green-50 to-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-sm text-gray-700">
               Closed Deals
@@ -167,7 +167,7 @@ export function DashboardCEO() {
         </Card>
 
         {/* Total Revenue */}
-        <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-emerald-50 to-white">
+        <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-linear-to-br from-emerald-50 to-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-sm text-gray-700">
               Total Revenue
@@ -187,7 +187,7 @@ export function DashboardCEO() {
         </Card>
 
         {/* Avg Deal Size */}
-        <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-purple-50 to-white">
+        <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-linear-to-br from-purple-50 to-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-sm text-gray-700">
               Avg Deal Size
@@ -207,7 +207,7 @@ export function DashboardCEO() {
         </Card>
 
         {/* Active Agents */}
-        <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-cyan-50 to-white">
+        <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-linear-to-br from-cyan-50 to-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-sm text-gray-700">
               Active Agents
@@ -225,7 +225,7 @@ export function DashboardCEO() {
         </Card>
 
         {/* Developers */}
-        <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-orange-50 to-white">
+        <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-linear-to-br from-orange-50 to-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-sm text-gray-700">Developers</CardTitle>
             <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center">
@@ -507,15 +507,15 @@ export function DashboardCEO() {
               {agentPerformance.map((agent, index) => (
                 <div
                   key={agent.name}
-                  className="group relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-gray-50 to-white border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all duration-300"
+                  className="group relative overflow-hidden rounded-xl p-4 bg-linear-to-br from-gray-50 to-white border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all duration-300"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div
                         className={`w-10 h-10 rounded-full flex items-center justify-center ${
                           index === 0
-                            ? "bg-gradient-to-br from-yellow-400 to-yellow-500"
-                            : "bg-gradient-to-br from-gray-400 to-gray-500"
+                            ? "bg-linear-to-br from-yellow-400 to-yellow-500"
+                            : "bg-linear-to-br from-gray-400 to-gray-500"
                         } text-white shadow-lg`}
                       >
                         {index + 1}
@@ -552,7 +552,7 @@ export function DashboardCEO() {
               {developerPerformance.slice(0, 5).map((dev, index) => (
                 <div
                   key={dev.name}
-                  className="group relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-gray-50 to-white border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all duration-300"
+                  className="group relative overflow-hidden rounded-xl p-4 bg-linear-to-br from-gray-50 to-white border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all duration-300"
                 >
                   <div
                     className="absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5"

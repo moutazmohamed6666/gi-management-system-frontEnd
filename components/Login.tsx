@@ -5,30 +5,27 @@ import Image from "next/image";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
 import { Alert, AlertDescription } from "./ui/alert";
 import { ThemeToggle } from "./ThemeToggle";
 import { User, Lock, AlertCircle, Building2 } from "lucide-react";
+import { authApi, setAuthToken } from "@/lib/api";
 
 type UserRole = "agent" | "finance" | "ceo" | "admin";
 
-interface UserData {
-  username: string;
-  password: string;
-  role: UserRole;
-  displayName: string;
-}
-
-// Fixed users for each role
-const USERS: UserData[] = [
-  { username: "agent", password: "123456", role: "agent", displayName: "Agent" },
-  { username: "finance", password: "123456", role: "finance", displayName: "Finance Team" },
-  { username: "ceo", password: "123456", role: "ceo", displayName: "CEO / Management" },
-  { username: "admin", password: "123456", role: "admin", displayName: "Admin" },
-];
-
 interface LoginProps {
-  onLogin: (role: UserRole, username: string) => void;
+  onLogin: (
+    role: UserRole,
+    username: string,
+    token: string,
+    userData: any
+  ) => void;
 }
 
 export function Login({ onLogin }: LoginProps) {
@@ -37,38 +34,53 @@ export function Login({ onLogin }: LoginProps) {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
-    // Simulate a small delay for better UX
-    setTimeout(() => {
-      const user = USERS.find(
-        (u) => u.username === username && u.password === password
-      );
+    try {
+      const response = await authApi.login({ username, password });
 
-      if (user) {
-        onLogin(user.role, user.displayName);
-      } else {
-        setError("Invalid username or password");
-      }
+      // Store token
+      setAuthToken(response.token);
+
+      // Map roleName from API to UserRole type
+      const roleMap: Record<string, UserRole> = {
+        Agent: "agent",
+        Finance: "finance",
+        CEO: "ceo",
+        Admin: "admin",
+      };
+
+      const role = roleMap[response.user.roleName] || "agent";
+
+      // Call onLogin with token and user data
+      onLogin(
+        role,
+        response.user.name || response.user.username,
+        response.token,
+        response.user
+      );
+    } catch (err: any) {
+      setError(err.message || "Invalid username or password");
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4 relative overflow-hidden transition-colors">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4 relative overflow-hidden transition-colors">
       {/* Theme Toggle - Top Right */}
       <div className="absolute top-6 right-6 z-20">
         <ThemeToggle />
       </div>
-      
+
       {/* Decorative background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-[var(--gi-dark-green)] opacity-5 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-[var(--gi-dark-green)] opacity-5 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[var(--gi-dark-green)] opacity-3 rounded-full blur-3xl"></div>
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-[(--gi-dark-green)] opacity-5 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-[(--gi-dark-green)] opacity-5 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[(--gi-dark-green)] opacity-3 rounded-full blur-3xl"></div>
       </div>
 
       {/* Login Card */}
@@ -77,24 +89,30 @@ export function Login({ onLogin }: LoginProps) {
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
             <div className="relative">
-              <div className="absolute inset-0 bg-[var(--gi-dark-green)] opacity-10 blur-2xl rounded-full"></div>
-              <Image 
-                src="/images/722778733878cdd4ce162bb6767c5c939386c373.png" 
-                alt="Gi Properties" 
+              <div className="absolute inset-0 bg-[(--gi-dark-green)] opacity-10 blur-2xl rounded-full"></div>
+              <Image
+                src="/images/722778733878cdd4ce162bb6767c5c939386c373.png"
+                alt="Gi Properties"
                 width={200}
                 height={96}
-                className="h-24 w-auto relative z-10" 
+                className="h-24 w-auto relative z-10"
                 priority
               />
             </div>
           </div>
-          <h1 className="text-gray-900 dark:text-white mb-2">Brokerage Management System</h1>
-          <p className="text-gray-600 dark:text-gray-400">Centralize your real estate operations</p>
+          <h1 className="text-gray-900 dark:text-white mb-2">
+            Brokerage Management System
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Centralize your real estate operations
+          </p>
         </div>
 
         <Card className="shadow-2xl border-0 overflow-hidden bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
-          <CardHeader className="space-y-2 pb-6 bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50">
-            <CardTitle className="text-center text-gray-900 dark:text-white">Welcome Back</CardTitle>
+          <CardHeader className="space-y-2 pb-6 bg-linear-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50">
+            <CardTitle className="text-center text-gray-900 dark:text-white">
+              Welcome Back
+            </CardTitle>
             <CardDescription className="text-center text-gray-600 dark:text-gray-400">
               Sign in to access your dashboard
             </CardDescription>
@@ -102,7 +120,12 @@ export function Login({ onLogin }: LoginProps) {
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="username" className="text-gray-900 dark:text-gray-200">Username</Label>
+                <Label
+                  htmlFor="username"
+                  className="text-gray-900 dark:text-gray-200"
+                >
+                  Username
+                </Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
                   <Input
@@ -114,12 +137,17 @@ export function Login({ onLogin }: LoginProps) {
                     required
                     autoComplete="username"
                     disabled={isLoading}
-                    className="pl-10 border-gray-200 dark:border-gray-600 focus:border-[var(--gi-dark-green)] focus:ring-[var(--gi-dark-green)] bg-white dark:bg-gray-700 dark:text-white"
+                    className="pl-10 border-gray-200 dark:border-gray-600 focus:border-[(--gi-dark-green)] focus:ring-[(--gi-dark-green)] bg-white dark:bg-gray-700 dark:text-white"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-gray-900 dark:text-gray-200">Password</Label>
+                <Label
+                  htmlFor="password"
+                  className="text-gray-900 dark:text-gray-200"
+                >
+                  Password
+                </Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
                   <Input
@@ -131,21 +159,24 @@ export function Login({ onLogin }: LoginProps) {
                     required
                     autoComplete="current-password"
                     disabled={isLoading}
-                    className="pl-10 border-gray-200 dark:border-gray-600 focus:border-[var(--gi-dark-green)] focus:ring-[var(--gi-dark-green)] bg-white dark:bg-gray-700 dark:text-white"
+                    className="pl-10 border-gray-200 dark:border-gray-600 focus:border-[(--gi-dark-green)] focus:ring-[(--gi-dark-green)] bg-white dark:bg-gray-700 dark:text-white"
                   />
                 </div>
               </div>
 
               {error && (
-                <Alert variant="destructive" className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+                <Alert
+                  variant="destructive"
+                  className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+                >
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
 
-              <Button 
-                type="submit" 
-                className="w-full gi-bg-dark-green hover:opacity-90 transition-all duration-200 shadow-lg hover:shadow-xl h-11" 
+              <Button
+                type="submit"
+                className="w-full gi-bg-dark-green hover:opacity-90 transition-all duration-200 shadow-lg hover:shadow-xl h-11"
                 disabled={isLoading}
               >
                 {isLoading ? (
