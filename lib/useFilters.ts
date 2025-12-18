@@ -84,8 +84,10 @@ export function useFilters(): UseFiltersReturn {
         nationalities,
         purchaseStatuses,
       });
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch filters");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to fetch filters";
+      setError(message);
       console.error("Error fetching filters:", err);
     } finally {
       setIsLoading(false);

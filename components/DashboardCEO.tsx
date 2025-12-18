@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { DateRangeFilter } from "./DateRangeFilter";
-import { mockDeals } from "@/lib/mockData";
+import type { Deal } from "@/lib/deals";
+import { dealsApi } from "@/lib/deals";
 import {
   TrendingUp,
   Users,
@@ -32,34 +33,55 @@ import {
 export function DashboardCEO() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [filteredDeals, setFilteredDeals] = useState<Deal[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const handleDateChange = (start: string, end: string) => {
     setStartDate(start);
     setEndDate(end);
   };
 
-  // Filter deals by date range
-  let filteredDeals = mockDeals;
-  if (startDate && endDate) {
-    filteredDeals = mockDeals.filter((deal) => {
-      if (!deal.dealCloseDate) return false;
-      const dealDate = new Date(deal.dealCloseDate);
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      return dealDate >= start && dealDate <= end;
-    });
-  }
+  // Fetch all deals
+  useEffect(() => {
+    const fetchDeals = async () => {
+      setIsLoading(true);
+      try {
+        const response = await dealsApi.getDeals();
+        let deals = Array.isArray(response.data) ? response.data : [];
+
+        // Apply date filter if dates are selected
+        if (startDate && endDate) {
+          deals = deals.filter((deal) => {
+            if (!deal.closeDate) return false;
+            const dealDate = new Date(deal.closeDate);
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            return dealDate >= start && dealDate <= end;
+          });
+        }
+
+        setFilteredDeals(deals);
+      } catch (err) {
+        console.error("Failed to fetch deals:", err);
+        setFilteredDeals([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDeals();
+  }, [startDate, endDate]);
 
   const totalPipeline = filteredDeals
     .filter((d) => d.status !== "Closed")
-    .reduce((sum, d) => sum + d.sellingPrice, 0);
+    .reduce((sum, d) => sum + d.dealValue, 0);
   const closedDeals = filteredDeals.filter((d) => d.status === "Closed").length;
   const totalRevenue = filteredDeals
-    .filter((d) => d.totalCommission)
-    .reduce((sum, d) => sum + (d.totalCommission || 0), 0);
+    .filter((d) => d.commission?.total)
+    .reduce((sum, d) => sum + (d.commission?.total || 0), 0);
   const avgDealSize =
     filteredDeals.length > 0
-      ? filteredDeals.reduce((sum, d) => sum + d.sellingPrice, 0) /
+      ? filteredDeals.reduce((sum, d) => sum + d.dealValue, 0) /
         filteredDeals.length
       : 0;
 

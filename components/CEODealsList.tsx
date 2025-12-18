@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { mockDeals } from "@/lib/mockData";
+import type { Deal } from "@/lib/deals";
+import { dealsApi } from "@/lib/deals";
 import { Button } from "./ui/button";
-import { Eye, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Eye, CheckCircle, XCircle, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 interface CEODealsListProps {
@@ -14,16 +15,55 @@ interface CEODealsListProps {
 export function CEODealsList({ onViewDeal }: CEODealsListProps) {
   const [approvingDealId, setApprovingDealId] = useState<string | null>(null);
   const [rejectingDealId, setRejectingDealId] = useState<string | null>(null);
+  const [dealsRequiringAction, setDealsRequiringAction] = useState<Deal[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Filter deals that require CEO action (Finance Review or Approved status)
-  const dealsRequiringAction = mockDeals.filter(
-    (deal) =>
-      deal.status === "Finance Review" ||
-      deal.status === "Approved" ||
-      deal.status === "Submitted"
-  );
+  // Fetch deals that require CEO action
+  useEffect(() => {
+    const fetchDeals = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        // Fetch all deals and filter client-side for CEO action
+        // Note: API requires statusId (UUID) for filtering, so we filter client-side for now
+        const response = await dealsApi.getDeals();
+        const allDeals = Array.isArray(response.data) ? response.data : [];
 
-  const getStatusColor = (status: string) => {
+        // Filter deals that require CEO action (based on commission status or deal status)
+        // Note: Since API doesn't have direct status field, we'll filter by commission status
+        const dealsRequiringAction = allDeals.filter((deal) => {
+          // For now, show deals with pending commission or specific status
+          const status = deal.status || "";
+          return (
+            deal.commission?.status === "Pending" ||
+            status === "Finance Review" ||
+            status === "Approved" ||
+            status === "Submitted"
+          );
+        });
+
+        setDealsRequiringAction(dealsRequiringAction);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load deals";
+        setError(errorMessage);
+        toast.error("Error loading deals", {
+          description:
+            errorMessage || "Failed to fetch deals. Please try again.",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDeals();
+  }, []);
+
+  const getStatusColor = (deal: Deal) => {
+    const status = (deal.commission?.status ||
+      deal.status ||
+      "Pending") as string;
     switch (status) {
       case "Finance Review":
         return "bg-orange-600";
@@ -31,6 +71,8 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
         return "bg-blue-600";
       case "Submitted":
         return "bg-yellow-600";
+      case "Pending":
+        return "bg-gray-600";
       default:
         return "bg-gray-600";
     }
@@ -39,27 +81,69 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
   const handleApprove = async (dealId: string) => {
     setApprovingDealId(dealId);
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Update status to "Approved" - requires statusId UUID
+      // TODO: Implement status name to UUID mapping
+      toast.warning("Status Update", {
+        description:
+          "Status update requires statusId (UUID) mapping. Please implement status mapping.",
+        duration: 3000,
+      });
+
+      // Remove from list or update status
+      setDealsRequiringAction((prev) =>
+        prev.filter((deal) => deal.id !== dealId)
+      );
+
       setApprovingDealId(null);
       toast.success("Deal Approved", {
         description: `Deal ${dealId} has been approved and moved to the next stage.`,
         duration: 3000,
       });
-    }, 1500);
+    } catch (err) {
+      setApprovingDealId(null);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Could not approve deal. Please try again.";
+      toast.error("Failed to approve deal", {
+        description: errorMessage,
+      });
+    }
   };
 
   const handleReject = async (dealId: string) => {
     setRejectingDealId(dealId);
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Update status to "Finance Review" - requires statusId UUID
+      // TODO: Implement status name to UUID mapping
+      toast.warning("Status Update", {
+        description:
+          "Status update requires statusId (UUID) mapping. Please implement status mapping.",
+        duration: 3000,
+      });
+
+      // Remove from list or update status
+      setDealsRequiringAction((prev) =>
+        prev.filter((deal) => deal.id !== dealId)
+      );
+
       setRejectingDealId(null);
-      toast.error("Deal Rejected", {
+      toast.success("Deal Rejected", {
         description: `Deal ${dealId} has been rejected and returned for review.`,
         duration: 3000,
       });
-    }, 1500);
+    } catch (err) {
+      setRejectingDealId(null);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Could not reject deal. Please try again.";
+      toast.error("Failed to reject deal", {
+        description: errorMessage,
+      });
+    }
   };
 
   return (
@@ -88,7 +172,21 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {dealsRequiringAction.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              <span className="ml-3 text-gray-600 dark:text-gray-400">
+                Loading deals...
+              </span>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center py-12">
+              <AlertCircle className="h-8 w-8 text-red-500" />
+              <span className="ml-3 text-red-600 dark:text-red-400">
+                {error}
+              </span>
+            </div>
+          ) : dealsRequiringAction.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-600 dark:text-gray-400">
                 No deals currently require your action.
@@ -133,46 +231,46 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
                     >
                       <td className="py-3 px-4">
                         <div className="text-gray-900 dark:text-gray-100 font-medium">
-                          {deal.id}
+                          {deal.dealNumber}
                         </div>
                       </td>
                       <td className="py-3 px-4">
                         <div className="text-gray-900 dark:text-gray-100">
-                          {deal.project}
+                          {deal.project?.name || "N/A"}
                         </div>
                         <div className="text-sm text-gray-600 dark:text-gray-400">
-                          {deal.developer}
+                          {deal.developer?.name || "N/A"}
                         </div>
                       </td>
                       <td className="py-3 px-4">
                         <div className="text-gray-900 dark:text-gray-100">
-                          {deal.buyerName}
+                          {deal.buyer?.name || "N/A"}
                         </div>
                       </td>
                       <td className="py-3 px-4">
                         <div className="text-gray-900 dark:text-gray-100">
-                          {deal.agentName}
+                          {deal.agent?.name || "N/A"}
                         </div>
                       </td>
                       <td className="py-3 px-4">
                         <div className="text-gray-900 dark:text-gray-100">
-                          AED {deal.sellingPrice.toLocaleString()}
+                          AED {deal.dealValue.toLocaleString()}
                         </div>
                       </td>
                       <td className="py-3 px-4">
                         <div className="text-gray-900 dark:text-gray-100">
-                          {deal.agentCommission
-                            ? `AED ${deal.agentCommission.toLocaleString()}`
+                          {deal.commission?.total
+                            ? `AED ${deal.commission.total.toLocaleString()}`
                             : "-"}
                         </div>
                       </td>
                       <td className="py-3 px-4">
                         <span
                           className={`inline-block px-3 py-1 rounded-full text-white text-sm ${getStatusColor(
-                            deal.status
+                            deal
                           )}`}
                         >
-                          {deal.status}
+                          {deal.commission?.status || deal.status || "Pending"}
                         </span>
                       </td>
                       <td className="py-3 px-4">

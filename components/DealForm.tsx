@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -15,8 +15,10 @@ import {
   SelectValue,
 } from "./ui/select";
 import { StyledDatePicker } from "./StyledDatePicker";
-import { mockDeals } from "@/lib/mockData";
-import { ArrowLeft, Save, Upload } from "lucide-react";
+import { useFilters } from "@/lib/useFilters";
+import { dealsApi, type CreateDealRequest, type Deal } from "@/lib/deals";
+import { ArrowLeft, Save, Loader2, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 
 interface DealFormProps {
   dealId: string | null;
@@ -25,48 +27,160 @@ interface DealFormProps {
 }
 
 export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
-  const existingDeal = dealId ? mockDeals.find((d) => d.id === dealId) : null;
+  // Fetch filter data for dropdowns
+  const {
+    developers,
+    projects: allProjects,
+    dealTypes,
+    propertyTypes,
+    unitTypes,
+    nationalities,
+    leadSources,
+    commissionTypes,
+    isLoading: filtersLoading,
+    error: filtersError,
+  } = useFilters();
 
   const [formData, setFormData] = useState({
     // Deal Information
-    bookingDate: existingDeal?.dealCloseDate || "",
+    bookingDate: "",
     cfExpiry: "",
-    dealType: "",
+    closeDate: "", // NEW: Added closeDate field
+    dealTypeId: "", // Changed from dealType to dealTypeId (UUID)
 
     // Property Details
-    developer: existingDeal?.developer || "",
-    projectName: existingDeal?.project || "",
-    propertyType: existingDeal?.propertyType || "",
-    unitNumber: existingDeal?.unitNumber || "",
-    unitType: existingDeal?.unitType || "",
-    sizeSqFt: "",
-    bedrooms: "",
+    developerId: "", // Changed from developer to developerId (UUID)
+    projectId: "", // Changed from projectName to projectId (UUID)
+    propertyName: "", // NEW: Added propertyName field
+    propertyTypeId: "", // Changed from propertyType to propertyTypeId (UUID)
+    unitNumber: "",
+    unitTypeId: "", // Changed from unitType to unitTypeId (UUID)
+    size: "", // Changed from sizeSqFt to size (will convert to number)
+    bedrooms: "", // Keep for now, discuss with backend
 
     // Seller Information
-    sellerName: existingDeal?.sellerName || "",
-    sellerPhone: existingDeal?.sellerContact || "",
-    sellerNationality: "",
-    sellerSource: "",
+    sellerName: "",
+    sellerPhone: "",
+    sellerNationalityId: "", // Changed from sellerNationality to sellerNationalityId (UUID)
+    sellerSourceId: "", // Changed from sellerSource to sellerSourceId (UUID)
 
     // Buyer Information
-    buyerName: existingDeal?.buyerName || "",
-    buyerPhone: existingDeal?.buyerContact || "",
-    buyerNationality: "",
-    buyerSource: "",
+    buyerName: "",
+    buyerPhone: "",
+    buyerNationalityId: "", // Changed from buyerNationality to buyerNationalityId (UUID)
+    buyerSourceId: "", // Changed from buyerSource to buyerSourceId (UUID)
 
     // Commission Details
     salesValue: "",
     commRate: "",
+    agentCommissionTypeId: "", // NEW: For commission type
     hasExternalAgent: false,
     agencyName: "",
     agencyComm: "",
+    agencyCommissionTypeId: "", // NEW: For external agent commission type
 
-    notes: existingDeal?.notes || "",
+    notes: "", // Keep for now, discuss with backend
   });
+
+  const [dealError, setDealError] = useState<string | null>(null);
+  const [loadedDealId, setLoadedDealId] = useState<string | null>(null);
+  const [dealFetchNonce, setDealFetchNonce] = useState(0);
+
+  const isEditMode = Boolean(dealId);
+
+  const isoToYmd = (value?: string) => {
+    if (!value) return "";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toISOString().split("T")[0];
+  };
+
+  // Load deal when editing
+  useLayoutEffect(() => {
+    if (!dealId) return;
+    if (loadedDealId === dealId) return;
+
+    let cancelled = false;
+
+    dealsApi
+      .getDealById(dealId)
+      .then((deal: Deal) => {
+        if (cancelled) return;
+
+        const buyer = deal.buyerSellerDetails?.find((d) => d.isBuyer === true);
+        const seller = deal.buyerSellerDetails?.find(
+          (d) => d.isBuyer === false
+        );
+
+        setFormData((prev) => ({
+          ...prev,
+          // Deal Information
+          bookingDate: isoToYmd(deal.bookingDate),
+          cfExpiry: isoToYmd(deal.cfExpiry),
+          closeDate: isoToYmd(deal.closeDate),
+          dealTypeId: deal.dealTypeId || "",
+
+          // Property Details
+          developerId: deal.developerId || deal.developer?.id || "",
+          projectId: deal.projectId || deal.project?.id || "",
+          propertyName: deal.propertyName || "",
+          propertyTypeId: deal.propertyTypeId || "",
+          unitNumber: deal.unitNumber || "",
+          unitTypeId: deal.unitTypeId || "",
+          size: deal.size ? String(deal.size) : "",
+
+          // Seller
+          sellerName: seller?.name || "",
+          sellerPhone: seller?.phone || "",
+          sellerNationalityId: seller?.nationalityId || "",
+          sellerSourceId: seller?.sourceId || "",
+
+          // Buyer
+          buyerName: buyer?.name || "",
+          buyerPhone: buyer?.phone || "",
+          buyerNationalityId: buyer?.nationalityId || "",
+          buyerSourceId: buyer?.sourceId || "",
+
+          // Commission
+          salesValue: deal.dealValue ? String(deal.dealValue) : "",
+        }));
+
+        setLoadedDealId(dealId);
+      })
+      .catch((err: unknown) => {
+        const message =
+          err instanceof Error ? err.message : "Failed to load deal";
+        setDealError(message);
+        console.error("Error loading deal:", err);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dealId, loadedDealId, dealFetchNonce]);
+
+  // Filter projects by selected developer
+  // Note: If API doesn't provide developerId in project objects,
+  // we may need to fetch projects with ?developerId={id} parameter
+  const filteredProjects = useMemo(() => {
+    if (!formData.developerId) return [];
+    // Try to filter by developerId if it exists in project object
+    // Otherwise show all projects (backend should filter or we need to update API)
+    type ProjectOption = { developerId?: string };
+    const projectsWithDeveloper = allProjects.filter((project) => {
+      const devId = (project as unknown as ProjectOption).developerId;
+      return devId === formData.developerId;
+    });
+    // If no projects have developerId property, show all projects
+    // (This means API doesn't include developerId, and we should update API call)
+    return projectsWithDeveloper.length > 0
+      ? projectsWithDeveloper
+      : allProjects;
+  }, [allProjects, formData.developerId]);
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: string, value: string | boolean | null) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
@@ -97,9 +211,47 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     handleChange(field, numericValue);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Validate phones before saving
     const newErrors: { [key: string]: string } = {};
+
+    // Required field validations
+    if (!formData.developerId) {
+      newErrors.developerId = "Developer is required";
+    }
+    if (!formData.projectId) {
+      newErrors.projectId = "Project is required";
+    }
+    if (!formData.dealTypeId) {
+      newErrors.dealTypeId = "Deal type is required";
+    }
+    if (!formData.propertyTypeId) {
+      newErrors.propertyTypeId = "Property type is required";
+    }
+    if (!formData.unitTypeId) {
+      newErrors.unitTypeId = "Unit type is required";
+    }
+    if (!formData.buyerName) {
+      newErrors.buyerName = "Buyer name is required";
+    }
+    if (!formData.buyerPhone) {
+      newErrors.buyerPhone = "Buyer phone is required";
+    }
+    if (!formData.sellerName) {
+      newErrors.sellerName = "Seller name is required";
+    }
+    if (!formData.sellerPhone) {
+      newErrors.sellerPhone = "Seller phone is required";
+    }
+    if (!formData.salesValue) {
+      newErrors.salesValue = "Sales value is required";
+    }
+    if (!formData.bookingDate) {
+      newErrors.bookingDate = "Booking date is required";
+    }
+    if (!formData.closeDate) {
+      newErrors.closeDate = "Close date is required";
+    }
 
     if (formData.sellerPhone && !validatePhone(formData.sellerPhone)) {
       newErrors.sellerPhone = "Invalid phone number format";
@@ -110,13 +262,162 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      alert("Please fix the validation errors before saving");
+      toast.error("Validation Error", {
+        description: "Please fix the validation errors before saving",
+      });
       return;
     }
 
-    alert("Deal saved successfully!");
-    onSave();
+    // Get agent ID from session
+    const agentId = sessionStorage.getItem("userId");
+    if (!agentId) {
+      toast.error("Authentication Error", {
+        description: "Agent ID not found. Please log in again.",
+      });
+      return;
+    }
+
+    // Prepare API payload
+    const payload: CreateDealRequest = {
+      dealValue: parseFloat(formData.salesValue) || 0,
+      developerId: formData.developerId,
+      projectId: formData.projectId,
+      agentId: agentId,
+      bookingDate: new Date(formData.bookingDate).toISOString(),
+      cfExpiry: formData.cfExpiry
+        ? new Date(formData.cfExpiry).toISOString()
+        : new Date().toISOString(),
+      closeDate: new Date(formData.closeDate).toISOString(),
+      dealTypeId: formData.dealTypeId,
+      numberOfDeal: 1, // Default to 1, discuss with backend
+      propertyName: formData.propertyName || "", // Use propertyName or project name
+      propertyTypeId: formData.propertyTypeId,
+      unitNumber: formData.unitNumber,
+      unitTypeId: formData.unitTypeId,
+      size: parseFloat(formData.size) || 0,
+      buyer: {
+        name: formData.buyerName,
+        phone: formData.buyerPhone,
+        nationalityId: formData.buyerNationalityId,
+        sourceId: formData.buyerSourceId,
+      },
+      seller: {
+        name: formData.sellerName,
+        phone: formData.sellerPhone,
+        nationalityId: formData.sellerNationalityId,
+        sourceId: formData.sellerSourceId,
+      },
+      // Optional fields
+      agentCommissionTypeId: formData.agentCommissionTypeId || undefined,
+      agentCommissionValue: formData.commRate
+        ? parseFloat(formData.commRate)
+        : undefined,
+      // Additional agents if external agent is enabled
+      additionalAgents: formData.hasExternalAgent
+        ? [
+            {
+              externalAgentName: formData.agencyName,
+              commissionTypeId:
+                formData.agencyCommissionTypeId ||
+                formData.agentCommissionTypeId ||
+                "",
+              commissionValue: formData.agencyComm
+                ? parseFloat(formData.agencyComm)
+                : 0,
+              isInternal: false,
+            },
+          ]
+        : undefined,
+    };
+
+    try {
+      if (dealId) {
+        await dealsApi.updateDeal(dealId, payload);
+        toast.success("Deal Updated", {
+          description: "Deal has been updated successfully!",
+        });
+      } else {
+        await dealsApi.createDeal(payload);
+        toast.success("Deal Created", {
+          description: "Deal has been created successfully!",
+        });
+      }
+      onSave();
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : dealId
+          ? "Failed to update deal"
+          : "Failed to create deal";
+      toast.error(dealId ? "Error Updating Deal" : "Error Creating Deal", {
+        description: errorMessage,
+      });
+    }
   };
+
+  const shouldShowDealLoading =
+    Boolean(dealId) && loadedDealId !== dealId && !dealError;
+
+  if (shouldShowDealLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <span className="ml-3 text-gray-600 dark:text-gray-400">
+          Loading deal...
+        </span>
+      </div>
+    );
+  }
+
+  if (dealError) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <AlertCircle className="h-8 w-8 text-red-500" />
+        <div className="ml-3">
+          <div className="text-red-600 dark:text-red-400">{dealError}</div>
+          {dealId && (
+            <div className="mt-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setDealError(null);
+                  setLoadedDealId(null);
+                  setDealFetchNonce((n) => n + 1);
+                }}
+              >
+                Retry
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state while filters are loading
+  if (filtersLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <span className="ml-3 text-gray-600 dark:text-gray-400">
+          Loading form data...
+        </span>
+      </div>
+    );
+  }
+
+  // Show error state if filters failed to load
+  if (filtersError) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <AlertCircle className="h-8 w-8 text-red-500" />
+        <span className="ml-3 text-red-600 dark:text-red-400">
+          {filtersError}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -130,7 +431,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
           className="gi-bg-dark-green flex items-center gap-2"
         >
           <Save className="h-4 w-4" />
-          Save Deal
+          {isEditMode ? "Update Deal" : "Save Deal"}
         </Button>
       </div>
 
@@ -153,6 +454,11 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                     placeholder="Select booking date"
                   />
                 </div>
+                {errors.bookingDate && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.bookingDate}
+                  </p>
+                )}
               </div>
               <div>
                 <Label htmlFor="cfExpiry">CF Expiry</Label>
@@ -166,23 +472,44 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                 </div>
               </div>
               <div>
-                <Label htmlFor="dealType">Deal Type</Label>
+                <Label htmlFor="closeDate">Close Date</Label>
+                <div className="mt-1">
+                  <StyledDatePicker
+                    id="closeDate"
+                    value={formData.closeDate}
+                    onChange={(date) => handleChange("closeDate", date)}
+                    placeholder="Select close date"
+                  />
+                </div>
+                {errors.closeDate && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.closeDate}
+                  </p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="dealTypeId">Deal Type</Label>
                 <Select
-                  value={formData.dealType}
-                  onValueChange={(value) => handleChange("dealType", value)}
+                  value={formData.dealTypeId}
+                  onValueChange={(value) => handleChange("dealTypeId", value)}
+                  disabled={filtersLoading}
                 >
                   <SelectTrigger className="w-full mt-1">
                     <SelectValue placeholder="Select deal type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Primary Sale">Primary Sale</SelectItem>
-                    <SelectItem value="Secondary Sale">
-                      Secondary Sale
-                    </SelectItem>
-                    <SelectItem value="Lease">Lease</SelectItem>
-                    <SelectItem value="Off-Plan">Off-Plan</SelectItem>
+                    {dealTypes.map((type) => (
+                      <SelectItem key={type.id} value={type.id}>
+                        {type.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                {errors.dealTypeId && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.dealTypeId}
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -196,54 +523,100 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
           <CardContent>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="developer">Developer</Label>
+                <Label htmlFor="developerId">Developer</Label>
                 <Select
-                  value={formData.developer}
-                  onValueChange={(value) => handleChange("developer", value)}
+                  value={formData.developerId}
+                  onValueChange={(value) => {
+                    handleChange("developerId", value);
+                    // Reset project when developer changes
+                    handleChange("projectId", "");
+                  }}
+                  disabled={filtersLoading}
                 >
                   <SelectTrigger className="w-full mt-1">
                     <SelectValue placeholder="Select developer" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Emaar">Emaar Properties</SelectItem>
-                    <SelectItem value="Damac">Damac Properties</SelectItem>
-                    <SelectItem value="Meraas">Meraas</SelectItem>
-                    <SelectItem value="Nakheel">Nakheel</SelectItem>
-                    <SelectItem value="Aldar">Aldar Properties</SelectItem>
-                    <SelectItem value="Dubai Properties">
-                      Dubai Properties
-                    </SelectItem>
+                    {developers.map((dev) => (
+                      <SelectItem key={dev.id} value={dev.id}>
+                        {dev.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                {errors.developerId && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.developerId}
+                  </p>
+                )}
               </div>
               <div>
-                <Label htmlFor="projectName">Project Name</Label>
+                <Label htmlFor="projectId">Project</Label>
+                <Select
+                  value={formData.projectId}
+                  onValueChange={(value) => handleChange("projectId", value)}
+                  disabled={filtersLoading || !formData.developerId}
+                >
+                  <SelectTrigger className="w-full mt-1">
+                    <SelectValue placeholder="Select project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredProjects.length === 0 ? (
+                      <SelectItem value="__no_projects__" disabled>
+                        {formData.developerId
+                          ? "No projects available"
+                          : "Select developer first"}
+                      </SelectItem>
+                    ) : (
+                      filteredProjects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                {errors.projectId && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.projectId}
+                  </p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="propertyName">Property Name</Label>
                 <Input
-                  id="projectName"
-                  value={formData.projectName}
-                  onChange={(e) => handleChange("projectName", e.target.value)}
-                  placeholder="Enter project name"
+                  id="propertyName"
+                  value={formData.propertyName}
+                  onChange={(e) => handleChange("propertyName", e.target.value)}
+                  placeholder="Enter property name"
                   className="mt-1"
                 />
               </div>
               <div>
-                <Label htmlFor="propertyType">Property Type</Label>
+                <Label htmlFor="propertyTypeId">Property Type</Label>
                 <Select
-                  value={formData.propertyType}
-                  onValueChange={(value) => handleChange("propertyType", value)}
+                  value={formData.propertyTypeId}
+                  onValueChange={(value) =>
+                    handleChange("propertyTypeId", value)
+                  }
+                  disabled={filtersLoading}
                 >
                   <SelectTrigger className="w-full mt-1">
                     <SelectValue placeholder="Select property type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Apartment">Apartment</SelectItem>
-                    <SelectItem value="Villa">Villa</SelectItem>
-                    <SelectItem value="Townhouse">Townhouse</SelectItem>
-                    <SelectItem value="Penthouse">Penthouse</SelectItem>
-                    <SelectItem value="Studio">Studio</SelectItem>
-                    <SelectItem value="Plot">Plot</SelectItem>
+                    {propertyTypes.map((type) => (
+                      <SelectItem key={type.id} value={type.id}>
+                        {type.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                {errors.propertyTypeId && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.propertyTypeId}
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -269,32 +642,34 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
               />
             </div>
             <div>
-              <Label htmlFor="unitType">Unit Type</Label>
+              <Label htmlFor="unitTypeId">Unit Type</Label>
               <Select
-                value={formData.unitType}
-                onValueChange={(value) => handleChange("unitType", value)}
+                value={formData.unitTypeId}
+                onValueChange={(value) => handleChange("unitTypeId", value)}
+                disabled={filtersLoading}
               >
                 <SelectTrigger className="w-full mt-1">
                   <SelectValue placeholder="Select unit type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Studio">Studio</SelectItem>
-                  <SelectItem value="1 BR">1 Bedroom</SelectItem>
-                  <SelectItem value="2 BR">2 Bedroom</SelectItem>
-                  <SelectItem value="3 BR">3 Bedroom</SelectItem>
-                  <SelectItem value="4 BR">4 Bedroom</SelectItem>
-                  <SelectItem value="5 BR+">5+ Bedroom</SelectItem>
-                  <SelectItem value="Penthouse">Penthouse</SelectItem>
+                  {unitTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.id}>
+                      {type.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+              {errors.unitTypeId && (
+                <p className="text-red-500 text-sm mt-1">{errors.unitTypeId}</p>
+              )}
             </div>
             <div>
-              <Label htmlFor="sizeSqFt">Size (sq.ft)</Label>
+              <Label htmlFor="size">Size (sq.ft)</Label>
               <Input
-                id="sizeSqFt"
+                id="size"
                 type="text"
-                value={formData.sizeSqFt}
-                onChange={(e) => handleNumberOnly("sizeSqFt", e.target.value)}
+                value={formData.size}
+                onChange={(e) => handleNumberOnly("size", e.target.value)}
                 placeholder="Enter size in sq.ft"
                 className="mt-1"
               />
@@ -339,8 +714,15 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                   value={formData.sellerName}
                   onChange={(e) => handleChange("sellerName", e.target.value)}
                   placeholder="Enter seller name"
-                  className="mt-1"
+                  className={`mt-1 ${
+                    errors.sellerName ? "border-red-500" : ""
+                  }`}
                 />
+                {errors.sellerName && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.sellerName}
+                  </p>
+                )}
               </div>
               <div>
                 <Label htmlFor="sellerPhone">Phone</Label>
@@ -363,48 +745,44 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                 )}
               </div>
               <div>
-                <Label htmlFor="sellerNationality">Nationality</Label>
+                <Label htmlFor="sellerNationalityId">Nationality</Label>
                 <Select
-                  value={formData.sellerNationality}
+                  value={formData.sellerNationalityId}
                   onValueChange={(value) =>
-                    handleChange("sellerNationality", value)
+                    handleChange("sellerNationalityId", value)
                   }
+                  disabled={filtersLoading}
                 >
                   <SelectTrigger className="w-full mt-1">
                     <SelectValue placeholder="Select nationality" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="UAE">UAE</SelectItem>
-                    <SelectItem value="Saudi Arabia">Saudi Arabia</SelectItem>
-                    <SelectItem value="India">India</SelectItem>
-                    <SelectItem value="Pakistan">Pakistan</SelectItem>
-                    <SelectItem value="Egypt">Egypt</SelectItem>
-                    <SelectItem value="UK">United Kingdom</SelectItem>
-                    <SelectItem value="USA">United States</SelectItem>
-                    <SelectItem value="Canada">Canada</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
+                    {nationalities.map((nationality) => (
+                      <SelectItem key={nationality.id} value={nationality.id}>
+                        {nationality.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label htmlFor="sellerSource">Source</Label>
+                <Label htmlFor="sellerSourceId">Source</Label>
                 <Select
-                  value={formData.sellerSource}
-                  onValueChange={(value) => handleChange("sellerSource", value)}
+                  value={formData.sellerSourceId}
+                  onValueChange={(value) =>
+                    handleChange("sellerSourceId", value)
+                  }
+                  disabled={filtersLoading}
                 >
                   <SelectTrigger className="w-full mt-1">
                     <SelectValue placeholder="Select source" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Website">Website</SelectItem>
-                    <SelectItem value="Referral">Referral</SelectItem>
-                    <SelectItem value="Direct">Direct Walk-in</SelectItem>
-                    <SelectItem value="Social Media">Social Media</SelectItem>
-                    <SelectItem value="Exhibition">Exhibition</SelectItem>
-                    <SelectItem value="Cold Call">Cold Call</SelectItem>
-                    <SelectItem value="Property Portal">
-                      Property Portal
-                    </SelectItem>
+                    {leadSources.map((source) => (
+                      <SelectItem key={source.id} value={source.id}>
+                        {source.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -426,8 +804,13 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                   value={formData.buyerName}
                   onChange={(e) => handleChange("buyerName", e.target.value)}
                   placeholder="Enter buyer name"
-                  className="mt-1"
+                  className={`mt-1 ${errors.buyerName ? "border-red-500" : ""}`}
                 />
+                {errors.buyerName && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.buyerName}
+                  </p>
+                )}
               </div>
               <div>
                 <Label htmlFor="buyerPhone">Phone</Label>
@@ -450,48 +833,44 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                 )}
               </div>
               <div>
-                <Label htmlFor="buyerNationality">Nationality</Label>
+                <Label htmlFor="buyerNationalityId">Nationality</Label>
                 <Select
-                  value={formData.buyerNationality}
+                  value={formData.buyerNationalityId}
                   onValueChange={(value) =>
-                    handleChange("buyerNationality", value)
+                    handleChange("buyerNationalityId", value)
                   }
+                  disabled={filtersLoading}
                 >
                   <SelectTrigger className="w-full mt-1">
                     <SelectValue placeholder="Select nationality" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="UAE">UAE</SelectItem>
-                    <SelectItem value="Saudi Arabia">Saudi Arabia</SelectItem>
-                    <SelectItem value="India">India</SelectItem>
-                    <SelectItem value="Pakistan">Pakistan</SelectItem>
-                    <SelectItem value="Egypt">Egypt</SelectItem>
-                    <SelectItem value="UK">United Kingdom</SelectItem>
-                    <SelectItem value="USA">United States</SelectItem>
-                    <SelectItem value="Canada">Canada</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
+                    {nationalities.map((nationality) => (
+                      <SelectItem key={nationality.id} value={nationality.id}>
+                        {nationality.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label htmlFor="buyerSource">Source</Label>
+                <Label htmlFor="buyerSourceId">Source</Label>
                 <Select
-                  value={formData.buyerSource}
-                  onValueChange={(value) => handleChange("buyerSource", value)}
+                  value={formData.buyerSourceId}
+                  onValueChange={(value) =>
+                    handleChange("buyerSourceId", value)
+                  }
+                  disabled={filtersLoading}
                 >
                   <SelectTrigger className="w-full mt-1">
                     <SelectValue placeholder="Select source" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Website">Website</SelectItem>
-                    <SelectItem value="Referral">Referral</SelectItem>
-                    <SelectItem value="Direct">Direct Walk-in</SelectItem>
-                    <SelectItem value="Social Media">Social Media</SelectItem>
-                    <SelectItem value="Exhibition">Exhibition</SelectItem>
-                    <SelectItem value="Cold Call">Cold Call</SelectItem>
-                    <SelectItem value="Property Portal">
-                      Property Portal
-                    </SelectItem>
+                    {leadSources.map((source) => (
+                      <SelectItem key={source.id} value={source.id}>
+                        {source.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -520,17 +899,45 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                     handleNumberOnly("salesValue", e.target.value)
                   }
                   placeholder="Enter sales value"
-                  className="mt-1"
+                  className={`mt-1 ${
+                    errors.salesValue ? "border-red-500" : ""
+                  }`}
                 />
+                {errors.salesValue && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.salesValue}
+                  </p>
+                )}
               </div>
               <div>
-                <Label htmlFor="commRate">Commission Rate (%)</Label>
+                <Label htmlFor="agentCommissionTypeId">Commission Type</Label>
+                <Select
+                  value={formData.agentCommissionTypeId}
+                  onValueChange={(value) =>
+                    handleChange("agentCommissionTypeId", value)
+                  }
+                  disabled={filtersLoading}
+                >
+                  <SelectTrigger className="w-full mt-1">
+                    <SelectValue placeholder="Select commission type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {commissionTypes.map((type) => (
+                      <SelectItem key={type.id} value={type.id}>
+                        {type.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="commRate">Commission Rate/Value</Label>
                 <Input
                   id="commRate"
                   type="text"
                   value={formData.commRate}
                   onChange={(e) => handleNumberOnly("commRate", e.target.value)}
-                  placeholder="Enter commission rate"
+                  placeholder="Enter commission rate (%) or fixed amount"
                   className="mt-1"
                 />
               </div>
@@ -566,6 +973,29 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                       placeholder="Enter agency name"
                       className="mt-1"
                     />
+                  </div>
+                  <div>
+                    <Label htmlFor="agencyCommissionTypeId">
+                      Agency Commission Type
+                    </Label>
+                    <Select
+                      value={formData.agencyCommissionTypeId}
+                      onValueChange={(value) =>
+                        handleChange("agencyCommissionTypeId", value)
+                      }
+                      disabled={filtersLoading}
+                    >
+                      <SelectTrigger className="w-full mt-1">
+                        <SelectValue placeholder="Select commission type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {commissionTypes.map((type) => (
+                          <SelectItem key={type.id} value={type.id}>
+                            {type.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label htmlFor="agencyComm">Agency Commission (%)</Label>
@@ -627,33 +1057,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
         </Card>
       </div>
 
-      {/* Documents */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Documents & Attachments</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-[(--gi-dark-green)] transition-colors cursor-pointer">
-              <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-2">
-                Drag and drop files here, or click to browse
-              </p>
-              <Button variant="outline">Choose Files</Button>
-            </div>
-            <div className="text-gray-600">
-              <p className="mb-2">Supported documents:</p>
-              <ul className="list-disc list-inside space-y-1 text-sm">
-                <li>Booking form</li>
-                <li>Signed contract</li>
-                <li>Customer ID/Passport</li>
-                <li>Payment receipts</li>
-                <li>Commission invoices</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Documents & Attachments (hidden for now - backend has no attachment APIs yet) */}
     </div>
   );
 }

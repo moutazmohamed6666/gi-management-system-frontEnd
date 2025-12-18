@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { DateRangeFilter } from "./DateRangeFilter";
-import { mockDeals } from "@/lib/mockData";
+import type { Deal } from "@/lib/deals";
+import { dealsApi } from "@/lib/deals";
 import {
   TrendingUp,
   DollarSign,
@@ -12,8 +13,11 @@ import {
   CheckCircle2,
   Clock,
   ArrowUpRight,
-  ArrowDownRight,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
+import { financeApi } from "@/lib/finance";
+import type { AgentMetricsResponse } from "@/lib/finance";
 import {
   BarChart,
   Bar,
@@ -25,81 +29,229 @@ import {
   PieChart,
   Pie,
   Cell,
-  LineChart,
-  Line,
 } from "recharts";
 
 export function DashboardAgent() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [agentDeals, setAgentDeals] = useState<Deal[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [agentMetrics, setAgentMetrics] = useState<AgentMetricsResponse | null>(
+    null
+  );
+  const [metricsLoading, setMetricsLoading] = useState(true);
+  const [metricsError, setMetricsError] = useState<string | null>(null);
 
   const handleDateChange = (start: string, end: string) => {
     setStartDate(start);
     setEndDate(end);
   };
 
-  // Filter deals for current agent (Sarah Johnson)
-  let agentDeals = mockDeals.filter((d) => d.agentName === "Sarah Johnson");
+  // Fetch agent dashboard metrics (server-calculated)
+  useEffect(() => {
+    const fetchAgentMetrics = async () => {
+      try {
+        setMetricsLoading(true);
+        setMetricsError(null);
+        const data = await financeApi.getAgentMetrics();
+        setAgentMetrics(data);
+      } catch (err: unknown) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load agent metrics";
+        setMetricsError(errorMessage);
+        console.error("Error fetching agent metrics:", err);
+      } finally {
+        setMetricsLoading(false);
+      }
+    };
 
-  // Apply date filter if dates are selected
-  if (startDate && endDate) {
-    agentDeals = agentDeals.filter((deal) => {
-      if (!deal.dealCloseDate) return false;
-      const dealDate = new Date(deal.dealCloseDate);
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      return dealDate >= start && dealDate <= end;
-    });
-  }
+    fetchAgentMetrics();
+  }, []);
 
-  const unitsSold = agentDeals.filter(
-    (d) => d.status === "Closed" || d.status === "Commission Transferred"
-  ).length;
+  // Fetch deals for current agent
+  useEffect(() => {
+    const fetchDeals = async () => {
+      setIsLoading(true);
+      try {
+        const userId = sessionStorage.getItem("userId");
+        const response = await dealsApi.getDeals({
+          agent_id: userId || undefined,
+        });
+        let deals = Array.isArray(response.data) ? response.data : [];
+
+        // Apply date filter if dates are selected
+        if (startDate && endDate) {
+          deals = deals.filter((deal) => {
+            if (!deal.closeDate) return false;
+            const dealDate = new Date(deal.closeDate);
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            return dealDate >= start && dealDate <= end;
+          });
+        }
+
+        setAgentDeals(deals);
+      } catch (err) {
+        console.error("Failed to fetch agent deals:", err);
+        setAgentDeals([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDeals();
+  }, [startDate, endDate]);
+
+  // Calculate commission totals from commissions array
+  const getCommissionTotal = (deal: Deal): number => {
+    return (
+      deal.commissions?.reduce(
+        (sum, c) => sum + parseFloat(c.expectedAmount || "0"),
+        0
+      ) || 0
+    );
+  };
+
+  const getCommissionPaid = (deal: Deal): number => {
+    return (
+      deal.commissions?.reduce(
+        (sum, c) => sum + parseFloat(c.paidAmount || "0"),
+        0
+      ) || 0
+    );
+  };
+
+  // Note: Status checking needs statusId mapping - using client-side check for now
+  // TODO: Implement statusId to status name mapping
   const totalCommissionEarned = agentDeals.reduce(
-    (sum, d) => sum + (d.agentCommission || 0),
+    (sum, d) => sum + getCommissionTotal(d),
     0
   );
-  const commissionPaid = agentDeals
-    .filter((d) => d.paidToAgent)
-    .reduce(
-      (sum, d) =>
-        sum + (d.agentCommission || 0) * ((d.paidPercentage || 0) / 100),
-      0
-    );
+  const commissionPaid = agentDeals.reduce(
+    (sum, d) => sum + getCommissionPaid(d),
+    0
+  );
   const commissionUnpaid = totalCommissionEarned - commissionPaid;
   const developersClosed = new Set(
-    agentDeals.filter((d) => d.status === "Closed").map((d) => d.developer)
+    agentDeals
+      .filter((d) => {
+        const paidAmount = getCommissionPaid(d);
+        const totalAmount = getCommissionTotal(d);
+        return paidAmount >= totalAmount && totalAmount > 0;
+      })
+      .map((d) => d.developer?.name || "")
+      .filter((name) => name !== "")
   ).size;
 
-  // Monthly performance data
-  const monthlyData = [
-    { month: "Jan", deals: 2, commission: 95000 },
-    { month: "Feb", deals: 3, commission: 142000 },
-    { month: "Mar", deals: 1, commission: 34800 },
-    { month: "Apr", deals: 2, commission: 196800 },
-    { month: "May", deals: 1, commission: 66000 },
-  ];
+  const monthlyData = useMemo(() => {
+    // Show last 6 months (including current month)
+    const monthsToShow = 6;
+    const now = new Date();
+    const buckets = Array.from({ length: monthsToShow }, (_, idx) => {
+      const d = new Date(
+        now.getFullYear(),
+        now.getMonth() - (monthsToShow - 1 - idx),
+        1
+      );
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+        2,
+        "0"
+      )}`;
+      return {
+        key,
+        monthLabel: d.toLocaleString("en-US", { month: "short" }),
+        deals: 0,
+        commission: 0,
+      };
+    });
+
+    const bucketByKey = new Map(buckets.map((b) => [b.key, b]));
+
+    for (const deal of agentDeals) {
+      if (!deal.closeDate) continue;
+      const d = new Date(deal.closeDate);
+      if (Number.isNaN(d.getTime())) continue;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+        2,
+        "0"
+      )}`;
+      const bucket = bucketByKey.get(key);
+      if (!bucket) continue;
+      bucket.deals += 1;
+      bucket.commission += getCommissionTotal(deal);
+    }
+
+    return buckets.map((b) => ({
+      month: b.monthLabel,
+      deals: b.deals,
+      commission: b.commission,
+    }));
+  }, [agentDeals]);
 
   // Status breakdown
+  // Note: Using commission status as proxy for deal status
+  // TODO: Implement proper statusId to status name mapping
   const statusData = [
     {
       name: "Closed",
-      value: agentDeals.filter((d) => d.status === "Closed").length,
+      value: agentDeals.filter((d) => {
+        const paidAmount = getCommissionPaid(d);
+        const totalAmount = getCommissionTotal(d);
+        return paidAmount >= totalAmount && totalAmount > 0;
+      }).length,
       color: "var(--gi-dark-green)",
     },
     {
       name: "In Progress",
-      value: agentDeals.filter(
-        (d) => d.status !== "Closed" && d.status !== "Draft"
-      ).length,
+      value: agentDeals.filter((d) => {
+        const paidAmount = getCommissionPaid(d);
+        const totalAmount = getCommissionTotal(d);
+        return paidAmount > 0 && paidAmount < totalAmount;
+      }).length,
       color: "#3b82f6",
     },
     {
-      name: "Draft",
-      value: agentDeals.filter((d) => d.status === "Draft").length,
+      name: "Pending",
+      value: agentDeals.filter((d) => {
+        const paidAmount = getCommissionPaid(d);
+        return paidAmount === 0;
+      }).length,
       color: "#94a3b8",
     },
   ];
+
+  const currentUser =
+    typeof window !== "undefined"
+      ? sessionStorage.getItem("username") ||
+        sessionStorage.getItem("name") ||
+        ""
+      : "";
+
+  if (metricsLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-[(--gi-dark-green)]" />
+          <p className="mt-4 text-gray-600 dark:text-gray-400">
+            Loading agent dashboard...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (metricsError || !agentMetrics) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <AlertCircle className="h-8 w-8 mx-auto text-red-600" />
+          <p className="mt-4 text-red-600 dark:text-red-400">
+            {metricsError || "Failed to load agent dashboard"}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -113,14 +265,19 @@ export function DashboardAgent() {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-white/80 mb-2">Welcome back,</p>
-              <h2 className="text-white mb-1">Sarah Johnson</h2>
+              <h2 className="text-white mb-1">{currentUser || "Agent"}</h2>
               <p className="text-white/70">Real Estate Agent</p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/20">
-              <p className="text-white/80 text-sm">This Month</p>
+              <p className="text-white/80 text-sm">
+                {agentMetrics.total_commission.period}
+              </p>
               <div className="flex items-center gap-2 mt-1">
                 <TrendingUp className="h-5 w-5 text-white" />
-                <span className="text-white">+23%</span>
+                <span className="text-white">
+                  {agentMetrics.total_commission.trend >= 0 ? "+" : ""}
+                  {agentMetrics.total_commission.trend}%
+                </span>
               </div>
             </div>
           </div>
@@ -145,15 +302,18 @@ export function DashboardAgent() {
           <CardContent>
             <div className="flex items-baseline gap-2">
               <div className="text-3xl text-gray-900 dark:text-gray-100">
-                {unitsSold}
+                {agentMetrics.units_sold.value}
               </div>
               <div className="flex items-center gap-1 text-green-600 dark:text-green-400 text-sm">
                 <ArrowUpRight className="h-4 w-4" />
-                <span>12%</span>
+                <span>
+                  {agentMetrics.units_sold.trend >= 0 ? "+" : ""}
+                  {agentMetrics.units_sold.trend}%
+                </span>
               </div>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              This year
+              {agentMetrics.units_sold.period}
             </p>
           </CardContent>
         </Card>
@@ -171,15 +331,19 @@ export function DashboardAgent() {
           <CardContent>
             <div className="flex items-baseline gap-2">
               <div className="text-2xl text-gray-900 dark:text-gray-100">
-                AED {(totalCommissionEarned / 1000).toFixed(0)}K
+                {agentMetrics.total_commission.currency}{" "}
+                {(agentMetrics.total_commission.value / 1000).toFixed(0)}K
               </div>
               <div className="flex items-center gap-1 text-green-600 dark:text-green-400 text-sm">
                 <ArrowUpRight className="h-4 w-4" />
-                <span>8%</span>
+                <span>
+                  {agentMetrics.total_commission.trend >= 0 ? "+" : ""}
+                  {agentMetrics.total_commission.trend}%
+                </span>
               </div>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Earned
+              {agentMetrics.total_commission.status}
             </p>
           </CardContent>
         </Card>
@@ -408,55 +572,78 @@ export function DashboardAgent() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {agentDeals.slice(0, 5).map((deal, index) => (
-              <div
-                key={deal.id}
-                className="group relative overflow-hidden rounded-xl p-4 bg-linear-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 border border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-md dark:hover:shadow-xl dark:hover:shadow-black/20 transition-all duration-300"
-              >
-                {/* Decorative accent */}
+            {isLoading ? (
+              <div className="text-center py-8 text-gray-600 dark:text-gray-400">
+                Loading deals...
+              </div>
+            ) : agentDeals.length === 0 ? (
+              <div className="text-center py-8 text-gray-600 dark:text-gray-400">
+                No deals found
+              </div>
+            ) : (
+              agentDeals.slice(0, 5).map((deal) => (
                 <div
-                  className="absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5"
-                  style={{ backgroundColor: "var(--gi-dark-green)" }}
-                ></div>
+                  key={deal.id}
+                  className="group relative overflow-hidden rounded-xl p-4 bg-linear-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 border border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-md dark:hover:shadow-xl dark:hover:shadow-black/20 transition-all duration-300"
+                >
+                  {/* Decorative accent */}
+                  <div
+                    className="absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5"
+                    style={{ backgroundColor: "var(--gi-dark-green)" }}
+                  ></div>
 
-                <div className="flex items-center justify-between pl-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
-                        <Home className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                      </div>
-                      <div>
-                        <div className="text-gray-900 dark:text-gray-100 font-medium">
-                          {deal.project} - Unit {deal.unitNumber}
+                  <div className="flex items-center justify-between pl-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
+                          <Home className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                         </div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                          {deal.buyerName} • {deal.developer}
+                        <div>
+                          <div className="text-gray-900 dark:text-gray-100 font-medium">
+                            {deal.project?.name || "N/A"} - Unit{" "}
+                            {deal.unitNumber || "N/A"}
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            {deal.buyerSellerDetails?.find((d) => d.isBuyer)
+                              ?.name || "N/A"}{" "}
+                            • {deal.developer?.name || "N/A"}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="text-right flex flex-col items-end gap-2">
-                    <div className="text-lg text-gray-900 dark:text-gray-100 font-semibold">
-                      AED {(deal.sellingPrice / 1000).toFixed(0)}K
-                    </div>
-                    <div
-                      className={`inline-flex px-3 py-1 rounded-full text-sm text-white ${
-                        deal.status === "Closed"
-                          ? "bg-linear-to-r from-green-600 to-green-500 dark:from-green-500 dark:to-green-400"
-                          : deal.status === "Approved" ||
-                            deal.status === "Commission Received"
-                          ? "bg-linear-to-r from-blue-600 to-blue-500 dark:from-blue-500 dark:to-blue-400"
-                          : deal.status === "Finance Review"
-                          ? "bg-linear-to-r from-orange-600 to-orange-500 dark:from-orange-500 dark:to-orange-400"
-                          : "bg-linear-to-r from-gray-600 to-gray-500 dark:from-gray-500 dark:to-gray-400"
-                      }`}
-                    >
-                      {deal.status}
+                    <div className="text-right flex flex-col items-end gap-2">
+                      <div className="text-lg text-gray-900 dark:text-gray-100 font-semibold">
+                        AED{" "}
+                        {(parseFloat(deal.dealValue || "0") / 1000).toFixed(0)}K
+                      </div>
+                      {(() => {
+                        const paidAmount = getCommissionPaid(deal);
+                        const totalAmount = getCommissionTotal(deal);
+                        const status =
+                          paidAmount >= totalAmount && totalAmount > 0
+                            ? "Paid"
+                            : paidAmount > 0
+                            ? "Partially Paid"
+                            : "Pending";
+                        const statusColor =
+                          status === "Paid"
+                            ? "bg-linear-to-r from-green-600 to-green-500 dark:from-green-500 dark:to-green-400"
+                            : status === "Partially Paid"
+                            ? "bg-linear-to-r from-blue-600 to-blue-500 dark:from-blue-500 dark:to-blue-400"
+                            : "bg-linear-to-r from-orange-600 to-orange-500 dark:from-orange-500 dark:to-orange-400";
+                        return (
+                          <div
+                            className={`inline-flex px-3 py-1 rounded-full text-sm text-white ${statusColor}`}
+                          >
+                            {status}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>

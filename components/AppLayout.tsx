@@ -95,6 +95,41 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   const renderNavigation = () => {
+    // Dark-mode tab styling presets (NO green). Change this value to pick a look:
+    // "slate" | "indigo" | "amber" | "glass"
+    const TAB_PRESET: "slate" | "indigo" | "amber" | "glass" = "slate";
+
+    const TAB_STYLES = {
+      slate: {
+        nav: "flex gap-2 px-6 py-3 bg-[(--gi-green-20)] dark:bg-gray-900 dark:border-t dark:border-gray-700 transition-colors",
+        active:
+          "bg-gray-100 text-gray-900 hover:bg-gray-200 dark:bg-gray-200 dark:hover:bg-gray-100 dark:text-gray-900 shadow-lg font-semibold",
+        inactive:
+          "text-gray-700 hover:bg-gray-200/70 dark:text-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 dark:hover:text-white dark:border dark:border-gray-600/60 font-medium",
+      },
+      indigo: {
+        nav: "flex gap-2 px-6 py-3 bg-[(--gi-green-20)] dark:bg-slate-950 dark:border-t dark:border-slate-800 transition-colors",
+        active:
+          "bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:text-white shadow-lg font-semibold",
+        inactive:
+          "text-gray-700 hover:bg-gray-200/70 dark:text-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 dark:hover:text-white dark:border dark:border-slate-700 font-medium",
+      },
+      amber: {
+        nav: "flex gap-2 px-6 py-3 bg-[(--gi-green-20)] dark:bg-neutral-950 dark:border-t dark:border-neutral-800 transition-colors",
+        active:
+          "bg-amber-500 text-black hover:bg-amber-400 dark:bg-amber-400 dark:hover:bg-amber-300 dark:text-black shadow-lg font-semibold",
+        inactive:
+          "text-gray-700 hover:bg-gray-200/70 dark:text-neutral-100 dark:bg-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white dark:border dark:border-neutral-700 font-medium",
+      },
+      glass: {
+        nav: "flex gap-2 px-6 py-3 bg-[(--gi-green-20)] dark:bg-slate-950/70 dark:backdrop-blur dark:border-t dark:border-white/10 transition-colors",
+        active:
+          "bg-white/90 text-gray-900 hover:bg-white dark:bg-white/15 dark:hover:bg-white/20 dark:text-white shadow-lg font-semibold",
+        inactive:
+          "text-gray-700 hover:bg-gray-200/70 dark:text-white/80 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-white dark:border dark:border-white/10 font-medium",
+      },
+    }[TAB_PRESET];
+
     const navItems = [];
 
     navItems.push({
@@ -130,7 +165,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
 
     return (
-      <nav className="flex gap-2 px-6 py-3 bg-[(--gi-green-20)] dark:bg-gray-800/95 dark:border-t dark:border-gray-700 transition-colors">
+      <nav className={TAB_STYLES.nav}>
         {navItems.map((item) => {
           const isActive =
             pathname === item.view || pathname?.startsWith(item.view + "/");
@@ -139,9 +174,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <Button
                 variant={isActive ? "default" : "ghost"}
                 className={`flex items-center gap-2 transition-all ${
-                  isActive
-                    ? "gi-bg-dark-green text-white hover:opacity-90 dark:bg-[#4ade80] dark:hover:bg-[#22c55e] dark:text-white shadow-lg font-medium"
-                    : "gi-text-dark-green hover:bg-[(--gi-green-40)] dark:text-white dark:bg-gray-700/50 dark:hover:bg-gray-600 dark:hover:text-white dark:border dark:border-gray-500"
+                  isActive ? TAB_STYLES.active : TAB_STYLES.inactive
                 }`}
               >
                 <item.icon className="h-4 w-4" />
