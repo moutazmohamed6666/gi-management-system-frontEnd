@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -15,6 +15,13 @@ import {
 import type { Deal } from "@/lib/deals";
 import { dealsApi } from "@/lib/deals";
 import {
+  commissionsApi,
+  type DealCollection,
+  type CommissionSummary,
+} from "@/lib/commissions";
+import { CollectCommissionModal } from "./CollectCommissionModal";
+import { TransferCommissionModal } from "./TransferCommissionModal";
+import {
   ArrowLeft,
   Save,
   CheckCircle,
@@ -22,6 +29,11 @@ import {
   X,
   Loader2,
   AlertCircle,
+  DollarSign,
+  Send,
+  RefreshCw,
+  Clock,
+  Banknote,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -37,6 +49,16 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
   const [error, setError] = useState<string | null>(null);
   const [isEditingOverview, setIsEditingOverview] = useState(false);
   const [isDealApproved, setIsDealApproved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Commission modals
+  const [isCollectModalOpen, setIsCollectModalOpen] = useState(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+
+  // Commission data
+  const [collections, setCollections] = useState<DealCollection[]>([]);
+  const [commissionSummary, setCommissionSummary] =
+    useState<CommissionSummary | null>(null);
 
   // Initialize state with deal data when deal is loaded
   const [dealOverview, setDealOverview] = useState({
@@ -76,32 +98,53 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
   });
 
   // Fetch deal data from API
-  useEffect(() => {
-    const fetchDeal = async () => {
-      if (!dealId) {
-        setIsLoading(false);
-        return;
-      }
+  const fetchDeal = useCallback(async () => {
+    if (!dealId) {
+      setIsLoading(false);
+      return;
+    }
 
-      setIsLoading(true);
-      setError(null);
+    setIsLoading(true);
+    setError(null);
+    try {
+      const dealData = await dealsApi.getDealById(dealId);
+      setDeal(dealData);
+
+      // Fetch collections for this deal
       try {
-        const dealData = await dealsApi.getDealById(dealId);
-        setDeal(dealData);
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to load deal";
-        setError(errorMessage);
-        toast.error("Error loading deal", {
-          description: errorMessage,
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+        const collectionsData = await commissionsApi.getDealCollections(dealId);
+        setCollections(collectionsData);
 
-    fetchDeal();
+        // Calculate commission summary
+        const summary = commissionsApi.calculateSummary(
+          dealData.commissions || [],
+          collectionsData
+        );
+        setCommissionSummary(summary);
+      } catch {
+        // Collections API might not be available, use deal data
+        setCollections([]);
+        const summary = commissionsApi.calculateSummary(
+          dealData.commissions || [],
+          []
+        );
+        setCommissionSummary(summary);
+      }
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load deal";
+      setError(errorMessage);
+      toast.error("Error loading deal", {
+        description: errorMessage,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }, [dealId]);
+
+  useEffect(() => {
+    fetchDeal();
+  }, [fetchDeal]);
 
   // Update state when deal is loaded
   useEffect(() => {
@@ -115,7 +158,9 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
         deal.commissions?.reduce(
           (sum, c) => sum + parseFloat(c.expectedAmount || "0"),
           0
-        ) || 0;
+        ) ||
+        parseFloat(deal.totalCommissionValue || "0") ||
+        0;
       const paidAmount =
         deal.commissions?.reduce(
           (sum, c) => sum + parseFloat(c.paidAmount || "0"),
@@ -208,9 +253,74 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
     setFinanceData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSaveOverview = () => {
-    setIsEditingOverview(false);
-    alert("Deal overview changes saved!");
+  const handleSaveOverview = async () => {
+    if (!deal) return;
+
+    setIsSaving(true);
+    try {
+      // Use the finance update endpoint
+      await dealsApi.updateDealAsFinance(deal.id, {
+        dealValue: dealOverview.sellingPrice,
+        propertyName: dealOverview.propertyType,
+        unitNumber: dealOverview.unitNumber,
+        closeDate: dealOverview.dealCloseDate
+          ? new Date(dealOverview.dealCloseDate).toISOString()
+          : undefined,
+        buyer: {
+          name: dealOverview.buyerName,
+          phone: dealOverview.buyerContact,
+        },
+        seller: {
+          name: dealOverview.sellerName,
+          phone: dealOverview.sellerContact,
+        },
+        financeNotes: dealOverview.notes,
+      });
+
+      toast.success("Deal Updated", {
+        description: "Deal overview changes saved successfully.",
+      });
+
+      setIsEditingOverview(false);
+
+      // Refresh deal data
+      fetchDeal();
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to save changes";
+      toast.error("Save Failed", {
+        description: errorMessage,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveFinanceData = async () => {
+    if (!deal) return;
+
+    setIsSaving(true);
+    try {
+      await dealsApi.updateDealAsFinance(deal.id, {
+        totalCommissionValue: financeData.totalCommission,
+        financeNotes: financeData.financeNotes,
+      });
+
+      toast.success("Finance Data Saved", {
+        description: "Commission and finance data updated successfully.",
+      });
+
+      // Refresh deal data
+      fetchDeal();
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to save finance data";
+      toast.error("Save Failed", {
+        description: errorMessage,
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -243,12 +353,61 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
     }
   };
 
-  const handleApproveDeal = () => {
+  const handleApproveDeal = async () => {
     if (!isDealApproved) {
       setIsDealApproved(true);
-      alert("Deal overview approved! You can now enter finance details.");
+      toast.success("Deal Approved", {
+        description:
+          "Deal overview approved! You can now enter finance details.",
+      });
     } else {
-      alert("Deal fully approved and moved to next stage!");
+      // Final approval - move to next stage
+      setIsSaving(true);
+      try {
+        // Update deal stage to "Finance Approved"
+        // Note: This requires the actual stageId UUID from your API
+        await dealsApi.updateDealAsFinance(deal.id, {
+          financeNotes: financeData.financeNotes,
+          // stageId would be set here once you have the UUID mapping
+        });
+
+        toast.success("Deal Fully Approved", {
+          description: "Deal has been approved and moved to the next stage.",
+        });
+
+        onBack();
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to approve deal";
+        toast.error("Approval Failed", {
+          description: errorMessage,
+        });
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
+
+  const handleCollectionSuccess = () => {
+    setIsCollectModalOpen(false);
+    // Refresh data
+    fetchDeal();
+  };
+
+  const handleTransferSuccess = () => {
+    setIsTransferModalOpen(false);
+    // Refresh data
+    fetchDeal();
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case "Paid":
+        return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+      case "Partially Paid":
+        return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400";
+      default:
+        return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";
     }
   };
 
@@ -261,10 +420,10 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
             Back to Deals
           </Button>
           <div>
-            <h2 className="text-gray-900">
+            <h2 className="text-gray-900 dark:text-white text-xl font-semibold">
               Finance Review - {deal.dealNumber}
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-400">
               {dealOverview.project} • {dealOverview.buyerName}
             </p>
           </div>
@@ -277,6 +436,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
                   <Button
                     variant="outline"
                     onClick={handleCancelEdit}
+                    disabled={isSaving}
                     className="flex items-center gap-2"
                   >
                     <X className="h-4 w-4" />
@@ -284,9 +444,14 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
                   </Button>
                   <Button
                     onClick={handleSaveOverview}
+                    disabled={isSaving}
                     className="flex items-center gap-2 gi-bg-dark-green"
                   >
-                    <Save className="h-4 w-4" />
+                    {isSaving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
                     Save Overview
                   </Button>
                 </>
@@ -313,15 +478,29 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
           )}
           {isDealApproved && (
             <>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Save className="h-4 w-4" />
+              <Button
+                variant="outline"
+                onClick={handleSaveFinanceData}
+                disabled={isSaving}
+                className="flex items-center gap-2"
+              >
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
                 Save Finance Data
               </Button>
               <Button
                 onClick={handleApproveDeal}
+                disabled={isSaving}
                 className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
               >
-                <CheckCircle className="h-4 w-4" />
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4" />
+                )}
                 Final Approval
               </Button>
             </>
@@ -331,14 +510,136 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
 
       {/* Status Badge */}
       {isDealApproved && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-green-700">
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
             <CheckCircle className="h-5 w-5" />
-            <span className="gi-text-medium">
+            <span className="font-medium">
               Deal Overview Approved - Finance fields are now editable
             </span>
           </div>
         </div>
+      )}
+
+      {/* Commission Summary Cards */}
+      {commissionSummary && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <DollarSign className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Total Expected
+                  </p>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                    AED {commissionSummary.totalExpected.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                  <Banknote className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Total Collected
+                  </p>
+                  <p className="text-lg font-semibold text-green-600 dark:text-green-400">
+                    AED {commissionSummary.totalCollected.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                  <Send className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Total Transferred
+                  </p>
+                  <p className="text-lg font-semibold text-purple-600 dark:text-purple-400">
+                    AED {commissionSummary.totalTransferred.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                  <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Remaining
+                  </p>
+                  <p className="text-lg font-semibold text-orange-600 dark:text-orange-400">
+                    AED {commissionSummary.remainingToCollect.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Quick Actions for Commission */}
+      {isDealApproved && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Commission Actions</span>
+              <span
+                className={`px-3 py-1 rounded-full text-sm ${getStatusBadgeColor(
+                  commissionSummary?.status || "Pending"
+                )}`}
+              >
+                {commissionSummary?.status || "Pending"}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4">
+              <Button
+                onClick={() => setIsCollectModalOpen(true)}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+              >
+                <DollarSign className="h-4 w-4" />
+                Collect Commission
+              </Button>
+              <Button
+                onClick={() => setIsTransferModalOpen(true)}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Send className="h-4 w-4" />
+                Transfer to Agent/Manager
+              </Button>
+              <Button
+                onClick={fetchDeal}
+                variant="ghost"
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Deal Overview */}
@@ -351,7 +652,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
                   <div className="flex items-center justify-between w-full pr-4">
                     <CardTitle>Deal Overview</CardTitle>
                     <span
-                      className="px-3 py-1 rounded-full bg-green-100 text-green-700"
+                      className="px-3 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
                       style={{ fontSize: "0.875rem" }}
                     >
                       Approved
@@ -363,99 +664,131 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
                 <CardContent className="pt-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <div className="text-gray-600">Property Type</div>
-                      <div className="text-gray-900">
+                      <div className="text-gray-600 dark:text-gray-400">
+                        Property Type
+                      </div>
+                      <div className="text-gray-900 dark:text-white">
                         {dealOverview.propertyType || "-"}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-600">Developer</div>
-                      <div className="text-gray-900">
+                      <div className="text-gray-600 dark:text-gray-400">
+                        Developer
+                      </div>
+                      <div className="text-gray-900 dark:text-white">
                         {dealOverview.developer || "-"}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-600">Project</div>
-                      <div className="text-gray-900">
+                      <div className="text-gray-600 dark:text-gray-400">
+                        Project
+                      </div>
+                      <div className="text-gray-900 dark:text-white">
                         {dealOverview.project || "-"}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-600">Unit Type</div>
-                      <div className="text-gray-900">
+                      <div className="text-gray-600 dark:text-gray-400">
+                        Unit Type
+                      </div>
+                      <div className="text-gray-900 dark:text-white">
                         {dealOverview.unitType || "-"}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-600">Unit Number</div>
-                      <div className="text-gray-900">
+                      <div className="text-gray-600 dark:text-gray-400">
+                        Unit Number
+                      </div>
+                      <div className="text-gray-900 dark:text-white">
                         {dealOverview.unitNumber || "-"}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-600">Location</div>
-                      <div className="text-gray-900">
+                      <div className="text-gray-600 dark:text-gray-400">
+                        Location
+                      </div>
+                      <div className="text-gray-900 dark:text-white">
                         {dealOverview.location || "-"}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-600">Buyer Name</div>
-                      <div className="text-gray-900">
+                      <div className="text-gray-600 dark:text-gray-400">
+                        Buyer Name
+                      </div>
+                      <div className="text-gray-900 dark:text-white">
                         {dealOverview.buyerName || "-"}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-600">Buyer Contact</div>
-                      <div className="text-gray-900">
+                      <div className="text-gray-600 dark:text-gray-400">
+                        Buyer Contact
+                      </div>
+                      <div className="text-gray-900 dark:text-white">
                         {dealOverview.buyerContact || "-"}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-600">Seller Name</div>
-                      <div className="text-gray-900">
+                      <div className="text-gray-600 dark:text-gray-400">
+                        Seller Name
+                      </div>
+                      <div className="text-gray-900 dark:text-white">
                         {dealOverview.sellerName || "-"}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-600">Seller Contact</div>
-                      <div className="text-gray-900">
+                      <div className="text-gray-600 dark:text-gray-400">
+                        Seller Contact
+                      </div>
+                      <div className="text-gray-900 dark:text-white">
                         {dealOverview.sellerContact || "-"}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-600">Agent</div>
-                      <div className="text-gray-900">
+                      <div className="text-gray-600 dark:text-gray-400">
+                        Agent
+                      </div>
+                      <div className="text-gray-900 dark:text-white">
                         {dealOverview.agentName || "-"}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-600">Selling Price</div>
-                      <div className="text-gray-900">
+                      <div className="text-gray-600 dark:text-gray-400">
+                        Selling Price
+                      </div>
+                      <div className="text-gray-900 dark:text-white">
                         AED {dealOverview.sellingPrice.toLocaleString()}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-600">Close Date</div>
-                      <div className="text-gray-900">
+                      <div className="text-gray-600 dark:text-gray-400">
+                        Close Date
+                      </div>
+                      <div className="text-gray-900 dark:text-white">
                         {dealOverview.dealCloseDate || "-"}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-600">Lead Source</div>
-                      <div className="text-gray-900">
+                      <div className="text-gray-600 dark:text-gray-400">
+                        Lead Source
+                      </div>
+                      <div className="text-gray-900 dark:text-white">
                         {dealOverview.leadSource || "-"}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-600">Payment Plan</div>
-                      <div className="text-gray-900">
+                      <div className="text-gray-600 dark:text-gray-400">
+                        Payment Plan
+                      </div>
+                      <div className="text-gray-900 dark:text-white">
                         {dealOverview.paymentPlan || "-"}
                       </div>
                     </div>
                     {dealOverview.notes && (
                       <div className="md:col-span-3">
-                        <div className="text-gray-600">Notes</div>
-                        <div className="text-gray-900">
+                        <div className="text-gray-600 dark:text-gray-400">
+                          Notes
+                        </div>
+                        <div className="text-gray-900 dark:text-white">
                           {dealOverview.notes}
                         </div>
                       </div>
@@ -471,14 +804,24 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Deal Overview</span>
-              {!isEditingOverview && (
+              <div className="flex items-center gap-2">
+                {!isEditingOverview && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsEditingOverview(true)}
+                  >
+                    <Edit2 className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
+                )}
                 <span
-                  className="px-3 py-1 rounded-full bg-orange-100 text-orange-700"
+                  className="px-3 py-1 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
                   style={{ fontSize: "0.875rem" }}
                 >
                   Pending Approval
                 </span>
-              )}
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -492,7 +835,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
                     onChange={(e) =>
                       handleOverviewChange("propertyType", e.target.value)
                     }
-                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full mt-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
                   >
                     <option value="">Select type</option>
                     <option value="Apartment">Apartment</option>
@@ -509,6 +852,8 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
                     onChange={(e) =>
                       handleOverviewChange("developer", e.target.value)
                     }
+                    disabled
+                    className="bg-gray-50 dark:bg-gray-800"
                   />
                 </div>
                 <div>
@@ -519,6 +864,8 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
                     onChange={(e) =>
                       handleOverviewChange("project", e.target.value)
                     }
+                    disabled
+                    className="bg-gray-50 dark:bg-gray-800"
                   />
                 </div>
                 <div>
@@ -597,9 +944,8 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
                   <Input
                     id="agentName"
                     value={dealOverview.agentName}
-                    onChange={(e) =>
-                      handleOverviewChange("agentName", e.target.value)
-                    }
+                    disabled
+                    className="bg-gray-50 dark:bg-gray-800"
                   />
                 </div>
                 <div>
@@ -663,99 +1009,131 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <div className="text-gray-600">Property Type</div>
-                  <div className="text-gray-900">
+                  <div className="text-gray-600 dark:text-gray-400">
+                    Property Type
+                  </div>
+                  <div className="text-gray-900 dark:text-white">
                     {dealOverview.propertyType || "-"}
                   </div>
                 </div>
                 <div>
-                  <div className="text-gray-600">Developer</div>
-                  <div className="text-gray-900">
+                  <div className="text-gray-600 dark:text-gray-400">
+                    Developer
+                  </div>
+                  <div className="text-gray-900 dark:text-white">
                     {dealOverview.developer || "-"}
                   </div>
                 </div>
                 <div>
-                  <div className="text-gray-600">Project</div>
-                  <div className="text-gray-900">
+                  <div className="text-gray-600 dark:text-gray-400">
+                    Project
+                  </div>
+                  <div className="text-gray-900 dark:text-white">
                     {dealOverview.project || "-"}
                   </div>
                 </div>
                 <div>
-                  <div className="text-gray-600">Unit Type</div>
-                  <div className="text-gray-900">
+                  <div className="text-gray-600 dark:text-gray-400">
+                    Unit Type
+                  </div>
+                  <div className="text-gray-900 dark:text-white">
                     {dealOverview.unitType || "-"}
                   </div>
                 </div>
                 <div>
-                  <div className="text-gray-600">Unit Number</div>
-                  <div className="text-gray-900">
+                  <div className="text-gray-600 dark:text-gray-400">
+                    Unit Number
+                  </div>
+                  <div className="text-gray-900 dark:text-white">
                     {dealOverview.unitNumber || "-"}
                   </div>
                 </div>
                 <div>
-                  <div className="text-gray-600">Location</div>
-                  <div className="text-gray-900">
+                  <div className="text-gray-600 dark:text-gray-400">
+                    Location
+                  </div>
+                  <div className="text-gray-900 dark:text-white">
                     {dealOverview.location || "-"}
                   </div>
                 </div>
                 <div>
-                  <div className="text-gray-600">Buyer Name</div>
-                  <div className="text-gray-900">
+                  <div className="text-gray-600 dark:text-gray-400">
+                    Buyer Name
+                  </div>
+                  <div className="text-gray-900 dark:text-white">
                     {dealOverview.buyerName || "-"}
                   </div>
                 </div>
                 <div>
-                  <div className="text-gray-600">Buyer Contact</div>
-                  <div className="text-gray-900">
+                  <div className="text-gray-600 dark:text-gray-400">
+                    Buyer Contact
+                  </div>
+                  <div className="text-gray-900 dark:text-white">
                     {dealOverview.buyerContact || "-"}
                   </div>
                 </div>
                 <div>
-                  <div className="text-gray-600">Seller Name</div>
-                  <div className="text-gray-900">
+                  <div className="text-gray-600 dark:text-gray-400">
+                    Seller Name
+                  </div>
+                  <div className="text-gray-900 dark:text-white">
                     {dealOverview.sellerName || "-"}
                   </div>
                 </div>
                 <div>
-                  <div className="text-gray-600">Seller Contact</div>
-                  <div className="text-gray-900">
+                  <div className="text-gray-600 dark:text-gray-400">
+                    Seller Contact
+                  </div>
+                  <div className="text-gray-900 dark:text-white">
                     {dealOverview.sellerContact || "-"}
                   </div>
                 </div>
                 <div>
-                  <div className="text-gray-600">Agent</div>
-                  <div className="text-gray-900">
+                  <div className="text-gray-600 dark:text-gray-400">Agent</div>
+                  <div className="text-gray-900 dark:text-white">
                     {dealOverview.agentName || "-"}
                   </div>
                 </div>
                 <div>
-                  <div className="text-gray-600">Selling Price</div>
-                  <div className="text-gray-900">
+                  <div className="text-gray-600 dark:text-gray-400">
+                    Selling Price
+                  </div>
+                  <div className="text-gray-900 dark:text-white">
                     AED {dealOverview.sellingPrice.toLocaleString()}
                   </div>
                 </div>
                 <div>
-                  <div className="text-gray-600">Close Date</div>
-                  <div className="text-gray-900">
+                  <div className="text-gray-600 dark:text-gray-400">
+                    Close Date
+                  </div>
+                  <div className="text-gray-900 dark:text-white">
                     {dealOverview.dealCloseDate || "-"}
                   </div>
                 </div>
                 <div>
-                  <div className="text-gray-600">Lead Source</div>
-                  <div className="text-gray-900">
+                  <div className="text-gray-600 dark:text-gray-400">
+                    Lead Source
+                  </div>
+                  <div className="text-gray-900 dark:text-white">
                     {dealOverview.leadSource || "-"}
                   </div>
                 </div>
                 <div>
-                  <div className="text-gray-600">Payment Plan</div>
-                  <div className="text-gray-900">
+                  <div className="text-gray-600 dark:text-gray-400">
+                    Payment Plan
+                  </div>
+                  <div className="text-gray-900 dark:text-white">
                     {dealOverview.paymentPlan || "-"}
                   </div>
                 </div>
                 {dealOverview.notes && (
                   <div className="md:col-span-3">
-                    <div className="text-gray-600">Notes</div>
-                    <div className="text-gray-900">{dealOverview.notes}</div>
+                    <div className="text-gray-600 dark:text-gray-400">
+                      Notes
+                    </div>
+                    <div className="text-gray-900 dark:text-white">
+                      {dealOverview.notes}
+                    </div>
                   </div>
                 )}
               </div>
@@ -785,7 +1163,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
                     onChange={(e) =>
                       handleFinanceChange(
                         "fixedCommission",
-                        parseFloat(e.target.value)
+                        parseFloat(e.target.value) || 0
                       )
                     }
                   />
@@ -801,7 +1179,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
                     onChange={(e) =>
                       handleFinanceChange(
                         "totalCommission",
-                        parseFloat(e.target.value)
+                        parseFloat(e.target.value) || 0
                       )
                     }
                   />
@@ -817,7 +1195,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
                     onChange={(e) =>
                       handleFinanceChange(
                         "buyerRepCommission",
-                        parseFloat(e.target.value)
+                        parseFloat(e.target.value) || 0
                       )
                     }
                   />
@@ -833,7 +1211,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
                     onChange={(e) =>
                       handleFinanceChange(
                         "sellerRepCommission",
-                        parseFloat(e.target.value)
+                        parseFloat(e.target.value) || 0
                       )
                     }
                   />
@@ -849,10 +1227,10 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
                     onChange={(e) =>
                       handleFinanceChange(
                         "managerCommission",
-                        parseFloat(e.target.value)
+                        parseFloat(e.target.value) || 0
                       )
                     }
-                    className="bg-blue-50"
+                    className="bg-blue-50 dark:bg-blue-900/20"
                   />
                 </div>
                 <div>
@@ -866,15 +1244,75 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
                     onChange={(e) =>
                       handleFinanceChange(
                         "agentCommission",
-                        parseFloat(e.target.value)
+                        parseFloat(e.target.value) || 0
                       )
                     }
-                    className="bg-green-50"
+                    className="bg-green-50 dark:bg-green-900/20"
                   />
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          {/* Collection History */}
+          {collections.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Collection History</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b dark:border-gray-700">
+                        <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">
+                          Date
+                        </th>
+                        <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">
+                          Source
+                        </th>
+                        <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">
+                          Method
+                        </th>
+                        <th className="text-right py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">
+                          Amount
+                        </th>
+                        <th className="text-left py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">
+                          Reference
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {collections.map((collection) => (
+                        <tr
+                          key={collection.id}
+                          className="border-b dark:border-gray-700"
+                        >
+                          <td className="py-3 px-4 text-gray-900 dark:text-white">
+                            {new Date(
+                              collection.receivedDate
+                            ).toLocaleDateString()}
+                          </td>
+                          <td className="py-3 px-4 text-gray-900 dark:text-white capitalize">
+                            {collection.sourceType}
+                          </td>
+                          <td className="py-3 px-4 text-gray-900 dark:text-white">
+                            {collection.paymentMethod.replace("-", " ")}
+                          </td>
+                          <td className="py-3 px-4 text-right text-green-600 dark:text-green-400 font-medium">
+                            AED {parseFloat(collection.amount).toLocaleString()}
+                          </td>
+                          <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
+                            {collection.reference || "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Payment Tracking */}
           <Card>
@@ -892,7 +1330,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
                     onChange={(e) =>
                       handleFinanceChange(
                         "receivedAmount",
-                        parseFloat(e.target.value)
+                        parseFloat(e.target.value) || 0
                       )
                     }
                   />
@@ -906,7 +1344,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
                     onChange={(e) =>
                       handleFinanceChange(
                         "receivedPercentage",
-                        parseFloat(e.target.value)
+                        parseFloat(e.target.value) || 0
                       )
                     }
                   />
@@ -922,7 +1360,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
                         e.target.value === "yes"
                       )
                     }
-                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full mt-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
                   >
                     <option value="no">No</option>
                     <option value="yes">Yes</option>
@@ -937,7 +1375,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
                     onChange={(e) =>
                       handleFinanceChange(
                         "paidPercentage",
-                        parseFloat(e.target.value)
+                        parseFloat(e.target.value) || 0
                       )
                     }
                   />
@@ -964,10 +1402,10 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
                     onChange={(e) =>
                       handleFinanceChange(
                         "remainingAmount",
-                        parseFloat(e.target.value)
+                        parseFloat(e.target.value) || 0
                       )
                     }
-                    className="bg-orange-50"
+                    className="bg-orange-50 dark:bg-orange-900/20"
                   />
                 </div>
                 <div>
@@ -978,7 +1416,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
                     onChange={(e) =>
                       handleFinanceChange("commissionStatus", e.target.value)
                     }
-                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full mt-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700 dark:text-white"
                   >
                     <option value="Pending">Pending</option>
                     <option value="Partially Paid">Partially Paid</option>
@@ -1000,6 +1438,24 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
               </div>
             </CardContent>
           </Card>
+        </>
+      )}
+
+      {/* Commission Modals */}
+      {deal && (
+        <>
+          <CollectCommissionModal
+            deal={deal}
+            isOpen={isCollectModalOpen}
+            onClose={() => setIsCollectModalOpen(false)}
+            onSuccess={handleCollectionSuccess}
+          />
+          <TransferCommissionModal
+            deal={deal}
+            isOpen={isTransferModalOpen}
+            onClose={() => setIsTransferModalOpen(false)}
+            onSuccess={handleTransferSuccess}
+          />
         </>
       )}
     </div>

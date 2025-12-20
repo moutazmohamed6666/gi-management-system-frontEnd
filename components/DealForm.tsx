@@ -28,6 +28,16 @@ interface DealFormProps {
 
 type UserRole = "agent" | "finance" | "ceo" | "admin";
 
+// Define stages that should lock the deal for finance editing
+// Only lock after CEO/final approval, not during finance review stages
+const LOCKED_STAGES = [
+  "ceo approved",
+  "commission received",
+  "commission transferred",
+  "closed",
+  "completed",
+];
+
 export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
   // Fetch filter data for dropdowns
   const {
@@ -138,8 +148,14 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
   const isApproved = useMemo(() => {
     const candidates = [dealStatusName, statusNameFromFilters]
       .filter(Boolean)
-      .map((s) => String(s).toLowerCase());
-    return candidates.some((s) => s.includes("approved"));
+      .map((s) => String(s).toLowerCase().trim());
+
+    // Check if any candidate matches a locked stage
+    return candidates.some((status) =>
+      LOCKED_STAGES.some(
+        (locked) => status.includes(locked) || locked.includes(status)
+      )
+    );
   }, [dealStatusName, statusNameFromFilters]);
 
   const isReadOnly =
@@ -216,7 +232,9 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
           // Commission
           salesValue: deal.dealValue ? String(deal.dealValue) : "",
           totalCommissionTypeId: deal.totalCommissionTypeId || "",
-          totalCommissionValue: deal.totalCommissionValue ? String(deal.totalCommissionValue) : "",
+          totalCommissionValue: deal.totalCommissionValue
+            ? String(deal.totalCommissionValue)
+            : "",
         }));
 
         setLoadedDealId(dealId);
@@ -676,7 +694,9 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                   <Label htmlFor="purchaseStatusId">Purchase Status</Label>
                   <Select
                     value={formData.purchaseStatusId}
-                    onValueChange={(value) => handleChange("purchaseStatusId", value)}
+                    onValueChange={(value) =>
+                      handleChange("purchaseStatusId", value)
+                    }
                     disabled={filtersLoading}
                   >
                     <SelectTrigger className="w-full mt-1">
@@ -1133,10 +1153,15 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                 </div>
 
                 {/* Total Commission Fields */}
-                <div className="pt-4 border-t" style={{ borderColor: "var(--gi-green-40)" }}>
+                <div
+                  className="pt-4 border-t"
+                  style={{ borderColor: "var(--gi-green-40)" }}
+                >
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="totalCommissionTypeId">Total Commission Type</Label>
+                      <Label htmlFor="totalCommissionTypeId">
+                        Total Commission Type
+                      </Label>
                       <Select
                         value={formData.totalCommissionTypeId}
                         onValueChange={(value) =>
@@ -1157,13 +1182,18 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="totalCommissionValue">Total Commission Value</Label>
+                      <Label htmlFor="totalCommissionValue">
+                        Total Commission Value
+                      </Label>
                       <Input
                         id="totalCommissionValue"
                         type="text"
                         value={formData.totalCommissionValue}
                         onChange={(e) =>
-                          handleNumberOnly("totalCommissionValue", e.target.value)
+                          handleNumberOnly(
+                            "totalCommissionValue",
+                            e.target.value
+                          )
                         }
                         placeholder="Enter value"
                         className="mt-1"
@@ -1201,8 +1231,15 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                             type="radio"
                             name="additionalAgentType"
                             value="internal"
-                            checked={formData.additionalAgentType === "internal"}
-                            onChange={(e) => handleChange("additionalAgentType", e.target.value)}
+                            checked={
+                              formData.additionalAgentType === "internal"
+                            }
+                            onChange={(e) =>
+                              handleChange(
+                                "additionalAgentType",
+                                e.target.value
+                              )
+                            }
                             className="w-4 h-4"
                           />
                           <span className="text-sm">Internal Agent</span>
@@ -1212,8 +1249,15 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                             type="radio"
                             name="additionalAgentType"
                             value="external"
-                            checked={formData.additionalAgentType === "external"}
-                            onChange={(e) => handleChange("additionalAgentType", e.target.value)}
+                            checked={
+                              formData.additionalAgentType === "external"
+                            }
+                            onChange={(e) =>
+                              handleChange(
+                                "additionalAgentType",
+                                e.target.value
+                              )
+                            }
                             className="w-4 h-4"
                           />
                           <span className="text-sm">External Agent</span>
@@ -1301,10 +1345,13 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                         <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded text-sm">
                           <p className="text-blue-900 dark:text-blue-100 font-semibold">
                             Commission: AED{" "}
-                            {parseFloat(formData.agencyComm).toLocaleString("en-US", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
+                            {parseFloat(formData.agencyComm).toLocaleString(
+                              "en-US",
+                              {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              }
+                            )}
                           </p>
                         </div>
                       )}

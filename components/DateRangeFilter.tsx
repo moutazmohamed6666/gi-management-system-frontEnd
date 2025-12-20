@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { StyledDatePicker } from "./StyledDatePicker";
 import { Calendar } from "lucide-react";
@@ -16,18 +16,25 @@ export function DateRangeFilter({ onDateChange }: DateRangeFilterProps) {
     "today" | "week" | "month" | "year" | "custom" | null
   >(null);
 
-  const handleApplyFilter = () => {
+  // Sync dates to parent when they change
+  useEffect(() => {
     if (startDate || endDate) {
-      setActiveFilter("custom");
       onDateChange(startDate, endDate);
     }
-  };
+  }, [startDate, endDate, onDateChange]);
 
   const handleClearFilter = () => {
     setStartDate("");
     setEndDate("");
     setActiveFilter(null);
     onDateChange("", "");
+  };
+
+  const handleApplyFilter = () => {
+    if (startDate || endDate) {
+      setActiveFilter("custom");
+      onDateChange(startDate, endDate);
+    }
   };
 
   // Quick filter options

@@ -1,5 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;500;700&display=swap");
 @import "tailwindcss";
+@import "react-day-picker/style.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -315,4 +316,357 @@ html {
 
 .dark .recharts-tooltip-item {
   color: #9ca3af !important;
+}
+
+/* Calendar/Date Picker Theme Styling - Centralized for all date pickers */
+/* Override react-day-picker CSS variables to use theme colors */
+.rdp,
+.rdp-root {
+  /* Main colors */
+  --rdp-accent-color: var(--primary);
+  --rdp-accent-background-color: var(--primary);
+  --rdp-selected-color: var(--primary-foreground);
+  --rdp-background-color: var(--background);
+  --rdp-cell-size: 36px;
+  --rdp-caption-font-size: 0.875rem;
+  --rdp-outline: 2px solid var(--ring);
+  --rdp-outline-selected: 2px solid var(--primary);
+
+  /* Dark mode colors */
+  --rdp-accent-color-dark: var(--primary);
+  --rdp-background-color-dark: var(--background);
+}
+.rmdp-arrow-container:hover {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+/* Dark mode overrides */
+.dark .rdp,
+.dark .rdp-root {
+  --rdp-accent-color: var(--primary);
+  --rdp-accent-background-color: var(--primary);
+  --rdp-selected-color: var(--primary-foreground);
+  --rdp-background-color: var(--background);
+  --rdp-accent-color-dark: var(--primary);
+  --rdp-background-color-dark: var(--background);
+}
+
+/* Calendar navigation buttons - override blue colors */
+.rdp-button_previous,
+.rdp-button_next {
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+  background-color: transparent !important;
+}
+
+.rdp-button_previous:hover:not([disabled]),
+.rdp-button_next:hover:not([disabled]) {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+  border-color: var(--border) !important;
+}
+
+.rdp-button_previous[disabled],
+.rdp-button_next[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Calendar caption (month/year dropdown) */
+.rdp-caption_label,
+.rdp-month_caption {
+  color: var(--foreground) !important;
+}
+
+/* Calendar weekdays */
+.rdp-weekday {
+  color: var(--muted-foreground) !important;
+}
+
+/* Calendar day buttons - remove blue hover/selected colors */
+.rdp-day_button {
+  color: var(--foreground) !important;
+}
+
+.rdp-day_button:hover:not([disabled]):not(.rdp-selected):not(
+    .rdp-day_selected
+  ) {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+/* Selected day - use theme primary color */
+.rdp-day_selected,
+.rdp-selected,
+.rdp-day_button[aria-selected="true"] {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+
+.rdp-day_selected:hover,
+.rdp-selected:hover,
+.rdp-day_button[aria-selected="true"]:hover {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+
+/* Today - use accent color, not blue */
+.rdp-day_today,
+.rdp-today {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+  font-weight: 600;
+}
+
+.rdp-day_today:not(.rdp-day_selected):not(.rdp-selected) {
+  border: 1px solid var(--primary) !important;
+}
+
+/* Selected + Today */
+.rdp-day_today.rdp-day_selected,
+.rdp-day_today.rdp-selected {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  border-color: var(--primary) !important;
+}
+
+/* Disabled days */
+.rdp-day_disabled,
+.rdp-disabled,
+.rdp-day_button[disabled] {
+  color: var(--muted-foreground) !important;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Outside month days */
+.rdp-day_outside,
+.rdp-outside {
+  color: var(--muted-foreground) !important;
+  opacity: 0.5;
+}
+
+.rdp-day_outside:hover:not([disabled]) {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+/* Range selection (if used) */
+.rdp-day_range_middle {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+.rdp-day_range_end {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+
+/* Dropdown selects in caption */
+.rdp-caption_dropdowns select,
+.rdp-dropdown select {
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+
+.rdp-caption_dropdowns select:hover,
+.rdp-dropdown select:hover {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+/* Focus states */
+.rdp-day_button:focus-visible {
+  outline: 2px solid var(--ring) !important;
+  outline-offset: 2px;
+}
+
+/* Remove any blue colors from hover states */
+.rdp-day_button:hover:not([disabled]):not(.rdp-selected):not(
+    .rdp-day_selected
+  ) {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+/* React Multi Date Picker Theme Styling - Centralized for all multi date pickers */
+/* Override react-multi-date-picker styles to use theme colors */
+.rmdp-wrapper {
+  background-color: var(--popover) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.dark .rmdp-wrapper {
+  background-color: var(--popover) !important;
+  border-color: var(--border) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    0 2px 4px -1px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Calendar header */
+.rmdp-calendar .rmdp-header {
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.rmdp-calendar .rmdp-header-values {
+  color: var(--foreground) !important;
+}
+
+.rmdp-calendar .rmdp-header-values span {
+  color: var(--foreground) !important;
+}
+
+/* Calendar navigation arrows */
+.rmdp-arrow {
+  border-color: var(--foreground) !important;
+  box-shadow: 0 0 0 1px var(--border) !important;
+}
+
+.rmdp-arrow[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Calendar arrow pointer (ep-arrow) */
+.rmdp-container .ep-arrow::after {
+  background-color: var(--popover) !important;
+  border-color: var(--border) !important;
+}
+
+.rmdp-container .ep-arrow[direction="bottom"] {
+  border-top: 1px solid var(--border) !important;
+}
+
+.rmdp-container .ep-arrow[direction="top"] {
+  border-bottom: 1px solid var(--border) !important;
+}
+
+/* Calendar weekdays */
+.rmdp-week-day {
+  color: var(--muted-foreground) !important;
+}
+
+/* Calendar day cells */
+.rmdp-day {
+  color: var(--foreground) !important;
+}
+
+.rmdp-day:not(.rmdp-disabled):not(.rmdp-day-hidden) {
+  color: var(--foreground) !important;
+}
+
+/* Today */
+.rmdp-day.rmdp-today span {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+  border: 1px solid var(--primary) !important;
+}
+
+/* Selected day */
+.rmdp-day.rmdp-selected span:not(.highlight) {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  box-shadow: 0 0 3px var(--primary) !important;
+}
+
+.rmdp-day.rmdp-selected:hover:not(.rmdp-disabled) span {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+
+/* Hover state for days */
+.rmdp-day:not(.rmdp-disabled):not(.rmdp-day-hidden):hover span {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+/* Disabled days */
+.rmdp-day.rmdp-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rmdp-day.rmdp-disabled span {
+  color: var(--muted-foreground) !important;
+}
+
+/* Days outside current month */
+.rmdp-day.rmdp-day-hidden {
+  opacity: 0.3;
+}
+
+/* Range selection */
+.rmdp-day.ranges span {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+.rmdp-day.range span {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+.rmdp-day.range-start span,
+.rmdp-day.range-end span {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+
+/* Selected + Today */
+.rmdp-day.rmdp-today.rmdp-selected span {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  border-color: var(--primary) !important;
+}
+
+/* Calendar month/year selector */
+.rmdp-month-picker,
+.rmdp-year-picker {
+  background-color: var(--popover) !important;
+}
+
+.rmdp-month-picker .rmdp-day span,
+.rmdp-year-picker .rmdp-day span {
+  color: var(--foreground) !important;
+}
+
+.rmdp-month-picker .rmdp-day:hover:not(.rmdp-disabled) span,
+.rmdp-year-picker .rmdp-day:hover:not(.rmdp-disabled) span {
+  background-color: var(--accent) !important;
+  color: var(--accent-foreground) !important;
+}
+
+.rmdp-month-picker .rmdp-day.rmdp-selected span,
+.rmdp-year-picker .rmdp-day.rmdp-selected span {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+
+/* Time picker (if used) */
+.rmdp-time-picker input {
+  background-color: var(--input-background) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+}
+
+.rmdp-time-picker input:focus {
+  border-color: var(--ring) !important;
+  outline-color: var(--ring) !important;
+}
+
+/* Focus states */
+.rmdp-day:focus-visible span {
+  outline: 2px solid var(--ring) !important;
+  outline-offset: 2px;
+}
+
+/* Remove default blue colors */
+.rmdp-day.rmdp-selected span:not(.highlight),
+.rmdp-day.rmdp-selected:hover:not(.rmdp-disabled) span {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
 }

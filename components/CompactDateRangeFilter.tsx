@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+import { StyledDatePicker } from "./StyledDatePicker";
 import { Calendar, X } from "lucide-react";
 
 interface CompactDateRangeFilterProps {
@@ -28,6 +27,13 @@ export function CompactDateRangeFilter({
       handleQuickFilter("today");
     }
   }, []);
+
+  // Sync dates to parent when they change
+  useEffect(() => {
+    if (startDate || endDate) {
+      onDateChange(startDate, endDate);
+    }
+  }, [startDate, endDate, onDateChange]);
 
   const handleClearFilter = () => {
     onStartDateChange("");
@@ -68,11 +74,14 @@ export function CompactDateRangeFilter({
     onDateChange(startStr, endStr);
   };
 
-  const handleManualDateChange = () => {
-    if (startDate && endDate) {
-      setActiveFilter("custom");
-      onDateChange(startDate, endDate);
-    }
+  const handleStartDateChange = (date: string) => {
+    onStartDateChange(date);
+    setActiveFilter("custom");
+  };
+
+  const handleEndDateChange = (date: string) => {
+    onEndDateChange(date);
+    setActiveFilter("custom");
   };
 
   return (
@@ -84,7 +93,7 @@ export function CompactDateRangeFilter({
           className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
             activeFilter === "today"
               ? "gi-bg-dark-green text-white"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
           }`}
         >
           Today
@@ -94,7 +103,7 @@ export function CompactDateRangeFilter({
           className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
             activeFilter === "week"
               ? "gi-bg-dark-green text-white"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
           }`}
         >
           Week
@@ -104,7 +113,7 @@ export function CompactDateRangeFilter({
           className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
             activeFilter === "month"
               ? "gi-bg-dark-green text-white"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
           }`}
         >
           Month
@@ -114,7 +123,7 @@ export function CompactDateRangeFilter({
           className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
             activeFilter === "quarter"
               ? "gi-bg-dark-green text-white"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
           }`}
         >
           Quarter
@@ -124,7 +133,7 @@ export function CompactDateRangeFilter({
           className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
             activeFilter === "year"
               ? "gi-bg-dark-green text-white"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
           }`}
         >
           Year
@@ -132,7 +141,7 @@ export function CompactDateRangeFilter({
         {activeFilter && (
           <button
             onClick={handleClearFilter}
-            className="px-3 py-1.5 text-sm rounded-md bg-red-100 text-red-700 hover:bg-red-200 transition-colors flex items-center gap-1"
+            className="px-3 py-1.5 text-sm rounded-md bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors flex items-center gap-1"
             title="Clear filter"
           >
             <X className="h-3 w-3" />
@@ -141,22 +150,41 @@ export function CompactDateRangeFilter({
         )}
       </div>
 
+      {/* Date Inputs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1.5">
+            Start Date
+          </label>
+          <StyledDatePicker
+            value={startDate}
+            onChange={handleStartDateChange}
+            placeholder="Select start date"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1.5">
+            End Date
+          </label>
+          <StyledDatePicker
+            value={endDate}
+            onChange={handleEndDateChange}
+            placeholder="Select end date"
+          />
+        </div>
+      </div>
+
       {/* Active Filter Display */}
-      {activeFilter && (
-        <div className="text-xs text-gray-600 flex items-center gap-2">
+      {activeFilter && startDate && endDate && (
+        <div className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2">
           <Calendar className="h-3 w-3" />
           <span>
-            {startDate && endDate && (
-              <>
-                {new Date(startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                {' - '}
-                {new Date(endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              </>
-            )}
+            {new Date(startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            {' - '}
+            {new Date(endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
           </span>
         </div>
       )}
     </div>
   );
 }
-

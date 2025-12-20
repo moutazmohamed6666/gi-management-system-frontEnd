@@ -204,6 +204,43 @@ export interface CreateDealResponse {
 export type UpdateDealRequest = CreateDealRequest;
 export type UpdateDealResponse = CreateDealResponse | Deal;
 
+// Finance Update Request (for finance role editing deals)
+export interface FinanceUpdateDealRequest {
+  // Deal overview fields that finance can modify
+  dealValue?: number;
+  propertyName?: string;
+  unitNumber?: string;
+  closeDate?: string;
+  bookingDate?: string;
+  cfExpiry?: string;
+  // Buyer/Seller updates
+  buyer?: {
+    name?: string;
+    phone?: string;
+    nationalityId?: string;
+    sourceId?: string;
+  };
+  seller?: {
+    name?: string;
+    phone?: string;
+    nationalityId?: string;
+    sourceId?: string;
+  };
+  // Commission fields
+  totalCommissionTypeId?: string;
+  totalCommissionValue?: number;
+  // Finance-specific fields
+  financeNotes?: string;
+  stageId?: string; // For approval workflow
+  statusId?: string;
+}
+
+export interface FinanceUpdateDealResponse {
+  id: string;
+  message?: string;
+  data: Deal;
+}
+
 // Update Deal Status Request
 export interface UpdateDealStatusRequest {
   statusId: string; // UUID
@@ -311,5 +348,16 @@ export const dealsApi = {
   // Get all agents and managers for a deal (for commission transfer)
   getDealAgents: async (dealId: string): Promise<GetDealAgentsResponse> => {
     return apiClient<GetDealAgentsResponse>(`/api/deals/${dealId}/agents`);
+  },
+
+  // Finance role: Update deal with finance-specific fields
+  updateDealAsFinance: async (
+    dealId: string,
+    data: FinanceUpdateDealRequest
+  ): Promise<FinanceUpdateDealResponse> => {
+    return apiClient<FinanceUpdateDealResponse>(`/api/deals/${dealId}/finance`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
   },
 };
