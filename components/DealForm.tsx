@@ -40,6 +40,8 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     nationalities,
     leadSources,
     commissionTypes,
+    purchaseStatuses,
+    agents: allAgents,
     isLoading: filtersLoading,
     error: filtersError,
   } = useFilters();
@@ -51,6 +53,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     closeDate: "", // NEW: Added closeDate field
     dealTypeId: "", // Changed from dealType to dealTypeId (UUID)
     statusId: "", // NEW: Required for create deal (UUID)
+    purchaseStatusId: "", // NEW: Purchase status (UUID)
 
     // Property Details
     developerId: "", // Changed from developer to developerId (UUID)
@@ -78,7 +81,11 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     salesValue: "",
     commRate: "",
     agentCommissionTypeId: "", // NEW: For commission type
-    hasExternalAgent: false,
+    totalCommissionTypeId: "", // NEW: Total commission type (UUID)
+    totalCommissionValue: "", // NEW: Total commission value
+    hasAdditionalAgent: false, // Renamed from hasExternalAgent
+    additionalAgentType: "external" as "internal" | "external", // NEW: Type of additional agent
+    additionalAgentId: "", // NEW: For internal agent selection
     agencyName: "",
     agencyComm: "",
     agencyCommissionTypeId: "", // NEW: For external agent commission type
@@ -183,6 +190,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
           closeDate: isoToYmd(deal.closeDate),
           dealTypeId: deal.dealTypeId || "",
           statusId: deal.statusId || "",
+          purchaseStatusId: deal.purchaseStatusId || "",
 
           // Property Details
           developerId: deal.developerId || deal.developer?.id || "",
@@ -207,6 +215,8 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
 
           // Commission
           salesValue: deal.dealValue ? String(deal.dealValue) : "",
+          totalCommissionTypeId: deal.totalCommissionTypeId || "",
+          totalCommissionValue: deal.totalCommissionValue ? String(deal.totalCommissionValue) : "",
         }));
 
         setLoadedDealId(dealId);
@@ -392,20 +402,39 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
       agentCommissionValue: formData.commRate
         ? parseFloat(formData.commRate)
         : undefined,
-      // Additional agents if external agent is enabled
-      additionalAgents: formData.hasExternalAgent
+      // Total Commission fields
+      totalCommissionTypeId: formData.totalCommissionTypeId || undefined,
+      totalCommissionValue: formData.totalCommissionValue
+        ? parseFloat(formData.totalCommissionValue)
+        : undefined,
+      // Purchase status
+      purchaseStatusId: formData.purchaseStatusId || undefined,
+      // Additional agents if enabled
+      additionalAgents: formData.hasAdditionalAgent
         ? [
-            {
-              externalAgentName: formData.agencyName,
-              commissionTypeId:
-                formData.agencyCommissionTypeId ||
-                formData.agentCommissionTypeId ||
-                "",
-              commissionValue: formData.agencyComm
-                ? parseFloat(formData.agencyComm)
-                : 0,
-              isInternal: false,
-            },
+            formData.additionalAgentType === "internal"
+              ? {
+                  agentId: formData.additionalAgentId,
+                  commissionTypeId:
+                    formData.agencyCommissionTypeId ||
+                    formData.agentCommissionTypeId ||
+                    "",
+                  commissionValue: formData.agencyComm
+                    ? parseFloat(formData.agencyComm)
+                    : 0,
+                  isInternal: true,
+                }
+              : {
+                  externalAgentName: formData.agencyName,
+                  commissionTypeId:
+                    formData.agencyCommissionTypeId ||
+                    formData.agentCommissionTypeId ||
+                    "",
+                  commissionValue: formData.agencyComm
+                    ? parseFloat(formData.agencyComm)
+                    : 0,
+                  isInternal: false,
+                },
           ]
         : undefined,
     };
@@ -642,6 +671,25 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                       {errors.statusId}
                     </p>
                   )}
+                </div>
+                <div>
+                  <Label htmlFor="purchaseStatusId">Purchase Status</Label>
+                  <Select
+                    value={formData.purchaseStatusId}
+                    onValueChange={(value) => handleChange("purchaseStatusId", value)}
+                    disabled={filtersLoading}
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder="Select purchase status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {purchaseStatuses.map((status) => (
+                        <SelectItem key={status.id} value={status.id}>
+                          {status.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </CardContent>
@@ -1071,7 +1119,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="commRate">Commission Rate/Value</Label>
+                  <Label htmlFor="commRate">Agent Commission Rate/Value</Label>
                   <Input
                     id="commRate"
                     type="text"
@@ -1079,46 +1127,144 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                     onChange={(e) =>
                       handleNumberOnly("commRate", e.target.value)
                     }
-                    placeholder="Enter commission rate (%) or fixed amount"
+                    placeholder="Enter agent commission rate (%) or fixed amount"
                     className="mt-1"
                   />
                 </div>
 
-                {/* External Agent Toggle */}
+                {/* Total Commission Fields */}
+                <div className="pt-4 border-t" style={{ borderColor: "var(--gi-green-40)" }}>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="totalCommissionTypeId">Total Commission Type</Label>
+                      <Select
+                        value={formData.totalCommissionTypeId}
+                        onValueChange={(value) =>
+                          handleChange("totalCommissionTypeId", value)
+                        }
+                        disabled={filtersLoading}
+                      >
+                        <SelectTrigger className="w-full mt-1">
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {commissionTypes.map((type) => (
+                            <SelectItem key={type.id} value={type.id}>
+                              {type.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="totalCommissionValue">Total Commission Value</Label>
+                      <Input
+                        id="totalCommissionValue"
+                        type="text"
+                        value={formData.totalCommissionValue}
+                        onChange={(e) =>
+                          handleNumberOnly("totalCommissionValue", e.target.value)
+                        }
+                        placeholder="Enter value"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Agent Toggle */}
                 <div
                   className="flex items-center justify-between pt-4 border-t"
                   style={{ borderColor: "var(--gi-green-40)" }}
                 >
-                  <Label htmlFor="hasExternalAgent" className="text-gray-900">
-                    External Agent
+                  <Label htmlFor="hasAdditionalAgent" className="text-gray-900">
+                    Additional Agent
                   </Label>
                   <Switch
-                    id="hasExternalAgent"
-                    checked={formData.hasExternalAgent}
+                    id="hasAdditionalAgent"
+                    checked={formData.hasAdditionalAgent}
                     onCheckedChange={(checked) =>
-                      handleChange("hasExternalAgent", checked)
+                      handleChange("hasAdditionalAgent", checked)
                     }
                   />
                 </div>
 
-                {/* External Agent Fields - Shown when toggle is enabled */}
-                {formData.hasExternalAgent && (
-                  <div className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                {/* Additional Agent Fields - Shown when toggle is enabled */}
+                {formData.hasAdditionalAgent && (
+                  <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                    {/* Agent Type Selection */}
                     <div>
-                      <Label htmlFor="agencyName">Agency Name</Label>
-                      <Input
-                        id="agencyName"
-                        value={formData.agencyName}
-                        onChange={(e) =>
-                          handleChange("agencyName", e.target.value)
-                        }
-                        placeholder="Enter agency name"
-                        className="mt-1"
-                      />
+                      <Label className="mb-2 block">Agent Type</Label>
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="additionalAgentType"
+                            value="internal"
+                            checked={formData.additionalAgentType === "internal"}
+                            onChange={(e) => handleChange("additionalAgentType", e.target.value)}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm">Internal Agent</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="additionalAgentType"
+                            value="external"
+                            checked={formData.additionalAgentType === "external"}
+                            onChange={(e) => handleChange("additionalAgentType", e.target.value)}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm">External Agent</span>
+                        </label>
+                      </div>
                     </div>
+
+                    {/* Internal Agent Selection */}
+                    {formData.additionalAgentType === "internal" && (
+                      <div>
+                        <Label htmlFor="additionalAgentId">Select Agent</Label>
+                        <Select
+                          value={formData.additionalAgentId}
+                          onValueChange={(value) =>
+                            handleChange("additionalAgentId", value)
+                          }
+                          disabled={filtersLoading}
+                        >
+                          <SelectTrigger className="w-full mt-1">
+                            <SelectValue placeholder="Select internal agent" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {allAgents.map((agent) => (
+                              <SelectItem key={agent.id} value={agent.id}>
+                                {agent.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {/* External Agent Name */}
+                    {formData.additionalAgentType === "external" && (
+                      <div>
+                        <Label htmlFor="agencyName">Agency/Agent Name</Label>
+                        <Input
+                          id="agencyName"
+                          value={formData.agencyName}
+                          onChange={(e) =>
+                            handleChange("agencyName", e.target.value)
+                          }
+                          placeholder="Enter agency or agent name"
+                          className="mt-1"
+                        />
+                      </div>
+                    )}
+
                     <div>
                       <Label htmlFor="agencyCommissionTypeId">
-                        Agency Commission Type
+                        Commission Type
                       </Label>
                       <Select
                         value={formData.agencyCommissionTypeId}
@@ -1140,7 +1286,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="agencyComm">Agency Commission (%)</Label>
+                      <Label htmlFor="agencyComm">Commission Value</Label>
                       <Input
                         id="agencyComm"
                         type="text"
@@ -1148,32 +1294,20 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                         onChange={(e) =>
                           handleNumberOnly("agencyComm", e.target.value)
                         }
-                        placeholder="Enter agency commission %"
+                        placeholder="Enter commission value"
                         className="mt-1"
                       />
-                      <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
-                        <p className="text-blue-900 mb-1">
-                          <span className="font-semibold">Calculation:</span>
-                        </p>
-                        <p className="text-blue-800">
-                          Agency Commission Amount = Sales Value × (Agency
-                          Commission % / 100)
-                        </p>
-                        {formData.salesValue && formData.agencyComm && (
-                          <p className="text-blue-900 mt-2 font-semibold">
-                            = AED {formData.salesValue} × {formData.agencyComm}%
-                            = AED{" "}
-                            {(
-                              (parseFloat(formData.salesValue) *
-                                parseFloat(formData.agencyComm)) /
-                              100
-                            ).toLocaleString("en-US", {
+                      {formData.salesValue && formData.agencyComm && (
+                        <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded text-sm">
+                          <p className="text-blue-900 dark:text-blue-100 font-semibold">
+                            Commission: AED{" "}
+                            {parseFloat(formData.agencyComm).toLocaleString("en-US", {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
                             })}
                           </p>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
