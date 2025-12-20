@@ -34,12 +34,12 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
         // Note: Since API doesn't have direct status field, we'll filter by commission status
         const dealsRequiringAction = allDeals.filter((deal) => {
           // For now, show deals with pending commission or specific status
-          const status = deal.status || "";
+          const statusId = deal.statusId || "";
           return (
             deal.commission?.status === "Pending" ||
-            status === "Finance Review" ||
-            status === "Approved" ||
-            status === "Submitted"
+            statusId === "Finance Review" ||
+            statusId === "Approved" ||
+            statusId === "Submitted"
           );
         });
 
@@ -62,7 +62,7 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
 
   const getStatusColor = (deal: Deal) => {
     const status = (deal.commission?.status ||
-      deal.status ||
+      deal.statusId ||
       "Pending") as string;
     switch (status) {
       case "Finance Review":
@@ -270,7 +270,7 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
                             deal
                           )}`}
                         >
-                          {deal.commission?.status || deal.status || "Pending"}
+                          {deal.commission?.status || deal.statusId || "Pending"}
                         </span>
                       </td>
                       <td className="py-3 px-4">

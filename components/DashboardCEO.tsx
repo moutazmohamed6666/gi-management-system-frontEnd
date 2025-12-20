@@ -73,15 +73,15 @@ export function DashboardCEO() {
   }, [startDate, endDate]);
 
   const totalPipeline = filteredDeals
-    .filter((d) => d.status !== "Closed")
-    .reduce((sum, d) => sum + d.dealValue, 0);
-  const closedDeals = filteredDeals.filter((d) => d.status === "Closed").length;
+    .filter((d) => d.statusId !== "Closed")
+    .reduce((sum, d) => sum + (parseFloat(d.dealValue) || 0), 0);
+  const closedDeals = filteredDeals.filter((d) => d.statusId === "Closed").length;
   const totalRevenue = filteredDeals
     .filter((d) => d.commission?.total)
     .reduce((sum, d) => sum + (d.commission?.total || 0), 0);
   const avgDealSize =
     filteredDeals.length > 0
-      ? filteredDeals.reduce((sum, d) => sum + d.dealValue, 0) /
+      ? filteredDeals.reduce((sum, d) => sum + (parseFloat(d.dealValue) || 0), 0) /
         filteredDeals.length
       : 0;
 

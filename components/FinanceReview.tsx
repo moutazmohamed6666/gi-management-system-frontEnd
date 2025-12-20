@@ -197,11 +197,14 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
     );
   }
 
-  const handleOverviewChange = (field: string, value: any) => {
+  const handleOverviewChange = (field: string, value: string | number) => {
     setDealOverview((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleFinanceChange = (field: string, value: any) => {
+  const handleFinanceChange = (
+    field: string,
+    value: string | number | boolean
+  ) => {
     setFinanceData((prev) => ({ ...prev, [field]: value }));
   };
 

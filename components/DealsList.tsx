@@ -186,7 +186,7 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
   const handleEditClick = (deal: Deal) => {
     setOpenPopoverId(null); // Close popover
     setEditingDealId(deal.id);
-    setEditingStatus(deal.commission?.status || deal.status || "");
+    setEditingStatus(deal.commission?.status || deal.statusId || "");
   };
 
   const handleCancelEdit = () => {
@@ -216,7 +216,8 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
               ? {
                   ...deal,
                   commission: {
-                    ...deal.commission,
+                    total: deal.commission?.total ?? 0,
+                    paid: deal.commission?.paid ?? 0,
                     status: newStatus as "Pending" | "Partially Paid" | "Paid",
                   },
                 }
@@ -587,12 +588,12 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
                           <span
                             className={`inline-block px-3 py-1 rounded-full text-white text-sm ${getStatusColor(
                               deal.commission?.status ||
-                                deal.status ||
+                                deal.statusId ||
                                 "Pending"
                             )}`}
                           >
                             {deal.commission?.status ||
-                              deal.status ||
+                              deal.statusId ||
                               "Pending"}
                           </span>
                         )}
