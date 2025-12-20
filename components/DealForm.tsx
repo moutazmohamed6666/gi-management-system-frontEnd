@@ -145,22 +145,9 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     );
   };
 
-  const isApproved = useMemo(() => {
-    const candidates = [dealStatusName, statusNameFromFilters]
-      .filter(Boolean)
-      .map((s) => String(s).toLowerCase().trim());
-
-    // Check if any candidate matches a locked stage
-    return candidates.some((status) =>
-      LOCKED_STAGES.some(
-        (locked) => status.includes(locked) || locked.includes(status)
-      )
-    );
-  }, [dealStatusName, statusNameFromFilters]);
-
-  const isReadOnly =
-    (isEditMode && currentRole === "agent") ||
-    (isEditMode && currentRole === "finance" && isApproved);
+  // Finance can always edit deals (same as agent create form)
+  // Agents can only create, not edit
+  const isReadOnly = isEditMode && currentRole === "agent";
 
   // Load deal when editing
   useLayoutEffect(() => {
@@ -198,6 +185,44 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
           (d) => d.isBuyer === false
         );
 
+        // Extract agent commission from commissions array
+        // Look for commission with roleId matching agent role (typically roleId for agents)
+        const agentCommission = deal.commissions?.find(
+          (c) => c.roleId && c.roleId !== "" // Agent commission (you may need to adjust this logic based on your role IDs)
+        );
+        const agentCommissionTypeId = agentCommission?.typeId || "";
+        const agentCommissionValue = agentCommission?.expectedAmount
+          ? String(parseFloat(agentCommission.expectedAmount))
+          : "";
+
+        // Extract additional agents if available in the deal response
+        // Check if deal has additionalAgents field (might not be in Deal type but could be in response)
+        const additionalAgents =
+          (
+            deal as unknown as {
+              additionalAgents?: Array<{
+                agentId?: string;
+                externalAgentName?: string;
+                commissionTypeId?: string;
+                commissionValue?: number;
+                isInternal?: boolean;
+              }>;
+            }
+          ).additionalAgents || [];
+
+        // Get first additional agent if exists (form currently supports one additional agent)
+        const firstAdditionalAgent = additionalAgents[0];
+        const hasAdditionalAgent = additionalAgents.length > 0;
+        const additionalAgentType: "internal" | "external" =
+          firstAdditionalAgent?.isInternal === true ? "internal" : "external";
+        const additionalAgentId = firstAdditionalAgent?.agentId || "";
+        const agencyName = firstAdditionalAgent?.externalAgentName || "";
+        const agencyComm = firstAdditionalAgent?.commissionValue
+          ? String(firstAdditionalAgent.commissionValue)
+          : "";
+        const agencyCommissionTypeId =
+          firstAdditionalAgent?.commissionTypeId || "";
+
         setFormData((prev) => ({
           ...prev,
           // Deal Information
@@ -231,10 +256,20 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
 
           // Commission
           salesValue: deal.dealValue ? String(deal.dealValue) : "",
+          agentCommissionTypeId: agentCommissionTypeId,
+          commRate: agentCommissionValue,
           totalCommissionTypeId: deal.totalCommissionTypeId || "",
           totalCommissionValue: deal.totalCommissionValue
             ? String(deal.totalCommissionValue)
             : "",
+
+          // Additional Agent
+          hasAdditionalAgent: hasAdditionalAgent,
+          additionalAgentType: additionalAgentType,
+          additionalAgentId: additionalAgentId,
+          agencyName: agencyName,
+          agencyComm: agencyComm,
+          agencyCommissionTypeId: agencyCommissionTypeId,
         }));
 
         setLoadedDealId(dealId);
@@ -570,19 +605,11 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
 
       {isReadOnly && (
         <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 dark:border-amber-900/30 dark:bg-amber-950/30 dark:text-amber-100">
-          {currentRole === "agent" ? (
-            <div className="text-sm">
-              You can <span className="font-medium">create</span> deals, but
-              existing deals are <span className="font-medium">view-only</span>{" "}
-              for Agents.
-            </div>
-          ) : (
-            <div className="text-sm">
-              This deal is <span className="font-medium">Approved</span> and is
-              now <span className="font-medium">locked</span>. Finance can edit
-              only before approval.
-            </div>
-          )}
+          <div className="text-sm">
+            You can <span className="font-medium">create</span> deals, but
+            existing deals are <span className="font-medium">view-only</span>{" "}
+            for Agents.
+          </div>
         </div>
       )}
 
