@@ -26,11 +26,14 @@ interface DealFormProps {
   onSave: () => void;
 }
 
+type UserRole = "agent" | "finance" | "ceo" | "admin";
+
 export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
   // Fetch filter data for dropdowns
   const {
     developers,
     projects: allProjects,
+    statuses,
     dealTypes,
     propertyTypes,
     unitTypes,
@@ -47,6 +50,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     cfExpiry: "",
     closeDate: "", // NEW: Added closeDate field
     dealTypeId: "", // Changed from dealType to dealTypeId (UUID)
+    statusId: "", // NEW: Required for create deal (UUID)
 
     // Property Details
     developerId: "", // Changed from developer to developerId (UUID)
@@ -85,6 +89,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
   const [dealError, setDealError] = useState<string | null>(null);
   const [loadedDealId, setLoadedDealId] = useState<string | null>(null);
   const [dealFetchNonce, setDealFetchNonce] = useState(0);
+  const [dealStatusName, setDealStatusName] = useState<string>("");
 
   const isEditMode = Boolean(dealId);
 
@@ -94,6 +99,45 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     if (Number.isNaN(d.getTime())) return "";
     return d.toISOString().split("T")[0];
   };
+
+  const currentRole: UserRole =
+    (typeof window !== "undefined"
+      ? (sessionStorage.getItem("userRole") as UserRole)
+      : "agent") || "agent";
+
+  const defaultStatusId = useMemo(() => {
+    if (isEditMode) return "";
+    if (statuses.length === 0) return "";
+    const preferred =
+      statuses.find((s) => String(s.name).toLowerCase().includes("new")) ??
+      statuses[0];
+    return preferred?.id ?? "";
+  }, [isEditMode, statuses]);
+
+  const effectiveStatusId = formData.statusId || defaultStatusId;
+
+  const statusNameFromFilters = useMemo(() => {
+    if (!effectiveStatusId) return "";
+    return statuses.find((s) => s.id === effectiveStatusId)?.name || "";
+  }, [effectiveStatusId, statuses]);
+
+  const isValidUuid = (value: string) => {
+    // UUID v1-v5
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value
+    );
+  };
+
+  const isApproved = useMemo(() => {
+    const candidates = [dealStatusName, statusNameFromFilters]
+      .filter(Boolean)
+      .map((s) => String(s).toLowerCase());
+    return candidates.some((s) => s.includes("approved"));
+  }, [dealStatusName, statusNameFromFilters]);
+
+  const isReadOnly =
+    (isEditMode && currentRole === "agent") ||
+    (isEditMode && currentRole === "finance" && isApproved);
 
   // Load deal when editing
   useLayoutEffect(() => {
@@ -107,6 +151,25 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
       .then((deal: Deal) => {
         if (cancelled) return;
 
+        // Backend responses can expose status as either a string or an object.
+        const statusLabel =
+          (deal as unknown as { status?: unknown }).status ??
+          (deal as unknown as { dealStatus?: unknown }).dealStatus ??
+          "";
+        if (typeof statusLabel === "string") setDealStatusName(statusLabel);
+        else if (
+          statusLabel &&
+          typeof statusLabel === "object" &&
+          "name" in (statusLabel as Record<string, unknown>) &&
+          typeof (statusLabel as Record<string, unknown>).name === "string"
+        ) {
+          setDealStatusName(
+            (statusLabel as Record<string, unknown>).name as string
+          );
+        } else {
+          setDealStatusName("");
+        }
+
         const buyer = deal.buyerSellerDetails?.find((d) => d.isBuyer === true);
         const seller = deal.buyerSellerDetails?.find(
           (d) => d.isBuyer === false
@@ -119,6 +182,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
           cfExpiry: isoToYmd(deal.cfExpiry),
           closeDate: isoToYmd(deal.closeDate),
           dealTypeId: deal.dealTypeId || "",
+          statusId: deal.statusId || "",
 
           // Property Details
           developerId: deal.developerId || deal.developer?.id || "",
@@ -212,6 +276,16 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
   };
 
   const handleSave = async () => {
+    if (isReadOnly) {
+      toast.error("Permission denied", {
+        description:
+          currentRole === "agent"
+            ? "Agents can create deals, but cannot edit an existing deal."
+            : "This deal is approved and cannot be edited.",
+      });
+      return;
+    }
+
     // Validate phones before saving
     const newErrors: { [key: string]: string } = {};
 
@@ -224,6 +298,11 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     }
     if (!formData.dealTypeId) {
       newErrors.dealTypeId = "Deal type is required";
+    }
+    if (!effectiveStatusId) {
+      newErrors.statusId = "Status is required";
+    } else if (!isValidUuid(effectiveStatusId)) {
+      newErrors.statusId = "Status must be a valid UUID";
     }
     if (!formData.propertyTypeId) {
       newErrors.propertyTypeId = "Property type is required";
@@ -289,6 +368,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
         : new Date().toISOString(),
       closeDate: new Date(formData.closeDate).toISOString(),
       dealTypeId: formData.dealTypeId,
+      statusId: effectiveStatusId,
       numberOfDeal: 1, // Default to 1, discuss with backend
       propertyName: formData.propertyName || "", // Use propertyName or project name
       propertyTypeId: formData.propertyTypeId,
@@ -426,636 +506,699 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Deals
         </Button>
-        <Button
-          onClick={handleSave}
-          className="gi-bg-dark-green flex items-center gap-2"
-        >
-          <Save className="h-4 w-4" />
-          {isEditMode ? "Update Deal" : "Save Deal"}
-        </Button>
-      </div>
-
-      {/* Row 1: Deal Information & Property Details */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Deal Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Deal Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="bookingDate">Booking Date</Label>
-                <div className="mt-1">
-                  <StyledDatePicker
-                    id="bookingDate"
-                    value={formData.bookingDate}
-                    onChange={(date) => handleChange("bookingDate", date)}
-                    placeholder="Select booking date"
-                  />
-                </div>
-                {errors.bookingDate && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.bookingDate}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="cfExpiry">CF Expiry</Label>
-                <div className="mt-1">
-                  <StyledDatePicker
-                    id="cfExpiry"
-                    value={formData.cfExpiry}
-                    onChange={(date) => handleChange("cfExpiry", date)}
-                    placeholder="Select CF expiry date"
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="closeDate">Close Date</Label>
-                <div className="mt-1">
-                  <StyledDatePicker
-                    id="closeDate"
-                    value={formData.closeDate}
-                    onChange={(date) => handleChange("closeDate", date)}
-                    placeholder="Select close date"
-                  />
-                </div>
-                {errors.closeDate && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.closeDate}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="dealTypeId">Deal Type</Label>
-                <Select
-                  value={formData.dealTypeId}
-                  onValueChange={(value) => handleChange("dealTypeId", value)}
-                  disabled={filtersLoading}
-                >
-                  <SelectTrigger className="w-full mt-1">
-                    <SelectValue placeholder="Select deal type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {dealTypes.map((type) => (
-                      <SelectItem key={type.id} value={type.id}>
-                        {type.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.dealTypeId && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.dealTypeId}
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Property Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Property Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="developerId">Developer</Label>
-                <Select
-                  value={formData.developerId}
-                  onValueChange={(value) => {
-                    handleChange("developerId", value);
-                    // Reset project when developer changes
-                    handleChange("projectId", "");
-                  }}
-                  disabled={filtersLoading}
-                >
-                  <SelectTrigger className="w-full mt-1">
-                    <SelectValue placeholder="Select developer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {developers.map((dev) => (
-                      <SelectItem key={dev.id} value={dev.id}>
-                        {dev.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.developerId && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.developerId}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="projectId">Project</Label>
-                <Select
-                  value={formData.projectId}
-                  onValueChange={(value) => handleChange("projectId", value)}
-                  disabled={filtersLoading || !formData.developerId}
-                >
-                  <SelectTrigger className="w-full mt-1">
-                    <SelectValue placeholder="Select project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredProjects.length === 0 ? (
-                      <SelectItem value="__no_projects__" disabled>
-                        {formData.developerId
-                          ? "No projects available"
-                          : "Select developer first"}
-                      </SelectItem>
-                    ) : (
-                      filteredProjects.map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.name}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-                {errors.projectId && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.projectId}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="propertyName">Property Name</Label>
-                <Input
-                  id="propertyName"
-                  value={formData.propertyName}
-                  onChange={(e) => handleChange("propertyName", e.target.value)}
-                  placeholder="Enter property name"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="propertyTypeId">Property Type</Label>
-                <Select
-                  value={formData.propertyTypeId}
-                  onValueChange={(value) =>
-                    handleChange("propertyTypeId", value)
-                  }
-                  disabled={filtersLoading}
-                >
-                  <SelectTrigger className="w-full mt-1">
-                    <SelectValue placeholder="Select property type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {propertyTypes.map((type) => (
-                      <SelectItem key={type.id} value={type.id}>
-                        {type.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.propertyTypeId && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.propertyTypeId}
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Row 2: Additional Property Details */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Unit Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <Label htmlFor="unitNumber">Unit #</Label>
-              <Input
-                id="unitNumber"
-                type="text"
-                value={formData.unitNumber}
-                onChange={(e) => handleNumberOnly("unitNumber", e.target.value)}
-                placeholder="Enter unit number"
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="unitTypeId">Unit Type</Label>
-              <Select
-                value={formData.unitTypeId}
-                onValueChange={(value) => handleChange("unitTypeId", value)}
-                disabled={filtersLoading}
-              >
-                <SelectTrigger className="w-full mt-1">
-                  <SelectValue placeholder="Select unit type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {unitTypes.map((type) => (
-                    <SelectItem key={type.id} value={type.id}>
-                      {type.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.unitTypeId && (
-                <p className="text-red-500 text-sm mt-1">{errors.unitTypeId}</p>
-              )}
-            </div>
-            <div>
-              <Label htmlFor="size">Size (sq.ft)</Label>
-              <Input
-                id="size"
-                type="text"
-                value={formData.size}
-                onChange={(e) => handleNumberOnly("size", e.target.value)}
-                placeholder="Enter size in sq.ft"
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="bedrooms">BR (Bedrooms)</Label>
-              <Select
-                value={formData.bedrooms}
-                onValueChange={(value) => handleChange("bedrooms", value)}
-              >
-                <SelectTrigger className="w-full mt-1">
-                  <SelectValue placeholder="Select bedrooms" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Studio">Studio</SelectItem>
-                  <SelectItem value="1">1</SelectItem>
-                  <SelectItem value="2">2</SelectItem>
-                  <SelectItem value="3">3</SelectItem>
-                  <SelectItem value="4">4</SelectItem>
-                  <SelectItem value="5">5</SelectItem>
-                  <SelectItem value="6+">6+</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        {!isReadOnly ? (
+          <Button
+            onClick={handleSave}
+            className="gi-bg-dark-green flex items-center gap-2"
+          >
+            <Save className="h-4 w-4" />
+            {isEditMode ? "Update Deal" : "Save Deal"}
+          </Button>
+        ) : (
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            View only
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Row 3: Seller & Buyer */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Seller Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Seller</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="sellerName">Name</Label>
-                <Input
-                  id="sellerName"
-                  value={formData.sellerName}
-                  onChange={(e) => handleChange("sellerName", e.target.value)}
-                  placeholder="Enter seller name"
-                  className={`mt-1 ${
-                    errors.sellerName ? "border-red-500" : ""
-                  }`}
-                />
-                {errors.sellerName && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.sellerName}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="sellerPhone">Phone</Label>
-                <Input
-                  id="sellerPhone"
-                  type="tel"
-                  value={formData.sellerPhone}
-                  onChange={(e) =>
-                    handlePhoneChange("sellerPhone", e.target.value)
-                  }
-                  placeholder="+971 50 123 4567"
-                  className={`mt-1 ${
-                    errors.sellerPhone ? "border-red-500" : ""
-                  }`}
-                />
-                {errors.sellerPhone && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.sellerPhone}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="sellerNationalityId">Nationality</Label>
-                <Select
-                  value={formData.sellerNationalityId}
-                  onValueChange={(value) =>
-                    handleChange("sellerNationalityId", value)
-                  }
-                  disabled={filtersLoading}
-                >
-                  <SelectTrigger className="w-full mt-1">
-                    <SelectValue placeholder="Select nationality" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {nationalities.map((nationality) => (
-                      <SelectItem key={nationality.id} value={nationality.id}>
-                        {nationality.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="sellerSourceId">Source</Label>
-                <Select
-                  value={formData.sellerSourceId}
-                  onValueChange={(value) =>
-                    handleChange("sellerSourceId", value)
-                  }
-                  disabled={filtersLoading}
-                >
-                  <SelectTrigger className="w-full mt-1">
-                    <SelectValue placeholder="Select source" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {leadSources.map((source) => (
-                      <SelectItem key={source.id} value={source.id}>
-                        {source.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Buyer Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Buyer</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="buyerName">Name</Label>
-                <Input
-                  id="buyerName"
-                  value={formData.buyerName}
-                  onChange={(e) => handleChange("buyerName", e.target.value)}
-                  placeholder="Enter buyer name"
-                  className={`mt-1 ${errors.buyerName ? "border-red-500" : ""}`}
-                />
-                {errors.buyerName && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.buyerName}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="buyerPhone">Phone</Label>
-                <Input
-                  id="buyerPhone"
-                  type="tel"
-                  value={formData.buyerPhone}
-                  onChange={(e) =>
-                    handlePhoneChange("buyerPhone", e.target.value)
-                  }
-                  placeholder="+971 50 123 4567"
-                  className={`mt-1 ${
-                    errors.buyerPhone ? "border-red-500" : ""
-                  }`}
-                />
-                {errors.buyerPhone && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.buyerPhone}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="buyerNationalityId">Nationality</Label>
-                <Select
-                  value={formData.buyerNationalityId}
-                  onValueChange={(value) =>
-                    handleChange("buyerNationalityId", value)
-                  }
-                  disabled={filtersLoading}
-                >
-                  <SelectTrigger className="w-full mt-1">
-                    <SelectValue placeholder="Select nationality" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {nationalities.map((nationality) => (
-                      <SelectItem key={nationality.id} value={nationality.id}>
-                        {nationality.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="buyerSourceId">Source</Label>
-                <Select
-                  value={formData.buyerSourceId}
-                  onValueChange={(value) =>
-                    handleChange("buyerSourceId", value)
-                  }
-                  disabled={filtersLoading}
-                >
-                  <SelectTrigger className="w-full mt-1">
-                    <SelectValue placeholder="Select source" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {leadSources.map((source) => (
-                      <SelectItem key={source.id} value={source.id}>
-                        {source.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        )}
       </div>
 
-      {/* Row 4: Commission Details & Additional Notes */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Commission Details */}
+      {isReadOnly && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 dark:border-amber-900/30 dark:bg-amber-950/30 dark:text-amber-100">
+          {currentRole === "agent" ? (
+            <div className="text-sm">
+              You can <span className="font-medium">create</span> deals, but
+              existing deals are <span className="font-medium">view-only</span>{" "}
+              for Agents.
+            </div>
+          ) : (
+            <div className="text-sm">
+              This deal is <span className="font-medium">Approved</span> and is
+              now <span className="font-medium">locked</span>. Finance can edit
+              only before approval.
+            </div>
+          )}
+        </div>
+      )}
+
+      <fieldset
+        disabled={isReadOnly}
+        className={isReadOnly ? "opacity-80" : ""}
+      >
+        {/* Row 1: Deal Information & Property Details */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Deal Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Deal Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="bookingDate">Booking Date</Label>
+                  <div className="mt-1">
+                    <StyledDatePicker
+                      id="bookingDate"
+                      value={formData.bookingDate}
+                      onChange={(date) => handleChange("bookingDate", date)}
+                      placeholder="Select booking date"
+                    />
+                  </div>
+                  {errors.bookingDate && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.bookingDate}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="cfExpiry">CF Expiry</Label>
+                  <div className="mt-1">
+                    <StyledDatePicker
+                      id="cfExpiry"
+                      value={formData.cfExpiry}
+                      onChange={(date) => handleChange("cfExpiry", date)}
+                      placeholder="Select CF expiry date"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="closeDate">Close Date</Label>
+                  <div className="mt-1">
+                    <StyledDatePicker
+                      id="closeDate"
+                      value={formData.closeDate}
+                      onChange={(date) => handleChange("closeDate", date)}
+                      placeholder="Select close date"
+                    />
+                  </div>
+                  {errors.closeDate && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.closeDate}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="dealTypeId">Deal Type</Label>
+                  <Select
+                    value={formData.dealTypeId}
+                    onValueChange={(value) => handleChange("dealTypeId", value)}
+                    disabled={filtersLoading}
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder="Select deal type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {dealTypes.map((type) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.dealTypeId && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.dealTypeId}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="statusId">Status</Label>
+                  <Select
+                    value={formData.statusId || defaultStatusId}
+                    onValueChange={(value) => handleChange("statusId", value)}
+                    disabled={filtersLoading}
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statuses.map((status) => (
+                        <SelectItem key={status.id} value={status.id}>
+                          {status.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.statusId && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.statusId}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Property Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Property Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="developerId">Developer</Label>
+                  <Select
+                    value={formData.developerId}
+                    onValueChange={(value) => {
+                      handleChange("developerId", value);
+                      // Reset project when developer changes
+                      handleChange("projectId", "");
+                    }}
+                    disabled={filtersLoading}
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder="Select developer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {developers.map((dev) => (
+                        <SelectItem key={dev.id} value={dev.id}>
+                          {dev.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.developerId && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.developerId}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="projectId">Project</Label>
+                  <Select
+                    value={formData.projectId}
+                    onValueChange={(value) => handleChange("projectId", value)}
+                    disabled={filtersLoading || !formData.developerId}
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder="Select project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredProjects.length === 0 ? (
+                        <SelectItem value="__no_projects__" disabled>
+                          {formData.developerId
+                            ? "No projects available"
+                            : "Select developer first"}
+                        </SelectItem>
+                      ) : (
+                        filteredProjects.map((project) => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {errors.projectId && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.projectId}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="propertyName">Property Name</Label>
+                  <Input
+                    id="propertyName"
+                    value={formData.propertyName}
+                    onChange={(e) =>
+                      handleChange("propertyName", e.target.value)
+                    }
+                    placeholder="Enter property name"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="propertyTypeId">Property Type</Label>
+                  <Select
+                    value={formData.propertyTypeId}
+                    onValueChange={(value) =>
+                      handleChange("propertyTypeId", value)
+                    }
+                    disabled={filtersLoading}
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder="Select property type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {propertyTypes.map((type) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.propertyTypeId && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.propertyTypeId}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Row 2: Additional Property Details */}
         <Card>
           <CardHeader>
-            <CardTitle>Commission Details</CardTitle>
+            <CardTitle>Unit Details</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {/* Basic Commission Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <Label htmlFor="salesValue">Sales Value (AED)</Label>
+                <Label htmlFor="unitNumber">Unit #</Label>
                 <Input
-                  id="salesValue"
+                  id="unitNumber"
                   type="text"
-                  value={formData.salesValue}
+                  value={formData.unitNumber}
                   onChange={(e) =>
-                    handleNumberOnly("salesValue", e.target.value)
+                    handleNumberOnly("unitNumber", e.target.value)
                   }
-                  placeholder="Enter sales value"
-                  className={`mt-1 ${
-                    errors.salesValue ? "border-red-500" : ""
-                  }`}
+                  placeholder="Enter unit number"
+                  className="mt-1"
                 />
-                {errors.salesValue && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.salesValue}
-                  </p>
-                )}
               </div>
               <div>
-                <Label htmlFor="agentCommissionTypeId">Commission Type</Label>
+                <Label htmlFor="unitTypeId">Unit Type</Label>
                 <Select
-                  value={formData.agentCommissionTypeId}
-                  onValueChange={(value) =>
-                    handleChange("agentCommissionTypeId", value)
-                  }
+                  value={formData.unitTypeId}
+                  onValueChange={(value) => handleChange("unitTypeId", value)}
                   disabled={filtersLoading}
                 >
                   <SelectTrigger className="w-full mt-1">
-                    <SelectValue placeholder="Select commission type" />
+                    <SelectValue placeholder="Select unit type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {commissionTypes.map((type) => (
+                    {unitTypes.map((type) => (
                       <SelectItem key={type.id} value={type.id}>
                         {type.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.unitTypeId && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.unitTypeId}
+                  </p>
+                )}
               </div>
               <div>
-                <Label htmlFor="commRate">Commission Rate/Value</Label>
+                <Label htmlFor="size">Size (sq.ft)</Label>
                 <Input
-                  id="commRate"
+                  id="size"
                   type="text"
-                  value={formData.commRate}
-                  onChange={(e) => handleNumberOnly("commRate", e.target.value)}
-                  placeholder="Enter commission rate (%) or fixed amount"
+                  value={formData.size}
+                  onChange={(e) => handleNumberOnly("size", e.target.value)}
+                  placeholder="Enter size in sq.ft"
                   className="mt-1"
                 />
               </div>
-
-              {/* External Agent Toggle */}
-              <div
-                className="flex items-center justify-between pt-4 border-t"
-                style={{ borderColor: "var(--gi-green-40)" }}
-              >
-                <Label htmlFor="hasExternalAgent" className="text-gray-900">
-                  External Agent
-                </Label>
-                <Switch
-                  id="hasExternalAgent"
-                  checked={formData.hasExternalAgent}
-                  onCheckedChange={(checked) =>
-                    handleChange("hasExternalAgent", checked)
-                  }
-                />
+              <div>
+                <Label htmlFor="bedrooms">BR (Bedrooms)</Label>
+                <Select
+                  value={formData.bedrooms}
+                  onValueChange={(value) => handleChange("bedrooms", value)}
+                >
+                  <SelectTrigger className="w-full mt-1">
+                    <SelectValue placeholder="Select bedrooms" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Studio">Studio</SelectItem>
+                    <SelectItem value="1">1</SelectItem>
+                    <SelectItem value="2">2</SelectItem>
+                    <SelectItem value="3">3</SelectItem>
+                    <SelectItem value="4">4</SelectItem>
+                    <SelectItem value="5">5</SelectItem>
+                    <SelectItem value="6+">6+</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+            </div>
+          </CardContent>
+        </Card>
 
-              {/* External Agent Fields - Shown when toggle is enabled */}
-              {formData.hasExternalAgent && (
-                <div className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <div>
-                    <Label htmlFor="agencyName">Agency Name</Label>
-                    <Input
-                      id="agencyName"
-                      value={formData.agencyName}
-                      onChange={(e) =>
-                        handleChange("agencyName", e.target.value)
-                      }
-                      placeholder="Enter agency name"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="agencyCommissionTypeId">
-                      Agency Commission Type
-                    </Label>
-                    <Select
-                      value={formData.agencyCommissionTypeId}
-                      onValueChange={(value) =>
-                        handleChange("agencyCommissionTypeId", value)
-                      }
-                      disabled={filtersLoading}
-                    >
-                      <SelectTrigger className="w-full mt-1">
-                        <SelectValue placeholder="Select commission type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {commissionTypes.map((type) => (
-                          <SelectItem key={type.id} value={type.id}>
-                            {type.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="agencyComm">Agency Commission (%)</Label>
-                    <Input
-                      id="agencyComm"
-                      type="text"
-                      value={formData.agencyComm}
-                      onChange={(e) =>
-                        handleNumberOnly("agencyComm", e.target.value)
-                      }
-                      placeholder="Enter agency commission %"
-                      className="mt-1"
-                    />
-                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
-                      <p className="text-blue-900 mb-1">
-                        <span className="font-semibold">Calculation:</span>
-                      </p>
-                      <p className="text-blue-800">
-                        Agency Commission Amount = Sales Value × (Agency
-                        Commission % / 100)
-                      </p>
-                      {formData.salesValue && formData.agencyComm && (
-                        <p className="text-blue-900 mt-2 font-semibold">
-                          = AED {formData.salesValue} × {formData.agencyComm}% =
-                          AED{" "}
-                          {(
-                            (parseFloat(formData.salesValue) *
-                              parseFloat(formData.agencyComm)) /
-                            100
-                          ).toLocaleString("en-US", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
+        {/* Row 3: Seller & Buyer */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Seller Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Seller</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="sellerName">Name</Label>
+                  <Input
+                    id="sellerName"
+                    value={formData.sellerName}
+                    onChange={(e) => handleChange("sellerName", e.target.value)}
+                    placeholder="Enter seller name"
+                    className={`mt-1 ${
+                      errors.sellerName ? "border-red-500" : ""
+                    }`}
+                  />
+                  {errors.sellerName && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.sellerName}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="sellerPhone">Phone</Label>
+                  <Input
+                    id="sellerPhone"
+                    type="tel"
+                    value={formData.sellerPhone}
+                    onChange={(e) =>
+                      handlePhoneChange("sellerPhone", e.target.value)
+                    }
+                    placeholder="+971 50 123 4567"
+                    className={`mt-1 ${
+                      errors.sellerPhone ? "border-red-500" : ""
+                    }`}
+                  />
+                  {errors.sellerPhone && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.sellerPhone}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="sellerNationalityId">Nationality</Label>
+                  <Select
+                    value={formData.sellerNationalityId}
+                    onValueChange={(value) =>
+                      handleChange("sellerNationalityId", value)
+                    }
+                    disabled={filtersLoading}
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder="Select nationality" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {nationalities.map((nationality) => (
+                        <SelectItem key={nationality.id} value={nationality.id}>
+                          {nationality.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="sellerSourceId">Source</Label>
+                  <Select
+                    value={formData.sellerSourceId}
+                    onValueChange={(value) =>
+                      handleChange("sellerSourceId", value)
+                    }
+                    disabled={filtersLoading}
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder="Select source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {leadSources.map((source) => (
+                        <SelectItem key={source.id} value={source.id}>
+                          {source.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Buyer Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Buyer</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="buyerName">Name</Label>
+                  <Input
+                    id="buyerName"
+                    value={formData.buyerName}
+                    onChange={(e) => handleChange("buyerName", e.target.value)}
+                    placeholder="Enter buyer name"
+                    className={`mt-1 ${
+                      errors.buyerName ? "border-red-500" : ""
+                    }`}
+                  />
+                  {errors.buyerName && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.buyerName}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="buyerPhone">Phone</Label>
+                  <Input
+                    id="buyerPhone"
+                    type="tel"
+                    value={formData.buyerPhone}
+                    onChange={(e) =>
+                      handlePhoneChange("buyerPhone", e.target.value)
+                    }
+                    placeholder="+971 50 123 4567"
+                    className={`mt-1 ${
+                      errors.buyerPhone ? "border-red-500" : ""
+                    }`}
+                  />
+                  {errors.buyerPhone && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.buyerPhone}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="buyerNationalityId">Nationality</Label>
+                  <Select
+                    value={formData.buyerNationalityId}
+                    onValueChange={(value) =>
+                      handleChange("buyerNationalityId", value)
+                    }
+                    disabled={filtersLoading}
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder="Select nationality" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {nationalities.map((nationality) => (
+                        <SelectItem key={nationality.id} value={nationality.id}>
+                          {nationality.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="buyerSourceId">Source</Label>
+                  <Select
+                    value={formData.buyerSourceId}
+                    onValueChange={(value) =>
+                      handleChange("buyerSourceId", value)
+                    }
+                    disabled={filtersLoading}
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder="Select source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {leadSources.map((source) => (
+                        <SelectItem key={source.id} value={source.id}>
+                          {source.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Row 4: Commission Details & Additional Notes */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Commission Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Commission Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Basic Commission Fields */}
+                <div>
+                  <Label htmlFor="salesValue">Sales Value (AED)</Label>
+                  <Input
+                    id="salesValue"
+                    type="text"
+                    value={formData.salesValue}
+                    onChange={(e) =>
+                      handleNumberOnly("salesValue", e.target.value)
+                    }
+                    placeholder="Enter sales value"
+                    className={`mt-1 ${
+                      errors.salesValue ? "border-red-500" : ""
+                    }`}
+                  />
+                  {errors.salesValue && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.salesValue}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="agentCommissionTypeId">Commission Type</Label>
+                  <Select
+                    value={formData.agentCommissionTypeId}
+                    onValueChange={(value) =>
+                      handleChange("agentCommissionTypeId", value)
+                    }
+                    disabled={filtersLoading}
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder="Select commission type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {commissionTypes.map((type) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="commRate">Commission Rate/Value</Label>
+                  <Input
+                    id="commRate"
+                    type="text"
+                    value={formData.commRate}
+                    onChange={(e) =>
+                      handleNumberOnly("commRate", e.target.value)
+                    }
+                    placeholder="Enter commission rate (%) or fixed amount"
+                    className="mt-1"
+                  />
+                </div>
+
+                {/* External Agent Toggle */}
+                <div
+                  className="flex items-center justify-between pt-4 border-t"
+                  style={{ borderColor: "var(--gi-green-40)" }}
+                >
+                  <Label htmlFor="hasExternalAgent" className="text-gray-900">
+                    External Agent
+                  </Label>
+                  <Switch
+                    id="hasExternalAgent"
+                    checked={formData.hasExternalAgent}
+                    onCheckedChange={(checked) =>
+                      handleChange("hasExternalAgent", checked)
+                    }
+                  />
+                </div>
+
+                {/* External Agent Fields - Shown when toggle is enabled */}
+                {formData.hasExternalAgent && (
+                  <div className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div>
+                      <Label htmlFor="agencyName">Agency Name</Label>
+                      <Input
+                        id="agencyName"
+                        value={formData.agencyName}
+                        onChange={(e) =>
+                          handleChange("agencyName", e.target.value)
+                        }
+                        placeholder="Enter agency name"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="agencyCommissionTypeId">
+                        Agency Commission Type
+                      </Label>
+                      <Select
+                        value={formData.agencyCommissionTypeId}
+                        onValueChange={(value) =>
+                          handleChange("agencyCommissionTypeId", value)
+                        }
+                        disabled={filtersLoading}
+                      >
+                        <SelectTrigger className="w-full mt-1">
+                          <SelectValue placeholder="Select commission type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {commissionTypes.map((type) => (
+                            <SelectItem key={type.id} value={type.id}>
+                              {type.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="agencyComm">Agency Commission (%)</Label>
+                      <Input
+                        id="agencyComm"
+                        type="text"
+                        value={formData.agencyComm}
+                        onChange={(e) =>
+                          handleNumberOnly("agencyComm", e.target.value)
+                        }
+                        placeholder="Enter agency commission %"
+                        className="mt-1"
+                      />
+                      <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
+                        <p className="text-blue-900 mb-1">
+                          <span className="font-semibold">Calculation:</span>
                         </p>
-                      )}
+                        <p className="text-blue-800">
+                          Agency Commission Amount = Sales Value × (Agency
+                          Commission % / 100)
+                        </p>
+                        {formData.salesValue && formData.agencyComm && (
+                          <p className="text-blue-900 mt-2 font-semibold">
+                            = AED {formData.salesValue} × {formData.agencyComm}%
+                            = AED{" "}
+                            {(
+                              (parseFloat(formData.salesValue) *
+                                parseFloat(formData.agencyComm)) /
+                              100
+                            ).toLocaleString("en-US", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Additional Notes */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Additional Notes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => handleChange("notes", e.target.value)}
-              placeholder="Enter any additional notes or comments..."
-              rows={10}
-              className="resize-none"
-            />
-          </CardContent>
-        </Card>
-      </div>
+          {/* Additional Notes */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Additional Notes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => handleChange("notes", e.target.value)}
+                placeholder="Enter any additional notes or comments..."
+                rows={10}
+                className="resize-none"
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </fieldset>
 
       {/* Documents & Attachments (hidden for now - backend has no attachment APIs yet) */}
     </div>

@@ -33,6 +33,17 @@ import { MonthlyTrendsChart } from "./finance/MonthlyTrendsChart";
 import { FinanceNotesTable } from "./finance/FinanceNotesTable";
 import { useFilters } from "@/lib/useFilters";
 
+type DashboardSectionErrorKey =
+  | "kpis"
+  | "exceptions"
+  | "commissionTransfers"
+  | "topPerformance"
+  | "receivablesForecast"
+  | "financeNotes"
+  | "financeMetrics";
+
+type DashboardSectionErrors = Partial<Record<DashboardSectionErrorKey, string>>;
+
 export function DashboardFinance() {
   const [developerFilter, setDeveloperFilter] = useState("all");
   const [agentFilter, setAgentFilter] = useState("all");
@@ -54,7 +65,36 @@ export function DashboardFinance() {
   const [financeMetrics, setFinanceMetrics] =
     useState<FinanceMetricsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [sectionErrors, setSectionErrors] = useState<DashboardSectionErrors>({});
+
+  const getErrorMessage = (err: unknown, fallback: string) =>
+    err instanceof Error ? err.message : fallback;
+
+  const SectionErrorCard = ({
+    title,
+    message,
+  }: {
+    title: string;
+    message: string;
+  }) => {
+    return (
+      <Card className="border-0 shadow-lg">
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 mt-0.5 text-red-600" />
+            <div>
+              <div className="text-gray-900 dark:text-gray-100 font-medium">
+                {title}
+              </div>
+              <div className="text-sm text-red-600 dark:text-red-400 mt-1">
+                {message}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   // Fetch filter options
   const {
@@ -68,48 +108,123 @@ export function DashboardFinance() {
   // Fetch all finance dashboard data
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
+      setIsLoading(true);
+      setSectionErrors({});
 
-        const [
-          kpisData,
-          dealsByStageData,
-          exceptionsData,
-          commissionTransfersData,
-          topPerformanceData,
-          receivablesForecastData,
-          financeNotesData,
-          financeMetricsData,
-        ] = await Promise.all([
-          financeApi.getKPIs(),
-          financeApi.getDealsByStage(),
-          financeApi.getExceptionsSummary(),
-          financeApi.getCommissionTransfers(),
-          financeApi.getTopPerformance(),
-          financeApi.getReceivablesForecast(),
-          financeApi.getRecentFinanceNotes(),
-          financeApi.getFinanceMetrics(),
-        ]);
+      const results = await Promise.allSettled([
+        financeApi.getKPIs(),
+        financeApi.getDealsByStage(),
+        financeApi.getExceptionsSummary(),
+        financeApi.getCommissionTransfers(),
+        financeApi.getTopPerformance(),
+        financeApi.getReceivablesForecast(),
+        financeApi.getRecentFinanceNotes(),
+        financeApi.getFinanceMetrics(),
+      ]);
 
-        setKpis(kpisData);
-        setDealsByStage(dealsByStageData);
-        setExceptions(exceptionsData);
-        setCommissionTransfers(commissionTransfersData);
-        setTopPerformance(topPerformanceData);
-        setReceivablesForecast(receivablesForecastData);
-        setFinanceNotes(financeNotesData);
-        setFinanceMetrics(financeMetricsData);
-      } catch (err: unknown) {
-        const errorMessage =
-          err instanceof Error
-            ? err.message
-            : "Failed to load finance dashboard data";
-        setError(errorMessage);
-        console.error("Error fetching finance dashboard data:", err);
-      } finally {
-        setIsLoading(false);
+      const [
+        kpisRes,
+        dealsByStageRes,
+        exceptionsRes,
+        commissionTransfersRes,
+        topPerformanceRes,
+        receivablesForecastRes,
+        financeNotesRes,
+        financeMetricsRes,
+      ] = results;
+
+      const nextErrors: DashboardSectionErrors = {};
+
+      if (kpisRes.status === "fulfilled") {
+        setKpis(kpisRes.value);
+      } else {
+        nextErrors.kpis = getErrorMessage(kpisRes.reason, "Failed to load KPIs");
+        setKpis(null);
+        console.error("Error fetching KPIs:", kpisRes.reason);
       }
+
+      // dealsByStage is currently stubbed in lib/finance.ts, but we keep this for future API restore.
+      if (dealsByStageRes.status === "fulfilled") {
+        setDealsByStage(dealsByStageRes.value);
+      } else {
+        setDealsByStage([]);
+        console.error("Error fetching deals-by-stage:", dealsByStageRes.reason);
+      }
+
+      if (exceptionsRes.status === "fulfilled") {
+        setExceptions(exceptionsRes.value);
+      } else {
+        nextErrors.exceptions = getErrorMessage(
+          exceptionsRes.reason,
+          "Failed to load exceptions"
+        );
+        setExceptions([]);
+        console.error("Error fetching exceptions:", exceptionsRes.reason);
+      }
+
+      if (commissionTransfersRes.status === "fulfilled") {
+        setCommissionTransfers(commissionTransfersRes.value);
+      } else {
+        nextErrors.commissionTransfers = getErrorMessage(
+          commissionTransfersRes.reason,
+          "Failed to load commission transfers"
+        );
+        setCommissionTransfers(null);
+        console.error(
+          "Error fetching commission transfers:",
+          commissionTransfersRes.reason
+        );
+      }
+
+      if (topPerformanceRes.status === "fulfilled") {
+        setTopPerformance(topPerformanceRes.value);
+      } else {
+        nextErrors.topPerformance = getErrorMessage(
+          topPerformanceRes.reason,
+          "Failed to load top performance"
+        );
+        setTopPerformance(null);
+        console.error("Error fetching top performance:", topPerformanceRes.reason);
+      }
+
+      if (receivablesForecastRes.status === "fulfilled") {
+        setReceivablesForecast(receivablesForecastRes.value);
+      } else {
+        nextErrors.receivablesForecast = getErrorMessage(
+          receivablesForecastRes.reason,
+          "Failed to load receivables forecast"
+        );
+        setReceivablesForecast(null);
+        console.error(
+          "Error fetching receivables forecast:",
+          receivablesForecastRes.reason
+        );
+      }
+
+      if (financeNotesRes.status === "fulfilled") {
+        setFinanceNotes(financeNotesRes.value);
+      } else {
+        nextErrors.financeNotes = getErrorMessage(
+          financeNotesRes.reason,
+          "Failed to load finance notes"
+        );
+        setFinanceNotes(null);
+        console.error("Error fetching finance notes:", financeNotesRes.reason);
+      }
+
+      if (financeMetricsRes.status === "fulfilled") {
+        setFinanceMetrics(financeMetricsRes.value);
+      } else {
+        nextErrors.financeMetrics = getErrorMessage(
+          financeMetricsRes.reason,
+          "Failed to load finance metrics"
+        );
+        setFinanceMetrics(null);
+        console.error("Error fetching finance metrics:", financeMetricsRes.reason);
+      }
+
+      setSectionErrors(nextErrors);
+      setIsLoading(false);
     };
 
     fetchData();
@@ -130,18 +245,6 @@ export function DashboardFinance() {
           <p className="mt-4 text-gray-600 dark:text-gray-400">
             Loading finance dashboard...
           </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <AlertCircle className="h-8 w-8 mx-auto text-red-600" />
-          <p className="mt-4 text-red-600 dark:text-red-400">{error}</p>
         </div>
       </div>
     );
@@ -264,30 +367,79 @@ export function DashboardFinance() {
       </Card>
 
       {/* Key Metrics - Row 1 */}
-      <FinanceKPICards kpis={kpis} financeMetrics={financeMetrics} />
+      {sectionErrors.kpis || sectionErrors.financeMetrics ? (
+        <SectionErrorCard
+          title="Key Metrics"
+          message={String(sectionErrors.kpis || sectionErrors.financeMetrics)}
+        />
+      ) : (
+        <FinanceKPICards kpis={kpis} financeMetrics={financeMetrics} />
+      )}
 
       {/* Commission Breakdown Card */}
-      <CommissionBreakdown kpis={kpis} />
+      {sectionErrors.kpis ? (
+        <SectionErrorCard
+          title="Commission Breakdown"
+          message={String(sectionErrors.kpis)}
+        />
+      ) : (
+        <CommissionBreakdown kpis={kpis} />
+      )}
 
       {/* Receivables Forecast Cards */}
-      <ReceivablesForecast forecast={receivablesForecast} />
+      {sectionErrors.receivablesForecast ? (
+        <SectionErrorCard
+          title="Receivables Forecast"
+          message={String(sectionErrors.receivablesForecast)}
+        />
+      ) : (
+        <ReceivablesForecast forecast={receivablesForecast} />
+      )}
 
       {/* Deals by Stage & Transfer Tracking */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <DealsByStageChart dealsByStage={dealsByStage} />
-        <CommissionTransfers commissionTransfers={commissionTransfers} />
+        {sectionErrors.commissionTransfers ? (
+          <SectionErrorCard
+            title="Commission Transfers"
+            message={String(sectionErrors.commissionTransfers)}
+          />
+        ) : (
+          <CommissionTransfers commissionTransfers={commissionTransfers} />
+        )}
       </div>
 
       {/* Exception Alerts */}
-      <ExceptionsList exceptions={exceptions} />
+      {sectionErrors.exceptions ? (
+        <SectionErrorCard
+          title="Exceptions Requiring Action"
+          message={String(sectionErrors.exceptions)}
+        />
+      ) : (
+        <ExceptionsList exceptions={exceptions} />
+      )}
 
       {/* Top Performance Mini-Tables */}
-      <TopPerformance topPerformance={topPerformance} />
+      {sectionErrors.topPerformance ? (
+        <SectionErrorCard
+          title="Top Performance"
+          message={String(sectionErrors.topPerformance)}
+        />
+      ) : (
+        <TopPerformance topPerformance={topPerformance} />
+      )}
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Received vs Expected */}
-        <MonthlyTrendsChart financeMetrics={financeMetrics} />
+        {sectionErrors.financeMetrics ? (
+          <SectionErrorCard
+            title="Received vs Expected"
+            message={String(sectionErrors.financeMetrics)}
+          />
+        ) : (
+          <MonthlyTrendsChart financeMetrics={financeMetrics} />
+        )}
 
         {/* Developer Aging Report - Removed as it's not available in API */}
         <Card className="border-0 shadow-lg">
@@ -300,7 +452,14 @@ export function DashboardFinance() {
       </div>
 
       {/* Recent Finance Notes */}
-      <FinanceNotesTable financeNotes={financeNotes} />
+      {sectionErrors.financeNotes ? (
+        <SectionErrorCard
+          title="Recent Finance Notes"
+          message={String(sectionErrors.financeNotes)}
+        />
+      ) : (
+        <FinanceNotesTable financeNotes={financeNotes} />
+      )}
     </div>
   );
 }

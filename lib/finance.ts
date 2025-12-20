@@ -183,9 +183,12 @@ export const financeApi = {
 
   // Get deals breakdown by stage
   getDealsByStage: async (): Promise<DealsByStageResponse> => {
-    return apiClient<DealsByStageResponse>(
-      "/api/finance-dashboard/deals-by-stage"
-    );
+    // TEMP: API removed for now (will be added back later)
+    // Previously:
+    // return apiClient<DealsByStageResponse>(
+    //   "/api/finance-dashboard/deals-by-stage"
+    // );
+    return [];
   },
 
   // Get exceptions summary

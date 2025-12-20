@@ -42,7 +42,7 @@ export function DealsByStageChart({ dealsByStage }: DealsByStageChartProps) {
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
-            No data available
+            Coming soon
           </div>
         </CardContent>
       </Card>

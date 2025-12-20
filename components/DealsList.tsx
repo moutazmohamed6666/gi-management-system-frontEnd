@@ -647,34 +647,29 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
                                       <Edit2 className="h-4 w-4 mr-2" />
                                       Edit Status
                                     </Button>
-                                    {deal.commission?.status ===
-                                      "Partially Paid" && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() =>
-                                          handleCollectCommissionClick(deal)
-                                        }
-                                        className="justify-start hover:bg-green-100 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400"
-                                      >
-                                        <DollarSign className="h-4 w-4 mr-2" />
-                                        Collect Commission
-                                      </Button>
-                                    )}
-                                    {(deal.commission?.status === "Paid" ||
-                                      deal.status === "Approved") && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() =>
-                                          handleTransferCommissionClick(deal)
-                                        }
-                                        className="justify-start hover:bg-purple-100 hover:text-purple-600 dark:hover:bg-purple-900/20 dark:hover:text-purple-400"
-                                      >
-                                        <Send className="h-4 w-4 mr-2" />
-                                        Transfer Commission
-                                      </Button>
-                                    )}
+                                    {/* Finance: show all commission actions regardless of current status (TEMP) */}
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleCollectCommissionClick(deal)
+                                      }
+                                      className="justify-start hover:bg-green-100 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400"
+                                    >
+                                      <DollarSign className="h-4 w-4 mr-2" />
+                                      Collect Commission
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleTransferCommissionClick(deal)
+                                      }
+                                      className="justify-start hover:bg-purple-100 hover:text-purple-600 dark:hover:bg-purple-900/20 dark:hover:text-purple-400"
+                                    >
+                                      <Send className="h-4 w-4 mr-2" />
+                                      Transfer Commission
+                                    </Button>
                                   </div>
                                 </PopoverContent>
                               </Popover>
