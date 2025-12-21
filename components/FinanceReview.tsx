@@ -10,6 +10,7 @@ import {
   type DealCollection,
   type CommissionSummary,
 } from "@/lib/commissions";
+import { filtersApi } from "@/lib/filters";
 import { CollectCommissionModal } from "./CollectCommissionModal";
 import { TransferCommissionModal } from "./TransferCommissionModal";
 import { FinanceReviewHeader } from "./finance/FinanceReviewHeader";
@@ -17,9 +18,6 @@ import { ApprovalStatusBadge } from "./finance/ApprovalStatusBadge";
 import { CommissionSummaryCards } from "./finance/CommissionSummaryCards";
 import { CommissionActionsCard } from "./finance/CommissionActionsCard";
 import { DealOverviewSection } from "./finance/DealOverviewSection";
-import { CommissionCalculationSection } from "./finance/CommissionCalculationSection";
-import { CollectionHistoryTable } from "./finance/CollectionHistoryTable";
-import { PaymentTrackingSection } from "./finance/PaymentTrackingSection";
 import type { DealOverview } from "./finance/DealOverviewForm";
 
 interface FinanceReviewProps {
@@ -35,13 +33,19 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
   const [isEditingOverview, setIsEditingOverview] = useState(false);
   const [isDealApproved, setIsDealApproved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [financeReviewStatusId, setFinanceReviewStatusId] = useState<
+    string | null
+  >(null);
+  const [financeApproveStatusId, setFinanceApproveStatusId] = useState<
+    string | null
+  >(null);
 
   // Commission modals
   const [isCollectModalOpen, setIsCollectModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
 
   // Commission data
-  const [collections, setCollections] = useState<DealCollection[]>([]);
+  const [, setCollections] = useState<DealCollection[]>([]);
   const [commissionSummary, setCommissionSummary] =
     useState<CommissionSummary | null>(null);
 
@@ -181,6 +185,41 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
     }
   }, [dealId]);
 
+  // Fetch status IDs for Finance Review and Finance Approve
+  useEffect(() => {
+    const fetchStatusIds = async () => {
+      try {
+        const statuses = await filtersApi.getStatuses();
+
+        // Find Finance Review status (case-insensitive)
+        const financeReviewStatus = statuses.find(
+          (s) =>
+            s.name.toLowerCase() === "finance review" ||
+            s.name.toLowerCase().includes("finance review")
+        );
+
+        // Find Finance Approve status (case-insensitive)
+        const financeApproveStatus = statuses.find(
+          (s) =>
+            s.name.toLowerCase() === "finance approve" ||
+            s.name.toLowerCase() === "finance approved" ||
+            s.name.toLowerCase().includes("finance approve")
+        );
+
+        if (financeReviewStatus) {
+          setFinanceReviewStatusId(financeReviewStatus.id);
+        }
+        if (financeApproveStatus) {
+          setFinanceApproveStatusId(financeApproveStatus.id);
+        }
+      } catch (err) {
+        console.error("Error fetching statuses:", err);
+      }
+    };
+
+    fetchStatusIds();
+  }, []);
+
   useEffect(() => {
     fetchDeal();
     // Reset edit mode when dealId changes
@@ -190,6 +229,16 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
   // Update state when deal is loaded
   useEffect(() => {
     if (deal) {
+      // Check if deal is already in Finance Review status
+      const dealStatusName = deal.status?.name?.toLowerCase() || "";
+      const isInFinanceReview =
+        dealStatusName.includes("finance review") ||
+        deal.statusId === financeReviewStatusId;
+
+      if (isInFinanceReview) {
+        setIsDealApproved(true);
+      }
+
       // Handle both old structure (buyerSellerDetails) and new structure (buyer/seller objects)
       const buyer =
         deal.buyer || deal.buyerSellerDetails?.find((d) => d.isBuyer === true);
@@ -290,7 +339,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
         financeNotes: "",
       });
     }
-  }, [deal]);
+  }, [deal, financeReviewStatusId]);
 
   // Early returns must come after all hooks
   if (isLoading) {
@@ -319,12 +368,13 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
     setDealOverview((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleFinanceChange = (
-    field: string,
-    value: string | number | boolean
-  ) => {
-    setFinanceData((prev) => ({ ...prev, [field]: value }));
-  };
+  // Note: handleFinanceChange is kept for potential future use
+  // const handleFinanceChange = (
+  //   field: string,
+  //   value: string | number | boolean
+  // ) => {
+  //   setFinanceData((prev) => ({ ...prev, [field]: value }));
+  // };
 
   const handleSaveOverview = async () => {
     if (!deal) return;
@@ -432,21 +482,48 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
   };
 
   const handleApproveDeal = async () => {
+    if (!deal) return;
+
     if (!isDealApproved) {
-      setIsDealApproved(true);
-      toast.success("Deal Approved", {
-        description:
-          "Deal overview approved! You can now enter finance details.",
-      });
-    } else {
+      // First approval: Change status to "Finance Review"
       setIsSaving(true);
       try {
+        if (financeReviewStatusId) {
+          await dealsApi.updateDealStatus(deal.id, financeReviewStatusId);
+        }
+
+        setIsDealApproved(true);
+        toast.success("Deal Approved", {
+          description:
+            "Deal overview approved! Status changed to Finance Review. You can now enter finance details.",
+        });
+
+        // Refresh deal data to get updated status
+        await fetchDeal();
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to update deal status";
+        toast.error("Approval Failed", {
+          description: errorMessage,
+        });
+      } finally {
+        setIsSaving(false);
+      }
+    } else {
+      // Final approval: Change status to "Finance Approve"
+      setIsSaving(true);
+      try {
+        if (financeApproveStatusId) {
+          await dealsApi.updateDealStatus(deal.id, financeApproveStatusId);
+        }
+
         await dealsApi.updateDealAsFinance(deal.id, {
           financeNotes: financeData.financeNotes,
         });
 
         toast.success("Deal Fully Approved", {
-          description: "Deal has been approved and moved to the next stage.",
+          description:
+            "Deal has been approved and status changed to Finance Approve.",
         });
 
         onBack();

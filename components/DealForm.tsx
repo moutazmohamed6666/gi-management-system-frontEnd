@@ -169,6 +169,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
   const watchedHasAdditionalAgent = watch("hasAdditionalAgent");
   const watchedAdditionalAgentType = watch("additionalAgentType");
   const watchedSalesValue = watch("salesValue");
+  const watchedBookingDate = watch("bookingDate");
   const watchedAgencyComm = watch("agencyComm");
 
   const [dealError, setDealError] = useState<string | null>(null);
@@ -241,6 +242,29 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
       }
     }
   }, [currentRole, isEditMode, setValue]);
+
+  // Auto-set purchaseStatusId to "Booking" when bookingDate is set for agents
+  useEffect(() => {
+    if (
+      currentRole === "agent" &&
+      !isEditMode &&
+      watchedBookingDate &&
+      purchaseStatuses.length > 0
+    ) {
+      // Find the "Booking" purchase status (case-insensitive search)
+      const bookingStatus = purchaseStatuses.find((status) =>
+        status.name.toLowerCase().includes("booking")
+      );
+
+      if (bookingStatus && bookingStatus.id) {
+        // Set purchaseStatusId to booking status, but don't validate (hidden field)
+        setValue("purchaseStatusId", bookingStatus.id, {
+          shouldValidate: false,
+          shouldDirty: false,
+        });
+      }
+    }
+  }, [currentRole, isEditMode, watchedBookingDate, purchaseStatuses, setValue]);
 
   // Load defaults from sessionStorage for agents
   useEffect(() => {
@@ -636,8 +660,23 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
       totalCommissionValue: data.totalCommissionValue
         ? parseFloat(data.totalCommissionValue)
         : undefined,
-      // Purchase status
-      purchaseStatusId: data.purchaseStatusId || undefined,
+      // Purchase status - for agents creating deals, always include if bookingDate is set
+      purchaseStatusId: (() => {
+        // For agents creating deals, if bookingDate is set but purchaseStatusId is not,
+        // try to find and set the booking status
+        if (
+          currentRole === "agent" &&
+          !dealId &&
+          data.bookingDate &&
+          !data.purchaseStatusId
+        ) {
+          const bookingStatus = purchaseStatuses.find((status) =>
+            status.name.toLowerCase().includes("booking")
+          );
+          return bookingStatus?.id || undefined;
+        }
+        return data.purchaseStatusId || undefined;
+      })(),
       // Additional agents if enabled
       additionalAgents: data.hasAdditionalAgent
         ? [
