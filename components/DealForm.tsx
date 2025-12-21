@@ -283,53 +283,136 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
         if (cancelled) return;
 
         // Backend responses can expose status as either a string or an object.
+        // Extract statusId from status object if available (new structure)
+        let statusId = deal.statusId || "";
         const statusLabel =
           (deal as unknown as { status?: unknown }).status ??
           (deal as unknown as { dealStatus?: unknown }).dealStatus ??
           "";
-        if (typeof statusLabel === "string") setDealStatusName(statusLabel);
-        else if (
+
+        if (typeof statusLabel === "string") {
+          setDealStatusName(statusLabel);
+        } else if (
           statusLabel &&
           typeof statusLabel === "object" &&
-          "name" in (statusLabel as Record<string, unknown>) &&
-          typeof (statusLabel as Record<string, unknown>).name === "string"
+          "id" in (statusLabel as Record<string, unknown>)
         ) {
-          setDealStatusName(
-            (statusLabel as Record<string, unknown>).name as string
-          );
+          // New structure: status is an object with id and name
+          const statusObj = statusLabel as { id: string; name?: string };
+          statusId = statusObj.id || statusId;
+          setDealStatusName(statusObj.name || "");
         } else {
           setDealStatusName("");
         }
 
-        const buyer = deal.buyerSellerDetails?.find((d) => d.isBuyer === true);
-        const seller = deal.buyerSellerDetails?.find(
-          (d) => d.isBuyer === false
-        );
+        // Handle both old structure (buyerSellerDetails) and new structure (buyer/seller objects)
+        const buyer =
+          deal.buyer ||
+          deal.buyerSellerDetails?.find((d) => d.isBuyer === true);
+        const seller =
+          deal.seller ||
+          deal.buyerSellerDetails?.find((d) => d.isBuyer === false);
 
-        // Extract agent commission from commissions array
-        // Look for commission with roleId matching agent role (typically roleId for agents)
-        const agentCommission = deal.commissions?.find(
-          (c) => c.roleId && c.roleId !== "" // Agent commission (you may need to adjust this logic based on your role IDs)
-        );
-        const agentCommissionTypeId = agentCommission?.typeId || "";
-        const agentCommissionValue = agentCommission?.expectedAmount
-          ? String(parseFloat(agentCommission.expectedAmount))
+        // Extract dealType - handle both old (dealTypeId) and new (dealType object) structures
+        const dealTypeId = deal.dealType?.id || deal.dealTypeId || "";
+
+        // Extract purchaseStatus - handle both old (purchaseStatusId) and new (purchaseStatus object) structures
+        const purchaseStatusId =
+          deal.purchaseStatus?.id || deal.purchaseStatusId || "";
+
+        // Extract property data - handle both old and new structures
+        const propertyName = deal.property?.name || deal.propertyName || "";
+        const propertyTypeId =
+          deal.property?.type?.id || deal.propertyTypeId || "";
+
+        // Extract unit data - handle both old and new structures
+        const unitNumber = deal.unit?.number || deal.unitNumber || "";
+        const unitTypeId = deal.unit?.type?.id || deal.unitTypeId || "";
+        const size = deal.unit?.size
+          ? String(deal.unit.size)
+          : deal.size
+          ? String(deal.size)
           : "";
 
-        // Extract additional agents if available in the deal response
-        // Check if deal has additionalAgents field (might not be in Deal type but could be in response)
-        const additionalAgents =
-          (
-            deal as unknown as {
-              additionalAgents?: Array<{
-                agentId?: string;
-                externalAgentName?: string;
-                commissionTypeId?: string;
-                commissionValue?: number;
-                isInternal?: boolean;
-              }>;
-            }
-          ).additionalAgents || [];
+        // Extract buyer/seller nationality and source - handle nested objects
+        const buyerNationalityId =
+          (buyer as { nationality?: { id: string } })?.nationality?.id ||
+          (buyer as { nationalityId?: string })?.nationalityId ||
+          "";
+        const buyerSourceId =
+          (buyer as { source?: { id: string } })?.source?.id ||
+          (buyer as { sourceId?: string })?.sourceId ||
+          "";
+        const sellerNationalityId =
+          (seller as { nationality?: { id: string } })?.nationality?.id ||
+          (seller as { nationalityId?: string })?.nationalityId ||
+          "";
+        const sellerSourceId =
+          (seller as { source?: { id: string } })?.source?.id ||
+          (seller as { sourceId?: string })?.sourceId ||
+          "";
+
+        // Extract agent commission - handle both old and new structures
+        let agentCommissionTypeId = "";
+        let agentCommissionValue = "";
+
+        // New structure: use agentCommissions.mainAgent
+        if (deal.agentCommissions?.mainAgent) {
+          const mainAgent = deal.agentCommissions.mainAgent;
+          agentCommissionTypeId = mainAgent.commissionType?.id || "";
+          agentCommissionValue = mainAgent.expectedAmount
+            ? String(mainAgent.expectedAmount)
+            : mainAgent.commissionValue
+            ? String(mainAgent.commissionValue)
+            : "";
+        } else if (deal.commissions) {
+          // Old structure: extract from commissions array
+          const agentCommission = deal.commissions.find(
+            (c) => c.roleId && c.roleId !== "" // Agent commission
+          );
+          agentCommissionTypeId = agentCommission?.typeId || "";
+          agentCommissionValue = agentCommission?.expectedAmount
+            ? String(parseFloat(agentCommission.expectedAmount))
+            : "";
+        }
+
+        // Extract additional agents - handle both old and new structures
+        let additionalAgents: Array<{
+          agentId?: string;
+          externalAgentName?: string;
+          commissionTypeId?: string;
+          commissionValue?: number;
+          isInternal?: boolean;
+        }> = [];
+
+        // New structure: use agentCommissions.additionalAgents
+        if (deal.agentCommissions?.additionalAgents) {
+          additionalAgents = deal.agentCommissions.additionalAgents.map(
+            (agent) => ({
+              agentId: agent.agent?.id,
+              externalAgentName: agent.isInternal
+                ? undefined
+                : agent.agent?.name,
+              commissionTypeId: agent.commissionType?.id,
+              commissionValue: agent.commissionValue,
+              isInternal: agent.isInternal,
+            })
+          );
+        } else {
+          // Old structure: check if deal has additionalAgents field
+          additionalAgents =
+            (
+              deal as unknown as {
+                additionalAgents?: Array<{
+                  agentId?: string;
+                  externalAgentName?: string;
+                  commissionTypeId?: string;
+                  commissionValue?: number;
+                  isInternal?: boolean;
+                }>;
+              }
+            ).additionalAgents || [];
+        }
 
         // Get first additional agent if exists (form currently supports one additional agent)
         const firstAdditionalAgent = additionalAgents[0];
@@ -349,39 +432,47 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
           // Deal Information
           bookingDate: isoToYmd(deal.bookingDate),
           cfExpiry: isoToYmd(deal.cfExpiry),
-          closeDate: isoToYmd(deal.closeDate),
-          dealTypeId: deal.dealTypeId || "",
-          statusId: deal.statusId || "",
-          purchaseStatusId: deal.purchaseStatusId || "",
+          closeDate: deal.closeDate ? isoToYmd(deal.closeDate) : "",
+          dealTypeId: dealTypeId, // Use extracted dealTypeId (from dealType object or dealTypeId field)
+          statusId: statusId, // Use extracted statusId (from status object or statusId field)
+          purchaseStatusId: purchaseStatusId, // Use extracted purchaseStatusId (from purchaseStatus object or purchaseStatusId field)
 
           // Property Details
           developerId: deal.developerId || deal.developer?.id || "",
           projectId: deal.projectId || deal.project?.id || "",
-          propertyName: deal.propertyName || "",
-          propertyTypeId: deal.propertyTypeId || "",
-          unitNumber: deal.unitNumber || "",
-          unitTypeId: deal.unitTypeId || "",
-          size: deal.size ? String(deal.size) : "",
+          propertyName: propertyName, // Use extracted propertyName (from property object or propertyName field)
+          propertyTypeId: propertyTypeId, // Use extracted propertyTypeId (from property.type object or propertyTypeId field)
+          unitNumber: unitNumber, // Use extracted unitNumber (from unit.number or unitNumber field)
+          unitTypeId: unitTypeId, // Use extracted unitTypeId (from unit.type object or unitTypeId field)
+          size: size, // Use extracted size (from unit.size or size field)
           bedrooms: "", // Keep for now
 
-          // Seller
+          // Seller - handle both old structure (BuyerSellerDetail) and new structure (BuyerSeller)
           sellerName: seller?.name || "",
           sellerPhone: seller?.phone || "",
-          sellerNationalityId: seller?.nationalityId || "",
-          sellerSourceId: seller?.sourceId || "",
+          sellerNationalityId: sellerNationalityId, // Use extracted from nested nationality object or nationalityId field
+          sellerSourceId: sellerSourceId, // Use extracted from nested source object or sourceId field
 
-          // Buyer
+          // Buyer - handle both old structure (BuyerSellerDetail) and new structure (BuyerSeller)
           buyerName: buyer?.name || "",
           buyerPhone: buyer?.phone || "",
-          buyerNationalityId: buyer?.nationalityId || "",
-          buyerSourceId: buyer?.sourceId || "",
+          buyerNationalityId: buyerNationalityId, // Use extracted from nested nationality object or nationalityId field
+          buyerSourceId: buyerSourceId, // Use extracted from nested source object or sourceId field
 
           // Commission
-          salesValue: deal.dealValue ? String(deal.dealValue) : "",
+          salesValue:
+            typeof deal.dealValue === "number"
+              ? String(deal.dealValue)
+              : deal.dealValue || "",
           agentCommissionTypeId: agentCommissionTypeId,
           commRate: agentCommissionValue,
-          totalCommissionTypeId: deal.totalCommissionTypeId || "",
-          totalCommissionValue: deal.totalCommissionValue
+          totalCommissionTypeId:
+            deal.totalCommission?.type?.id || deal.totalCommissionTypeId || "",
+          totalCommissionValue: deal.totalCommission?.value
+            ? String(deal.totalCommission.value)
+            : deal.totalCommission?.commissionValue
+            ? String(deal.totalCommission.commissionValue)
+            : deal.totalCommissionValue
             ? String(deal.totalCommissionValue)
             : "",
 

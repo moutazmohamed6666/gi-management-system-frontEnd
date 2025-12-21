@@ -77,18 +77,129 @@ export interface Commission {
   updatedAt?: string;
 }
 
+// Commission Type for new API structure (can be used with required or optional fields)
+export interface CommissionType {
+  id: string;
+  name: string;
+}
+
+// Status object for new API structure
+export interface DealStatus {
+  id: string;
+  name: string;
+}
+
+// Total Commission object for new API structure
+export interface TotalCommission {
+  value: number;
+  commissionValue: number;
+  type: CommissionType;
+}
+
+// Agent Commission for new API structure
+export interface AgentCommission {
+  id: string;
+  agent: Agent;
+  commissionType: CommissionType;
+  commissionValue: number;
+  expectedAmount: number;
+  paidAmount: number;
+  status: DealStatus;
+  currency: string;
+  dueDate: string | null;
+  paidDate: string | null;
+}
+
+// Additional Agent Commission for new API structure
+export interface AdditionalAgentCommission {
+  id: string;
+  agent: Agent & { isInternal?: boolean };
+  commissionType: CommissionType;
+  commissionValue: number;
+  isInternal: boolean;
+}
+
+// Agent Commissions object for new API structure
+export interface AgentCommissions {
+  mainAgent: AgentCommission;
+  additionalAgents: AdditionalAgentCommission[];
+  totalExpected: number;
+  totalPaid: number;
+}
+
+// Source and Nationality objects for new API structure
+export interface Source {
+  id: string;
+  name: string;
+}
+
+export interface Nationality {
+  id: string;
+  name: string;
+}
+
+// Buyer/Seller objects for new API structure
+export interface BuyerSeller {
+  id: string;
+  name: string;
+  phone: string;
+  source?: Source;
+  nationality?: Nationality;
+  // Old structure fields (for backward compatibility)
+  sourceId?: string;
+  nationalityId?: string;
+}
+
+// Deal Type object for new API structure
+export interface DealType {
+  id: string;
+  name: string;
+}
+
+// Purchase Status object for new API structure
+export interface PurchaseStatus {
+  id: string;
+  name: string;
+}
+
+// Property Type object for new API structure
+export interface PropertyType {
+  id: string;
+  name: string;
+}
+
+// Property object for new API structure
+export interface Property {
+  name: string;
+  type: PropertyType;
+}
+
+// Unit Type object for new API structure
+export interface UnitType {
+  id: string;
+  name: string;
+}
+
+// Unit object for new API structure
+export interface Unit {
+  number: string;
+  type: UnitType;
+  size: number;
+}
+
 // Deal type matching the actual API response
+// Supports both old structure (buyerSellerDetails, commissions array) and new structure (buyer/seller objects, agentCommissions)
 export interface Deal {
   id: string;
   dealNumber: string;
   stageId?: string;
   statusId?: string;
   purchaseStatusId?: string;
-  dealValue: string; // String in API
+  dealValue: string | number; // Can be string or number in API
   totalCommissionTypeId?: string | null;
   totalCommissionValue?: string | null;
   collected_commissions?: string | null;
-  closeDate: string;
+  closeDate: string | null;
   bookingDate?: string;
   cfExpiry?: string;
   dealTypeId?: string;
@@ -111,11 +222,22 @@ export interface Deal {
   developer: Developer;
   agent: Agent;
   manager?: Manager;
-  buyerSellerDetails: BuyerSellerDetail[];
-  commissions: Commission[];
+  // Old structure (for backward compatibility)
+  buyerSellerDetails?: BuyerSellerDetail[];
+  commissions?: Commission[];
+  // New structure (for finance API)
+  buyer?: BuyerSeller;
+  seller?: BuyerSeller;
+  status?: DealStatus;
+  purchaseStatus?: PurchaseStatus | null;
+  dealType?: DealType;
+  property?: Property;
+  unit?: Unit;
+  totalCommission?: TotalCommission;
+  agentCommissions?: AgentCommissions;
   // Helper getters (computed from arrays)
-  buyer?: BuyerSellerDetail | null;
-  seller?: BuyerSellerDetail | null;
+  // buyer?: BuyerSellerDetail | null;
+  // seller?: BuyerSellerDetail | null;
   // Computed commission summary
   commission?: {
     total: number;
@@ -281,17 +403,14 @@ export interface DealAgent {
 }
 
 // New API response structure for /api/deals/{id}/agents
-export interface CommissionType {
-  id?: string;
-  name?: string;
-}
+// Note: CommissionType is defined above, using optional fields where needed
 
 export interface DealAgentResponse {
   id: string;
   name: string;
   email: string;
   role: string;
-  commissionType?: CommissionType;
+  commissionType?: Partial<CommissionType>;
   commissionValue?: number;
   manager?: {
     id: string;
@@ -303,7 +422,7 @@ export interface DealAgentResponse {
 
 export interface ExternalAgentResponse {
   name: string;
-  commissionType?: CommissionType;
+  commissionType?: Partial<CommissionType>;
   commissionValue?: number;
 }
 

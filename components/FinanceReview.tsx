@@ -100,10 +100,37 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
         const collectionsData = await commissionsApi.getDealCollections(dealId);
         setCollections(collectionsData);
 
-        // Calculate commission summary
-        // Note: totalCollected from API response is already included in collections array sum
+        // Calculate commission summary - handle both old and new structures
+        let commissionsForSummary: Array<{
+          expectedAmount: string;
+          paidAmount: string;
+        }> = [];
+
+        // New structure: convert agentCommissions to commissions format
+        if (dealData.agentCommissions) {
+          // Use mainAgent and additionalAgents to build commissions array
+          const mainAgent = dealData.agentCommissions.mainAgent;
+          if (mainAgent) {
+            commissionsForSummary.push({
+              expectedAmount: String(mainAgent.expectedAmount || 0),
+              paidAmount: String(mainAgent.paidAmount || 0),
+            });
+          }
+          // Add additional agents
+          dealData.agentCommissions.additionalAgents?.forEach((agent) => {
+            // Additional agents might not have expectedAmount/paidAmount, use commissionValue
+            commissionsForSummary.push({
+              expectedAmount: String(agent.commissionValue || 0),
+              paidAmount: "0", // Additional agents typically don't have paidAmount
+            });
+          });
+        } else if (dealData.commissions) {
+          // Old structure: use commissions array directly
+          commissionsForSummary = dealData.commissions;
+        }
+
         const summary = commissionsApi.calculateSummary(
-          dealData.commissions || [],
+          commissionsForSummary,
           collectionsData
         );
         setCommissionSummary(summary);
@@ -111,8 +138,33 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
         // Collections API might not be available, use deal data
         console.error("Error fetching collections:", err);
         setCollections([]);
+
+        // Build commissions array for summary calculation
+        let commissionsForSummary: Array<{
+          expectedAmount: string;
+          paidAmount: string;
+        }> = [];
+
+        if (dealData.agentCommissions) {
+          const mainAgent = dealData.agentCommissions.mainAgent;
+          if (mainAgent) {
+            commissionsForSummary.push({
+              expectedAmount: String(mainAgent.expectedAmount || 0),
+              paidAmount: String(mainAgent.paidAmount || 0),
+            });
+          }
+          dealData.agentCommissions.additionalAgents?.forEach((agent) => {
+            commissionsForSummary.push({
+              expectedAmount: String(agent.commissionValue || 0),
+              paidAmount: "0",
+            });
+          });
+        } else if (dealData.commissions) {
+          commissionsForSummary = dealData.commissions;
+        }
+
         const summary = commissionsApi.calculateSummary(
-          dealData.commissions || [],
+          commissionsForSummary,
           []
         );
         setCommissionSummary(summary);
@@ -138,23 +190,49 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
   // Update state when deal is loaded
   useEffect(() => {
     if (deal) {
-      // Find buyer and seller from buyerSellerDetails array
-      const buyer = deal.buyerSellerDetails?.find((d) => d.isBuyer === true);
-      const seller = deal.buyerSellerDetails?.find((d) => d.isBuyer === false);
+      // Handle both old structure (buyerSellerDetails) and new structure (buyer/seller objects)
+      const buyer =
+        deal.buyer || deal.buyerSellerDetails?.find((d) => d.isBuyer === true);
+      const seller =
+        deal.seller ||
+        deal.buyerSellerDetails?.find((d) => d.isBuyer === false);
 
-      // Calculate commission totals from commissions array
-      const totalCommission =
-        deal.commissions?.reduce(
-          (sum, c) => sum + parseFloat(c.expectedAmount || "0"),
-          0
-        ) ||
-        parseFloat(deal.totalCommissionValue || "0") ||
-        0;
-      const paidAmount =
-        deal.commissions?.reduce(
-          (sum, c) => sum + parseFloat(c.paidAmount || "0"),
-          0
-        ) || 0;
+      // Calculate commission totals - handle both old and new structures
+      let totalCommission = 0;
+      let paidAmount = 0;
+
+      // New structure: use agentCommissions or totalCommission
+      if (deal.agentCommissions) {
+        totalCommission = deal.agentCommissions.totalExpected || 0;
+        paidAmount = deal.agentCommissions.totalPaid || 0;
+      } else if (deal.totalCommission) {
+        totalCommission =
+          deal.totalCommission.value ||
+          deal.totalCommission.commissionValue ||
+          0;
+        // For new structure, paid amount comes from agentCommissions.totalPaid
+        // If not available, use commissions array as fallback
+        paidAmount =
+          deal.commissions?.reduce(
+            (sum, c) => sum + parseFloat(c.paidAmount || "0"),
+            0
+          ) || 0;
+      } else {
+        // Old structure: use commissions array
+        totalCommission =
+          deal.commissions?.reduce(
+            (sum, c) => sum + parseFloat(c.expectedAmount || "0"),
+            0
+          ) ||
+          parseFloat(deal.totalCommissionValue || "0") ||
+          0;
+        paidAmount =
+          deal.commissions?.reduce(
+            (sum, c) => sum + parseFloat(c.paidAmount || "0"),
+            0
+          ) || 0;
+      }
+
       const receivedPercentage =
         totalCommission > 0
           ? Math.round((paidAmount / totalCommission) * 100)
@@ -168,6 +246,12 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
         commissionStatus = "Partially Paid";
       }
 
+      // Handle dealValue - can be string or number
+      const dealValue =
+        typeof deal.dealValue === "number"
+          ? deal.dealValue
+          : parseFloat(deal.dealValue || "0");
+
       setDealOverview({
         propertyType: deal.propertyName || "",
         developer: deal.developer?.name || "",
@@ -180,7 +264,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
         sellerName: seller?.name || "",
         sellerContact: seller?.phone || "",
         agentName: deal.agent?.name || "",
-        sellingPrice: parseFloat(deal.dealValue || "0"),
+        sellingPrice: dealValue,
         dealCloseDate: deal.closeDate
           ? new Date(deal.closeDate).toISOString().split("T")[0]
           : "",
@@ -311,8 +395,18 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
   const handleCancelEdit = () => {
     setIsEditingOverview(false);
     if (deal) {
-      const buyer = deal.buyerSellerDetails?.find((d) => d.isBuyer === true);
-      const seller = deal.buyerSellerDetails?.find((d) => d.isBuyer === false);
+      // Handle both old structure (buyerSellerDetails) and new structure (buyer/seller objects)
+      const buyer =
+        deal.buyer || deal.buyerSellerDetails?.find((d) => d.isBuyer === true);
+      const seller =
+        deal.seller ||
+        deal.buyerSellerDetails?.find((d) => d.isBuyer === false);
+
+      // Handle dealValue - can be string or number
+      const dealValue =
+        typeof deal.dealValue === "number"
+          ? deal.dealValue
+          : parseFloat(deal.dealValue || "0");
 
       setDealOverview({
         propertyType: deal.propertyName || "",
@@ -326,7 +420,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
         sellerName: seller?.name || "",
         sellerContact: seller?.phone || "",
         agentName: deal.agent?.name || "",
-        sellingPrice: parseFloat(deal.dealValue || "0"),
+        sellingPrice: dealValue,
         dealCloseDate: deal.closeDate
           ? new Date(deal.closeDate).toISOString().split("T")[0]
           : "",
