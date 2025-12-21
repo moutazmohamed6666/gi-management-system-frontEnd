@@ -250,10 +250,10 @@ export function CollectCommissionModal({
                 Deal Value
               </div>
               <div className="text-sm font-medium text-gray-900 dark:text-white">
-                AED {(
-                  typeof deal.dealValue === 'string' 
-                    ? parseFloat(deal.dealValue) 
-                    : deal.dealValue || 0
+                AED{" "}
+                {(typeof deal.dealValue === "string"
+                  ? parseFloat(deal.dealValue)
+                  : deal.dealValue || 0
                 ).toLocaleString()}
               </div>
             </div>

@@ -246,6 +246,12 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
         deal.seller ||
         deal.buyerSellerDetails?.find((d) => d.isBuyer === false);
 
+      // Get lead source - only available in new structure (BuyerSeller)
+      const leadSource =
+        deal.buyer && "source" in deal.buyer && deal.buyer.source
+          ? deal.buyer.source.name
+          : "";
+
       // Calculate commission totals - handle both old and new structures
       let totalCommission = 0;
       let paidAmount = 0;
@@ -302,12 +308,12 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
           : parseFloat(deal.dealValue || "0");
 
       setDealOverview({
-        propertyType: deal.propertyName || "",
+        propertyType: deal.property?.type?.name || deal.propertyName || "",
         developer: deal.developer?.name || "",
         project: deal.project?.name || "",
-        unitType: "",
-        unitNumber: deal.unitNumber || "",
-        location: deal.propertyName || "",
+        unitType: deal.unit?.type?.name || "",
+        unitNumber: deal.unit?.number || deal.unitNumber || "",
+        location: deal.property?.name || deal.propertyName || "",
         buyerName: buyer?.name || "",
         buyerContact: buyer?.phone || "",
         sellerName: seller?.name || "",
@@ -317,7 +323,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
         dealCloseDate: deal.closeDate
           ? new Date(deal.closeDate).toISOString().split("T")[0]
           : "",
-        leadSource: "",
+        leadSource: leadSource,
         paymentPlan: "",
         notes: "",
       });
@@ -452,6 +458,12 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
         deal.seller ||
         deal.buyerSellerDetails?.find((d) => d.isBuyer === false);
 
+      // Get lead source - only available in new structure (BuyerSeller)
+      const leadSource =
+        deal.buyer && "source" in deal.buyer && deal.buyer.source
+          ? deal.buyer.source.name
+          : "";
+
       // Handle dealValue - can be string or number
       const dealValue =
         typeof deal.dealValue === "number"
@@ -459,12 +471,12 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
           : parseFloat(deal.dealValue || "0");
 
       setDealOverview({
-        propertyType: deal.propertyName || "",
+        propertyType: deal.property?.type?.name || deal.propertyName || "",
         developer: deal.developer?.name || "",
         project: deal.project?.name || "",
-        unitType: "",
-        unitNumber: deal.unitNumber || "",
-        location: deal.propertyName || "",
+        unitType: deal.unit?.type?.name || "",
+        unitNumber: deal.unit?.number || deal.unitNumber || "",
+        location: deal.property?.name || deal.propertyName || "",
         buyerName: buyer?.name || "",
         buyerContact: buyer?.phone || "",
         sellerName: seller?.name || "",
@@ -474,7 +486,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
         dealCloseDate: deal.closeDate
           ? new Date(deal.closeDate).toISOString().split("T")[0]
           : "",
-        leadSource: "",
+        leadSource: leadSource,
         paymentPlan: "",
         notes: "",
       });
