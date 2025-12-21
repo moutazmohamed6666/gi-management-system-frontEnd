@@ -87,6 +87,7 @@ export interface Deal {
   dealValue: string; // String in API
   totalCommissionTypeId?: string | null;
   totalCommissionValue?: string | null;
+  collected_commissions?: string | null;
   closeDate: string;
   bookingDate?: string;
   cfExpiry?: string;

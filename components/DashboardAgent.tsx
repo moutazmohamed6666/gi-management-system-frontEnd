@@ -17,7 +17,11 @@ import {
   BarChart3,
 } from "lucide-react";
 import { financeApi } from "@/lib/finance";
-import type { AgentMetricsResponse } from "@/lib/finance";
+import type {
+  AgentMetricsResponse,
+  AgentMyPerformanceResponse,
+  AgentMonthlyPerformanceResponse,
+} from "@/lib/finance";
 import {
   BarChart,
   Bar,
@@ -39,6 +43,10 @@ export function DashboardAgent() {
   const [agentMetrics, setAgentMetrics] = useState<AgentMetricsResponse | null>(
     null
   );
+  const [myPerformance, setMyPerformance] =
+    useState<AgentMyPerformanceResponse | null>(null);
+  const [monthlyPerformance, setMonthlyPerformance] =
+    useState<AgentMonthlyPerformanceResponse | null>(null);
   const [metricsLoading, setMetricsLoading] = useState(true);
   const [metricsError, setMetricsError] = useState<string | null>(null);
 
@@ -53,8 +61,47 @@ export function DashboardAgent() {
       try {
         setMetricsLoading(true);
         setMetricsError(null);
-        const data = await financeApi.getAgentMetrics();
-        setAgentMetrics(data);
+
+        // Fetch all three endpoints in parallel, but handle individual failures gracefully
+        const results = await Promise.allSettled([
+          financeApi.getAgentMetrics(),
+          financeApi.getAgentMyPerformance(),
+          financeApi.getAgentMonthlyPerformance(),
+        ]);
+
+        // Set metrics if successful
+        if (results[0].status === "fulfilled") {
+          setAgentMetrics(results[0].value);
+        } else {
+          console.error("Error fetching agent metrics:", results[0].reason);
+        }
+
+        // Set performance data if successful
+        if (results[1].status === "fulfilled") {
+          setMyPerformance(results[1].value);
+        } else {
+          console.error("Error fetching my performance:", results[1].reason);
+        }
+
+        // Set monthly performance data if successful
+        if (results[2].status === "fulfilled") {
+          setMonthlyPerformance(results[2].value);
+        } else {
+          console.error(
+            "Error fetching monthly performance:",
+            results[2].reason
+          );
+        }
+
+        // Only show error if all requests failed
+        if (results.every((r) => r.status === "rejected")) {
+          const errorMessage =
+            results[0].status === "rejected" &&
+            results[0].reason instanceof Error
+              ? results[0].reason.message
+              : "Failed to load agent metrics";
+          setMetricsError(errorMessage);
+        }
       } catch (err: unknown) {
         const errorMessage =
           err instanceof Error ? err.message : "Failed to load agent metrics";
@@ -102,7 +149,7 @@ export function DashboardAgent() {
     fetchDeals();
   }, [startDate, endDate]);
 
-  // Calculate commission totals from commissions array
+  // Calculate commission totals from commissions array (for deals list display)
   const getCommissionTotal = (deal: Deal): number => {
     return (
       deal.commissions?.reduce(
@@ -121,104 +168,70 @@ export function DashboardAgent() {
     );
   };
 
-  // Note: Status checking needs statusId mapping - using client-side check for now
-  // TODO: Implement statusId to status name mapping
-  const totalCommissionEarned = agentDeals.reduce(
-    (sum, d) => sum + getCommissionTotal(d),
-    0
-  );
-  const commissionPaid = agentDeals.reduce(
-    (sum, d) => sum + getCommissionPaid(d),
-    0
-  );
-  const commissionUnpaid = totalCommissionEarned - commissionPaid;
-  const developersClosed = new Set(
-    agentDeals
-      .filter((d) => {
-        const paidAmount = getCommissionPaid(d);
-        const totalAmount = getCommissionTotal(d);
-        return paidAmount >= totalAmount && totalAmount > 0;
-      })
-      .map((d) => d.developer?.name || "")
-      .filter((name) => name !== "")
-  ).size;
+  // Use API data for metrics, fallback to calculated values if API data not available
+  const commissionPaid =
+    myPerformance?.paid_commission ||
+    agentDeals.reduce((sum, d) => sum + getCommissionPaid(d), 0);
+  const commissionUnpaid =
+    myPerformance?.pending_commission ||
+    (myPerformance?.total_commission
+      ? myPerformance.total_commission - commissionPaid
+      : agentDeals.reduce((sum, d) => sum + getCommissionTotal(d), 0) -
+        commissionPaid);
+  const developersClosed =
+    myPerformance?.developers_count ||
+    new Set(
+      agentDeals
+        .filter((d) => {
+          const paidAmount = getCommissionPaid(d);
+          const totalAmount = getCommissionTotal(d);
+          return paidAmount >= totalAmount && totalAmount > 0;
+        })
+        .map((d) => d.developer?.name || "")
+        .filter((name) => name !== "")
+    ).size;
 
+  // Use monthly performance data from API
   const monthlyData = useMemo(() => {
-    // Show last 6 months (including current month)
-    const monthsToShow = 6;
-    const now = new Date();
-    const buckets = Array.from({ length: monthsToShow }, (_, idx) => {
-      const d = new Date(
-        now.getFullYear(),
-        now.getMonth() - (monthsToShow - 1 - idx),
-        1
-      );
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-        2,
-        "0"
-      )}`;
-      return {
-        key,
-        monthLabel: d.toLocaleString("en-US", { month: "short" }),
-        deals: 0,
-        commission: 0,
-      };
-    });
-
-    const bucketByKey = new Map(buckets.map((b) => [b.key, b]));
-
-    for (const deal of agentDeals) {
-      if (!deal.closeDate) continue;
-      const d = new Date(deal.closeDate);
-      if (Number.isNaN(d.getTime())) continue;
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-        2,
-        "0"
-      )}`;
-      const bucket = bucketByKey.get(key);
-      if (!bucket) continue;
-      bucket.deals += 1;
-      bucket.commission += getCommissionTotal(deal);
+    if (!monthlyPerformance?.data) {
+      return [];
     }
 
-    return buckets.map((b) => ({
-      month: b.monthLabel,
-      deals: b.deals,
-      commission: b.commission,
+    return monthlyPerformance.data.map((item) => ({
+      month: item.month_label || item.month,
+      deals: item.deals || 0,
+      commission: item.commission || 0,
     }));
-  }, [agentDeals]);
+  }, [monthlyPerformance]);
 
-  // Status breakdown
-  // Note: Using commission status as proxy for deal status
-  // TODO: Implement proper statusId to status name mapping
-  const statusData = [
-    {
-      name: "Closed",
-      value: agentDeals.filter((d) => {
-        const paidAmount = getCommissionPaid(d);
-        const totalAmount = getCommissionTotal(d);
-        return paidAmount >= totalAmount && totalAmount > 0;
-      }).length,
-      color: "var(--gi-dark-green)",
-    },
-    {
-      name: "In Progress",
-      value: agentDeals.filter((d) => {
-        const paidAmount = getCommissionPaid(d);
-        const totalAmount = getCommissionTotal(d);
-        return paidAmount > 0 && paidAmount < totalAmount;
-      }).length,
-      color: "#3b82f6",
-    },
-    {
-      name: "Pending",
-      value: agentDeals.filter((d) => {
-        const paidAmount = getCommissionPaid(d);
-        return paidAmount === 0;
-      }).length,
-      color: "#94a3b8",
-    },
-  ];
+  // Status breakdown from API
+  const statusData = useMemo(() => {
+    if (!myPerformance) {
+      return [
+        { name: "Closed", value: 0, color: "var(--gi-dark-green)" },
+        { name: "In Progress", value: 0, color: "#3b82f6" },
+        { name: "Pending", value: 0, color: "#94a3b8" },
+      ];
+    }
+
+    return [
+      {
+        name: "Closed",
+        value: myPerformance.deals_closed || 0,
+        color: "var(--gi-dark-green)",
+      },
+      {
+        name: "In Progress",
+        value: myPerformance.deals_in_progress || 0,
+        color: "#3b82f6",
+      },
+      {
+        name: "Pending",
+        value: myPerformance.deals_pending || 0,
+        color: "#94a3b8",
+      },
+    ];
+  }, [myPerformance]);
 
   // Check if all status values are zero
   const totalStatusValue = statusData.reduce(
@@ -228,9 +241,9 @@ export function DashboardAgent() {
   const hasStatusData = totalStatusValue > 0;
 
   // Check if monthly data has any non-zero values
-  const hasMonthlyData = monthlyData.some(
-    (item) => item.commission > 0 || item.deals > 0
-  );
+  const hasMonthlyData =
+    monthlyData.length > 0 &&
+    monthlyData.some((item) => item.commission > 0 || item.deals > 0);
 
   const currentUser =
     typeof window !== "undefined"
@@ -252,6 +265,7 @@ export function DashboardAgent() {
     );
   }
 
+  // Only require agentMetrics to render, other data can be optional
   if (metricsError || !agentMetrics) {
     return (
       <div className="flex items-center justify-center h-96">

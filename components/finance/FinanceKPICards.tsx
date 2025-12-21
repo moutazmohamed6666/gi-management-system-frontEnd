@@ -25,7 +25,7 @@ export function FinanceKPICards({
   const pendingCommissionAmount = kpis?.pending_commission_amount || 0;
   const pendingTransfers = kpis?.pending_transfers.count || 0;
   const overdueApprovals = kpis?.overdue_approvals || 0;
-  const currentMonthReceived = financeMetrics?.received.current_month || 0;
+  const collectedCommissions = kpis?.collected_commissions || 0;
   const monthLabel = financeMetrics?.received.month_label || "";
 
   return (
@@ -43,7 +43,7 @@ export function FinanceKPICards({
         <CardContent>
           <div className="flex items-baseline gap-2">
             <div className="text-2xl text-gray-900 dark:text-white">
-              AED {(currentMonthReceived / 1000).toFixed(0)}K
+              AED {(collectedCommissions / 1000).toFixed(0)}K
             </div>
             {financeMetrics?.collection_rate.trend === "up" && (
               <div className="flex items-center gap-1 text-green-600 text-sm">

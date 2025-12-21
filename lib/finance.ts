@@ -10,6 +10,7 @@ import { apiClient } from "./api";
 export interface KPIsResponse {
   total_expected_commission: number;
   total_paid_commission: number;
+  collected_commissions: number;
   pending_commission_amount: number;
   commission_breakdown: {
     AGENT: {
@@ -116,6 +117,33 @@ export interface AgentMetricsResponse {
     status: string;
     period: string;
   };
+}
+
+// Agent My Performance Response
+export interface AgentMyPerformanceResponse {
+  total_commission: number;
+  paid_commission: number;
+  pending_commission: number;
+  units_sold: number;
+  deals_closed: number;
+  deals_in_progress: number;
+  deals_pending: number;
+  developers_count: number;
+  currency?: string;
+}
+
+// Agent Monthly Performance Response
+export interface MonthlyPerformanceData {
+  month: string;
+  month_label?: string;
+  commission: number;
+  deals: number;
+  units_sold?: number;
+}
+
+export interface AgentMonthlyPerformanceResponse {
+  data: MonthlyPerformanceData[];
+  period?: string;
 }
 
 // Finance Metrics Response
@@ -232,6 +260,21 @@ export const financeApi = {
       "/api/finance-dashboard/agent-metrics"
     );
   },
+
+  // Get agent my performance metrics
+  getAgentMyPerformance: async (): Promise<AgentMyPerformanceResponse> => {
+    return apiClient<AgentMyPerformanceResponse>(
+      "/api/finance-dashboard/agent-metrics/my-performance"
+    );
+  },
+
+  // Get agent monthly performance metrics
+  getAgentMonthlyPerformance:
+    async (): Promise<AgentMonthlyPerformanceResponse> => {
+      return apiClient<AgentMonthlyPerformanceResponse>(
+        "/api/finance-dashboard/agent-metrics/monthly-performance"
+      );
+    },
 
   // Get finance dashboard metrics
   getFinanceMetrics: async (): Promise<FinanceMetricsResponse> => {

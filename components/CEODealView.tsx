@@ -8,6 +8,7 @@ import { Loader2, AlertCircle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { CEODealHeader } from "./ceo/CEODealHeader";
 import { CEODealInfo } from "./ceo/CEODealInfo";
+import { CEOCommissionDetails } from "./ceo/CEOCommissionDetails";
 import { CEOPropertyDetails } from "./ceo/CEOPropertyDetails";
 
 interface CEODealViewProps {
@@ -153,6 +154,9 @@ export function CEODealView({ dealId, onBack }: CEODealViewProps) {
 
       {/* Deal Information */}
       <CEODealInfo deal={deal} />
+
+      {/* Commission Details - Summary only (Breakdown hidden) */}
+      <CEOCommissionDetails deal={deal} commissions={deal.commissions || []} />
 
       {/* Property Details */}
       <CEOPropertyDetails deal={deal} />

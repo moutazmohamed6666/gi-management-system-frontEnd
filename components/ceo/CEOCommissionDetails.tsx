@@ -42,10 +42,8 @@ export function CEOCommissionDetails({
   );
 
   // Calculate paid amounts
-  const dealCommissionPaid = commissions.reduce(
-    (sum, c) => sum + parseFloat(c.paidAmount || "0"),
-    0
-  );
+  // Use collected_commissions from API response for deal commission
+  const dealCommissionPaid = parseFloat(deal.collected_commissions || "0") || 0;
   const agentCommissionPaid = commissions.reduce(
     (sum, c) => sum + parseFloat(c.paidAmount || "0"),
     0
@@ -57,8 +55,10 @@ export function CEOCommissionDetails({
 
   // Determine commission status
   const getCommissionStatus = (paid: number, total: number) => {
-    if (total === 0) return { label: "No Commission", variant: "secondary" as const };
-    if (paid === 0) return { label: "Pending", variant: "destructive" as const };
+    if (total === 0)
+      return { label: "No Commission", variant: "secondary" as const };
+    if (paid === 0)
+      return { label: "Pending", variant: "destructive" as const };
     if (paid >= total) return { label: "Paid", variant: "default" as const };
     return { label: "Partially Paid", variant: "outline" as const };
   };
@@ -98,7 +98,7 @@ export function CEOCommissionDetails({
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  Paid Amount
+                  Collected Amount
                 </span>
                 <span className="text-base font-semibold text-green-600 dark:text-green-400">
                   {formatCurrency(dealCommissionPaid)}
@@ -155,8 +155,8 @@ export function CEOCommissionDetails({
           </div>
         </div>
 
-        {/* Commission Breakdown */}
-        {commissions && commissions.length > 0 && (
+        {/* Commission Breakdown - Hidden as requested */}
+        {/* {commissions && commissions.length > 0 && (
           <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
             <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
               Commission Breakdown
@@ -223,9 +223,8 @@ export function CEOCommissionDetails({
               ))}
             </div>
           </div>
-        )}
+        )} */}
       </CardContent>
     </Card>
   );
 }
-
