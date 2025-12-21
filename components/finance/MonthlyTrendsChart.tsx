@@ -32,9 +32,9 @@ export function MonthlyTrendsChart({
       )
     : [];
 
-  const hasData = monthlyTrends.length > 0 && monthlyTrends.some(
-    (item) => item.received > 0 || item.expected > 0
-  );
+  const hasData =
+    monthlyTrends.length > 0 &&
+    monthlyTrends.some((item) => item.received > 0 || item.expected > 0);
 
   if (monthlyTrends.length === 0 || !hasData) {
     return (

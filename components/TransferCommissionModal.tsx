@@ -252,7 +252,11 @@ export function TransferCommissionModal({
                 Deal Value
               </div>
               <div className="text-sm font-medium text-gray-900 dark:text-white">
-                AED {parseFloat(deal.dealValue || "0").toLocaleString()}
+                AED {(
+                  typeof deal.dealValue === 'string' 
+                    ? parseFloat(deal.dealValue) 
+                    : deal.dealValue || 0
+                ).toLocaleString()}
               </div>
             </div>
             <div>

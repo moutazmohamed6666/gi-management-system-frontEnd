@@ -35,7 +35,8 @@ export function DealsByStageChart({ dealsByStage }: DealsByStageChartProps) {
     color: stageColors[stage.stage] || "#94a3b8",
   }));
 
-  const hasData = chartData.length > 0 && chartData.some((item) => item.value > 0);
+  const hasData =
+    chartData.length > 0 && chartData.some((item) => item.value > 0);
 
   if (chartData.length === 0 || !hasData) {
     return (

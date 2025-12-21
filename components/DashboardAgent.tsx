@@ -698,7 +698,7 @@ export function DashboardAgent() {
                     <div className="text-right flex flex-col items-end gap-2">
                       <div className="text-lg text-gray-900 dark:text-gray-100 font-semibold">
                         AED{" "}
-                        {(parseFloat(deal.dealValue || "0") / 1000).toFixed(0)}K
+                        {((typeof deal.dealValue === 'string' ? parseFloat(deal.dealValue) : deal.dealValue || 0) / 1000).toFixed(0)}K
                       </div>
                       {(() => {
                         const paidAmount = getCommissionPaid(deal);

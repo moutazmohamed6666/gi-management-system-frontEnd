@@ -40,7 +40,10 @@ export function useCEODashboardMetrics({
       ceoMetrics?.total_pipeline?.value ||
       filteredDeals
         .filter((d) => d.statusId !== "Closed")
-        .reduce((sum, d) => sum + (parseFloat(d.dealValue) || 0), 0)
+        .reduce((sum, d) => {
+          const value = typeof d.dealValue === 'string' ? parseFloat(d.dealValue) : d.dealValue;
+          return sum + (value || 0);
+        }, 0)
     );
   }, [ceoMetrics, filteredDeals]);
 
@@ -63,7 +66,10 @@ export function useCEODashboardMetrics({
   const avgDealSize = useMemo(() => {
     return filteredDeals.length > 0
       ? filteredDeals.reduce(
-          (sum, d) => sum + (parseFloat(d.dealValue) || 0),
+          (sum, d) => {
+            const value = typeof d.dealValue === 'string' ? parseFloat(d.dealValue) : d.dealValue;
+            return sum + (value || 0);
+          },
           0
         ) / filteredDeals.length
       : 0;

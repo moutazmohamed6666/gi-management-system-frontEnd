@@ -9,7 +9,7 @@ interface CEODealInfoProps {
 }
 
 export function CEODealInfo({ deal }: CEODealInfoProps) {
-  const formatDate = (dateString: string | undefined) => {
+  const formatDate = (dateString: string | undefined | null) => {
     if (!dateString) return "-";
     try {
       return new Date(dateString).toLocaleDateString();
