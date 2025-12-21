@@ -150,7 +150,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
       // Commission Details
       salesValue: "",
       commRate: "",
-      agentCommissionTypeId: "",
+      agentCommissionTypeId: "", // Will be populated in useEffect
       totalCommissionTypeId: "",
       totalCommissionValue: "",
       hasAdditionalAgent: false,
@@ -175,6 +175,10 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
   const [loadedDealId, setLoadedDealId] = useState<string | null>(null);
   const [dealFetchNonce, setDealFetchNonce] = useState(0);
   const [dealStatusName, setDealStatusName] = useState<string>("");
+  // Store original commission value from login for override detection
+  const [originalCommissionValue, setOriginalCommissionValue] = useState<
+    string | null
+  >(null);
 
   const isEditMode = Boolean(dealId);
 
@@ -224,6 +228,43 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
       setValue("statusId", defaultStatusId, { shouldValidate: false });
     }
   }, [currentRole, isEditMode, defaultStatusId, setValue]);
+
+  // Ensure commission type is always set from login for agents (create mode only)
+  useEffect(() => {
+    if (currentRole === "agent" && !isEditMode) {
+      const loginCommissionType = sessionStorage.getItem("userCommissionType");
+      if (loginCommissionType) {
+        // Always ensure commission type from login is set
+        setValue("agentCommissionTypeId", loginCommissionType, {
+          shouldValidate: false,
+        });
+      }
+    }
+  }, [currentRole, isEditMode, setValue]);
+
+  // Load defaults from sessionStorage for agents
+  useEffect(() => {
+    if (!isEditMode && currentRole === "agent") {
+      const defaultCommType = sessionStorage.getItem("userCommissionType");
+      const defaultCommValue = sessionStorage.getItem("userCommissionValue");
+
+      // Always set commission type from login (required for agents)
+      if (defaultCommType) {
+        setValue("agentCommissionTypeId", defaultCommType, {
+          shouldValidate: false,
+        });
+      }
+
+      // Pre-fill commission value from login
+      if (defaultCommValue) {
+        setValue("commRate", defaultCommValue, { shouldValidate: false });
+        // Store original value for override detection
+        setOriginalCommissionValue(defaultCommValue);
+      } else {
+        setOriginalCommissionValue(null);
+      }
+    }
+  }, [isEditMode, currentRole, setValue]);
 
   // Finance can always edit deals (same as agent create form)
   // Agents can only create, not edit
@@ -461,11 +502,44 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
         nationalityId: data.sellerNationalityId,
         sourceId: data.sellerSourceId,
       },
-      // Optional fields
-      agentCommissionTypeId: data.agentCommissionTypeId || undefined,
+      // Commission fields - for agents, always use commission type from login
+      agentCommissionTypeId: (() => {
+        // For agents, always use commission type from login (never from form)
+        if (currentRole === "agent") {
+          const loginCommissionType =
+            sessionStorage.getItem("userCommissionType");
+          return loginCommissionType || data.agentCommissionTypeId || undefined;
+        }
+        // For other roles, use form value
+        return data.agentCommissionTypeId || undefined;
+      })(),
       agentCommissionValue: data.commRate
         ? parseFloat(data.commRate)
         : undefined,
+      agentCommissionTypeOverride: (() => {
+        // Only apply override logic for agents
+        if (currentRole === "agent") {
+          const originalValue =
+            originalCommissionValue ||
+            sessionStorage.getItem("userCommissionValue");
+          const currentValue = data.commRate;
+
+          // If value changed from original, set override flag
+          if (originalValue && currentValue) {
+            const originalNum = parseFloat(originalValue);
+            const currentNum = parseFloat(currentValue);
+            // Check if values are different (accounting for floating point precision)
+            if (
+              !isNaN(originalNum) &&
+              !isNaN(currentNum) &&
+              originalNum !== currentNum
+            ) {
+              return true;
+            }
+          }
+        }
+        return false;
+      })(),
       // Total Commission fields
       totalCommissionTypeId: data.totalCommissionTypeId || undefined,
       totalCommissionValue: data.totalCommissionValue
@@ -1351,24 +1425,52 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                     <Controller
                       name="agentCommissionTypeId"
                       control={control}
-                      render={({ field }) => (
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          disabled={filtersLoading}
-                        >
-                          <SelectTrigger className="w-full mt-1">
-                            <SelectValue placeholder="Select commission type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {commissionTypes.map((type) => (
-                              <SelectItem key={type.id} value={type.id}>
-                                {type.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
+                      render={({ field }) => {
+                        // For agents, use commission type from login unless it was programmatically changed
+                        console.log("commissionTypes", commissionTypes);
+                        console.log(
+                          "agentCommissionTypeId field.value:",
+                          field.value
+                        );
+
+                        const loginCommissionType =
+                          sessionStorage.getItem("userCommissionType");
+                        // For agents: prioritize field.value if it exists (programmatically set override),
+                        // otherwise use login commission type
+                        const effectiveValue =
+                          currentRole === "agent"
+                            ? field.value || loginCommissionType || ""
+                            : field.value;
+
+                        console.log(
+                          "effectiveValue for Select:",
+                          effectiveValue
+                        );
+
+                        return (
+                          <Select
+                            value={effectiveValue}
+                            onValueChange={(value) => {
+                              // Only allow changes for non-agents
+                              if (currentRole !== "agent") {
+                                field.onChange(value);
+                              }
+                            }}
+                            disabled={filtersLoading || currentRole === "agent"}
+                          >
+                            <SelectTrigger className="w-full mt-1">
+                              <SelectValue placeholder="Select commission type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {commissionTypes.map((type) => (
+                                <SelectItem key={type.id} value={type.id}>
+                                  {type.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        );
+                      }}
                     />
                   </div>
                   <div>
@@ -1394,6 +1496,44 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                           setValue("commRate", numericValue, {
                             shouldValidate: true,
                           });
+
+                          // When agent commission rate/value changes, automatically select override option
+                          // Only set override if there's a value and commission types are loaded
+                          if (
+                            numericValue &&
+                            numericValue.trim() !== "" &&
+                            commissionTypes.length > 0
+                          ) {
+                            // Find the override commission type (case-insensitive search)
+                            const overrideType = commissionTypes.find((type) =>
+                              type.name.toLowerCase().includes("override")
+                            );
+
+                            if (overrideType) {
+                              // Set the override commission type ID
+                              console.log(
+                                "Setting override commission type:",
+                                overrideType.id,
+                                overrideType.name
+                              );
+                              setValue(
+                                "agentCommissionTypeId",
+                                overrideType.id,
+                                {
+                                  shouldValidate: true,
+                                  shouldDirty: true,
+                                }
+                              );
+                            } else {
+                              console.log(
+                                "Override type not found in commissionTypes:",
+                                commissionTypes.map((t) => ({
+                                  id: t.id,
+                                  name: t.name,
+                                }))
+                              );
+                            }
+                          }
                         },
                       })}
                       placeholder="Enter agent commission rate (%) or fixed amount"
@@ -1402,62 +1542,62 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                   </div>
 
                   {/* Total Commission Fields */}
-                    <div
-                      className="pt-4 border-t"
-                      style={{ borderColor: "var(--gi-green-40)" }}
-                    >
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="totalCommissionTypeId">
-                            Total Commission Type
-                          </Label>
-                          <Controller
-                            name="totalCommissionTypeId"
-                            control={control}
-                            render={({ field }) => (
-                              <Select
-                                value={field.value}
-                                onValueChange={field.onChange}
-                                disabled={filtersLoading}
-                              >
-                                <SelectTrigger className="w-full mt-1">
-                                  <SelectValue placeholder="Select type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {commissionTypes.map((type) => (
-                                    <SelectItem key={type.id} value={type.id}>
-                                      {type.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="totalCommissionValue">
-                            Total Commission Value
-                          </Label>
-                          <Input
-                            id="totalCommissionValue"
-                            type="text"
-                            {...register("totalCommissionValue", {
-                              onChange: (e) => {
-                                const numericValue = e.target.value.replace(
-                                  /[^0-9]/g,
-                                  ""
-                                );
-                                setValue("totalCommissionValue", numericValue, {
-                                  shouldValidate: true,
-                                });
-                              },
-                            })}
-                            placeholder="Enter value"
-                            className="mt-1"
-                          />
-                        </div>
+                  <div
+                    className="pt-4 border-t"
+                    style={{ borderColor: "var(--gi-green-40)" }}
+                  >
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="totalCommissionTypeId">
+                          Total Commission Type
+                        </Label>
+                        <Controller
+                          name="totalCommissionTypeId"
+                          control={control}
+                          render={({ field }) => (
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              disabled={filtersLoading}
+                            >
+                              <SelectTrigger className="w-full mt-1">
+                                <SelectValue placeholder="Select type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {commissionTypes.map((type) => (
+                                  <SelectItem key={type.id} value={type.id}>
+                                    {type.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="totalCommissionValue">
+                          Total Commission Value
+                        </Label>
+                        <Input
+                          id="totalCommissionValue"
+                          type="text"
+                          {...register("totalCommissionValue", {
+                            onChange: (e) => {
+                              const numericValue = e.target.value.replace(
+                                /[^0-9]/g,
+                                ""
+                              );
+                              setValue("totalCommissionValue", numericValue, {
+                                shouldValidate: true,
+                              });
+                            },
+                          })}
+                          placeholder="Enter value"
+                          className="mt-1"
+                        />
                       </div>
                     </div>
+                  </div>
 
                   {/* Additional Agent Toggle */}
                   <div
