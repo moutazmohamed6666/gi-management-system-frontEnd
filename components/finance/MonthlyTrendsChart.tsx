@@ -10,6 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { BarChart3 } from "lucide-react";
 import type { FinanceMetricsResponse } from "@/lib/finance";
 
 interface MonthlyTrendsChartProps {
@@ -31,7 +32,11 @@ export function MonthlyTrendsChart({
       )
     : [];
 
-  if (monthlyTrends.length === 0) {
+  const hasData = monthlyTrends.length > 0 && monthlyTrends.some(
+    (item) => item.received > 0 || item.expected > 0
+  );
+
+  if (monthlyTrends.length === 0 || !hasData) {
     return (
       <Card className="border-0 shadow-lg">
         <CardHeader className="pb-4">
@@ -40,8 +45,12 @@ export function MonthlyTrendsChart({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
-            No data available
+          <div className="flex flex-col items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
+            <BarChart3 className="h-12 w-12 mb-4 opacity-50" />
+            <p className="text-lg font-medium mb-1">No Data Available</p>
+            <p className="text-sm text-center">
+              No commission data available for the selected period
+            </p>
           </div>
         </CardContent>
       </Card>

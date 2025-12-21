@@ -324,7 +324,7 @@ export const dealsApi = {
     dealId: string,
     deal: UpdateDealRequest
   ): Promise<UpdateDealResponse> => {
-    return apiClient<UpdateDealResponse>(`/api/deals/${dealId}`, {
+    return apiClient<UpdateDealResponse>(`/api/deals/${dealId}/finance`, {
       method: "PUT",
       body: JSON.stringify(deal),
     });

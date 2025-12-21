@@ -418,7 +418,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
         onOverviewChange={handleOverviewChange}
       />
 
-      {isDealApproved && (
+      {/* {isDealApproved && (
         <>
           <CommissionCalculationSection
             financeData={financeData}
@@ -432,7 +432,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
             onChange={handleFinanceChange}
           />
         </>
-      )}
+      )} */}
 
       {deal && (
         <>

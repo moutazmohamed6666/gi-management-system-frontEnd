@@ -6,7 +6,6 @@ import { DateRangeFilter } from "./DateRangeFilter";
 import type { Deal } from "@/lib/deals";
 import { dealsApi } from "@/lib/deals";
 import {
-  TrendingUp,
   DollarSign,
   Home,
   Building2,
@@ -15,6 +14,7 @@ import {
   ArrowUpRight,
   Loader2,
   AlertCircle,
+  BarChart3,
 } from "lucide-react";
 import { financeApi } from "@/lib/finance";
 import type { AgentMetricsResponse } from "@/lib/finance";
@@ -220,6 +220,18 @@ export function DashboardAgent() {
     },
   ];
 
+  // Check if all status values are zero
+  const totalStatusValue = statusData.reduce(
+    (sum, item) => sum + item.value,
+    0
+  );
+  const hasStatusData = totalStatusValue > 0;
+
+  // Check if monthly data has any non-zero values
+  const hasMonthlyData = monthlyData.some(
+    (item) => item.commission > 0 || item.deals > 0
+  );
+
   const currentUser =
     typeof window !== "undefined"
       ? sessionStorage.getItem("username") ||
@@ -268,7 +280,7 @@ export function DashboardAgent() {
               <h2 className="text-white mb-1">{currentUser || "Agent"}</h2>
               <p className="text-white/70">Real Estate Agent</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/20">
+            {/* <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/20">
               <p className="text-white/80 text-sm">
                 {agentMetrics.total_commission.period}
               </p>
@@ -279,7 +291,7 @@ export function DashboardAgent() {
                   {agentMetrics.total_commission.trend}%
                 </span>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
@@ -432,60 +444,70 @@ export function DashboardAgent() {
             </div>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={monthlyData}>
-                <defs>
-                  <linearGradient
-                    id="colorCommission"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop
-                      offset="5%"
-                      stopColor="var(--gi-dark-green)"
-                      stopOpacity={0.9}
-                    />
-                    <stop
-                      offset="95%"
-                      stopColor="var(--gi-dark-green)"
-                      stopOpacity={0.6}
-                    />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis
-                  dataKey="month"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#6b7280", fontSize: 12 }}
-                />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: "#6b7280", fontSize: 12 }}
-                  tickFormatter={(value) => `${value / 1000}K`}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "white",
-                    border: "none",
-                    borderRadius: "8px",
-                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                  }}
-                  formatter={(value: number) => [
-                    `AED ${value.toLocaleString()}`,
-                    "Commission",
-                  ]}
-                />
-                <Bar
-                  dataKey="commission"
-                  fill="url(#colorCommission)"
-                  radius={[8, 8, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            {!hasMonthlyData ? (
+              <div className="flex flex-col items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
+                <BarChart3 className="h-12 w-12 mb-4 opacity-50" />
+                <p className="text-lg font-medium mb-1">No Data Available</p>
+                <p className="text-sm text-center">
+                  No commission data available for the selected period
+                </p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={monthlyData}>
+                  <defs>
+                    <linearGradient
+                      id="colorCommission"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor="var(--gi-dark-green)"
+                        stopOpacity={0.9}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="var(--gi-dark-green)"
+                        stopOpacity={0.6}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis
+                    dataKey="month"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "#6b7280", fontSize: 12 }}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "#6b7280", fontSize: 12 }}
+                    tickFormatter={(value) => `${value / 1000}K`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                    }}
+                    formatter={(value: number) => [
+                      `AED ${value.toLocaleString()}`,
+                      "Commission",
+                    ]}
+                  />
+                  <Bar
+                    dataKey="commission"
+                    fill="url(#colorCommission)"
+                    radius={[8, 8, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -495,67 +517,81 @@ export function DashboardAgent() {
             <CardTitle>Deal Status Breakdown</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-center">
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <defs>
-                    <filter id="shadow" height="130%">
-                      <feDropShadow
-                        dx="0"
-                        dy="2"
-                        stdDeviation="3"
-                        floodOpacity="0.3"
+            {!hasStatusData ? (
+              <div className="flex flex-col items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
+                <BarChart3 className="h-12 w-12 mb-4 opacity-50" />
+                <p className="text-lg font-medium mb-1">No Data Available</p>
+                <p className="text-sm text-center">
+                  No deal status data available for the selected period
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <defs>
+                        <filter id="shadow" height="130%">
+                          <feDropShadow
+                            dx="0"
+                            dy="2"
+                            stdDeviation="3"
+                            floodOpacity="0.3"
+                          />
+                        </filter>
+                      </defs>
+                      <Pie
+                        data={statusData.filter((item) => item.value > 0)}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, value, percent }) =>
+                          `${name}: ${value} (${((percent ?? 0) * 100).toFixed(
+                            0
+                          )}%)`
+                        }
+                        outerRadius={100}
+                        fill="#8884d8"
+                        dataKey="value"
+                        style={{ filter: "url(#shadow)" }}
+                      >
+                        {statusData
+                          .filter((item) => item.value > 0)
+                          .map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "white",
+                          border: "none",
+                          borderRadius: "8px",
+                          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                        }}
                       />
-                    </filter>
-                  </defs>
-                  <Pie
-                    data={statusData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, value, percent }) =>
-                      `${name}: ${value} (${((percent ?? 0) * 100).toFixed(
-                        0
-                      )}%)`
-                    }
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                    style={{ filter: "url(#shadow)" }}
-                  >
-                    {statusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "white",
-                      border: "none",
-                      borderRadius: "8px",
-                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="grid grid-cols-3 gap-4 mt-6">
-              {statusData.map((item, index) => (
-                <div key={index} className="text-center">
-                  <div className="flex items-center justify-center gap-2 mb-1">
-                    <div
-                      className="h-3 w-3 rounded-full"
-                      style={{ backgroundColor: item.color }}
-                    ></div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {item.name}
-                    </span>
-                  </div>
-                  <div className="text-xl text-gray-900 dark:text-gray-100">
-                    {item.value}
-                  </div>
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
-              ))}
-            </div>
+                <div className="grid grid-cols-3 gap-4 mt-6">
+                  {statusData.map((item, index) => (
+                    <div key={index} className="text-center">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <div
+                          className="h-3 w-3 rounded-full"
+                          style={{ backgroundColor: item.color }}
+                        ></div>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {item.name}
+                        </span>
+                      </div>
+                      <div className="text-xl text-gray-900 dark:text-gray-100">
+                        {item.value}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

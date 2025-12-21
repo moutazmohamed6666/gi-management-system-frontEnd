@@ -9,9 +9,15 @@ export default function Home() {
   useEffect(() => {
     // Check if user is authenticated
     const auth = sessionStorage.getItem("isAuthenticated");
-    
+    const role = sessionStorage.getItem("userRole");
+
     if (auth === "true") {
-      router.push("/dashboard");
+      // Admin role should navigate to /users instead of /dashboard
+      if (role === "admin") {
+        router.push("/users");
+      } else {
+        router.push("/dashboard");
+      }
     } else {
       router.push("/login");
     }

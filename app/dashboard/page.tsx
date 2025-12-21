@@ -6,7 +6,6 @@ import { AppLayout } from "@/components/AppLayout";
 import { DashboardAgent } from "@/components/DashboardAgent";
 import { DashboardFinance } from "@/components/DashboardFinance";
 import { DashboardCEO } from "@/components/DashboardCEO";
-import { DashboardAdmin } from "@/components/DashboardAdmin";
 
 type UserRole = "agent" | "finance" | "ceo" | "admin";
 
@@ -38,7 +37,14 @@ export default function DashboardPage() {
       case "ceo":
         return <DashboardCEO />;
       case "admin":
-        return <DashboardAdmin />;
+        // Admin role only has access to user management, no dashboard view
+        return (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-gray-600">
+              Admin access is limited to user management only.
+            </div>
+          </div>
+        );
       default:
         return null;
     }
@@ -56,4 +62,3 @@ export default function DashboardPage() {
 
   return <AppLayout>{renderDashboard()}</AppLayout>;
 }
-

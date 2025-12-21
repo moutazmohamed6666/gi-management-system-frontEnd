@@ -22,6 +22,7 @@ import {
   Loader2,
   AlertCircle,
   RefreshCw,
+  BarChart3,
 } from "lucide-react";
 import { Label } from "./ui/label";
 import { useFilters } from "@/lib/useFilters";
@@ -505,177 +506,220 @@ export function Reports() {
                 </div>
               </CardHeader>
               <CardContent>
-                {chartData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
-                    {reportType === "monthly_revenue" ? (
-                      <LineChart data={chartData}>
-                        <defs>
-                          <linearGradient
-                            id="colorRevenueReport"
-                            x1="0"
-                            y1="0"
-                            x2="0"
-                            y2="1"
+                {(() => {
+                  // Check if chartData has any non-zero values
+                  type ChartDataItem = {
+                    revenue?: number;
+                    count?: number;
+                    value?: number;
+                    commission?: number;
+                    [key: string]: unknown;
+                  };
+                  const typedChartData = chartData as ChartDataItem[];
+                  const hasData =
+                    typedChartData.length > 0 &&
+                    (reportType === "monthly_revenue"
+                      ? typedChartData.some((item) => (item.revenue || 0) > 0)
+                      : reportType === "deal_pipeline"
+                      ? typedChartData.some((item) => (item.count || 0) > 0)
+                      : typedChartData.some((item) => {
+                          const value =
+                            item.value ||
+                            item.commission ||
+                            item.revenue ||
+                            item.count ||
+                            0;
+                          return value > 0;
+                        }));
+
+                  if (!hasData) {
+                    return (
+                      <div className="flex flex-col items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
+                        <BarChart3 className="h-12 w-12 mb-4 opacity-50" />
+                        <p className="text-lg font-medium mb-1">
+                          No Data Available
+                        </p>
+                        <p className="text-sm text-center">
+                          No data available for the selected period and filters
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <ResponsiveContainer width="100%" height={300}>
+                      {reportType === "monthly_revenue" ? (
+                        <LineChart data={chartData}>
+                          <defs>
+                            <linearGradient
+                              id="colorRevenueReport"
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop
+                                offset="5%"
+                                stopColor="var(--gi-dark-green)"
+                                stopOpacity={0.3}
+                              />
+                              <stop
+                                offset="95%"
+                                stopColor="var(--gi-dark-green)"
+                                stopOpacity={0}
+                              />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="#f0f0f0"
+                          />
+                          <XAxis
+                            dataKey="month"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: "#6b7280", fontSize: 12 }}
+                          />
+                          <YAxis
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: "#6b7280", fontSize: 12 }}
+                            tickFormatter={(value) => `${value / 1000}K`}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: "white",
+                              border: "none",
+                              borderRadius: "8px",
+                              boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                            }}
+                            formatter={(value: number) => [
+                              `AED ${value.toLocaleString()}`,
+                              "Revenue",
+                            ]}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="revenue"
+                            stroke="var(--gi-dark-green)"
+                            strokeWidth={3}
+                            fill="url(#colorRevenueReport)"
+                          />
+                        </LineChart>
+                      ) : reportType === "deal_pipeline" ? (
+                        <PieChart>
+                          <Pie
+                            data={
+                              chartData as Array<{
+                                stage: string;
+                                count: number;
+                                value: number;
+                                percentage: number;
+                              }>
+                            }
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={100}
+                            paddingAngle={5}
+                            dataKey="count"
+                            nameKey="stage"
+                            label={({ name, percent }) =>
+                              `${name ?? ""} ${((percent ?? 0) * 100).toFixed(
+                                0
+                              )}%`
+                            }
                           >
-                            <stop
-                              offset="5%"
-                              stopColor="var(--gi-dark-green)"
-                              stopOpacity={0.3}
-                            />
-                            <stop
-                              offset="95%"
-                              stopColor="var(--gi-dark-green)"
-                              stopOpacity={0}
-                            />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis
-                          dataKey="month"
-                          axisLine={false}
-                          tickLine={false}
-                          tick={{ fill: "#6b7280", fontSize: 12 }}
-                        />
-                        <YAxis
-                          axisLine={false}
-                          tickLine={false}
-                          tick={{ fill: "#6b7280", fontSize: 12 }}
-                          tickFormatter={(value) => `${value / 1000}K`}
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: "white",
-                            border: "none",
-                            borderRadius: "8px",
-                            boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                          }}
-                          formatter={(value: number) => [
-                            `AED ${value.toLocaleString()}`,
-                            "Revenue",
-                          ]}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="revenue"
-                          stroke="var(--gi-dark-green)"
-                          strokeWidth={3}
-                          fill="url(#colorRevenueReport)"
-                        />
-                      </LineChart>
-                    ) : reportType === "deal_pipeline" ? (
-                      <PieChart>
-                        <Pie
-                          data={
-                            chartData as Array<{
-                              stage: string;
-                              count: number;
-                              value: number;
-                              percentage: number;
-                            }>
-                          }
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={100}
-                          paddingAngle={5}
-                          dataKey="count"
-                          nameKey="stage"
-                          label={({ name, percent }) =>
-                            `${name ?? ""} ${((percent ?? 0) * 100).toFixed(
-                              0
-                            )}%`
-                          }
-                        >
-                          {chartData.map((_, index) => (
-                            <Cell
-                              key={`cell-${index}`}
-                              fill={CHART_COLORS[index % CHART_COLORS.length]}
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          formatter={(value: number, name: string) => [
-                            value,
-                            name,
-                          ]}
-                        />
-                      </PieChart>
-                    ) : (
-                      <BarChart data={chartData}>
-                        <defs>
-                          <linearGradient
-                            id="colorBarReport"
-                            x1="0"
-                            y1="0"
-                            x2="0"
-                            y2="1"
-                          >
-                            <stop
-                              offset="5%"
-                              stopColor="var(--gi-dark-green)"
-                              stopOpacity={0.9}
-                            />
-                            <stop
-                              offset="95%"
-                              stopColor="var(--gi-dark-green)"
-                              stopOpacity={0.6}
-                            />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis
-                          dataKey={
-                            reportType === "agent_performance"
-                              ? "agent_name"
-                              : "category"
-                          }
-                          axisLine={false}
-                          tickLine={false}
-                          tick={{ fill: "#6b7280", fontSize: 12 }}
-                        />
-                        <YAxis
-                          axisLine={false}
-                          tickLine={false}
-                          tick={{ fill: "#6b7280", fontSize: 12 }}
-                          tickFormatter={(value) =>
-                            value >= 1000 ? `${value / 1000}K` : value
-                          }
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: "white",
-                            border: "none",
-                            borderRadius: "8px",
-                            boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                          }}
-                          formatter={(value: number) => [
-                            value >= 1000
-                              ? `AED ${value.toLocaleString()}`
-                              : value,
-                            reportType === "agent_performance"
-                              ? "Commission"
-                              : "Amount",
-                          ]}
-                        />
-                        <Bar
-                          dataKey={
-                            reportType === "agent_performance"
-                              ? "total_commission"
-                              : reportType === "commission_summary"
-                              ? "collected"
-                              : "value"
-                          }
-                          fill="url(#colorBarReport)"
-                          radius={[8, 8, 0, 0]}
-                        />
-                      </BarChart>
-                    )}
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-[300px] flex items-center justify-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-                    No data available for selected filters
-                  </div>
-                )}
+                            {chartData.map((_, index) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={CHART_COLORS[index % CHART_COLORS.length]}
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            formatter={(value: number, name: string) => [
+                              value,
+                              name,
+                            ]}
+                          />
+                        </PieChart>
+                      ) : (
+                        <BarChart data={chartData}>
+                          <defs>
+                            <linearGradient
+                              id="colorBarReport"
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop
+                                offset="5%"
+                                stopColor="var(--gi-dark-green)"
+                                stopOpacity={0.9}
+                              />
+                              <stop
+                                offset="95%"
+                                stopColor="var(--gi-dark-green)"
+                                stopOpacity={0.6}
+                              />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="#f0f0f0"
+                          />
+                          <XAxis
+                            dataKey={
+                              reportType === "agent_performance"
+                                ? "agent_name"
+                                : "category"
+                            }
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: "#6b7280", fontSize: 12 }}
+                          />
+                          <YAxis
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: "#6b7280", fontSize: 12 }}
+                            tickFormatter={(value) =>
+                              value >= 1000 ? `${value / 1000}K` : value
+                            }
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: "white",
+                              border: "none",
+                              borderRadius: "8px",
+                              boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                            }}
+                            formatter={(value: number) => [
+                              value >= 1000
+                                ? `AED ${value.toLocaleString()}`
+                                : value,
+                              reportType === "agent_performance"
+                                ? "Commission"
+                                : "Amount",
+                            ]}
+                          />
+                          <Bar
+                            dataKey={
+                              reportType === "agent_performance"
+                                ? "total_commission"
+                                : reportType === "commission_summary"
+                                ? "collected"
+                                : "value"
+                            }
+                            fill="url(#colorBarReport)"
+                            radius={[8, 8, 0, 0]}
+                          />
+                        </BarChart>
+                      )}
+                    </ResponsiveContainer>
+                  );
+                })()}
               </CardContent>
             </Card>
 

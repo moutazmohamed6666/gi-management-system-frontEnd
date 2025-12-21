@@ -158,6 +158,24 @@ export const filtersApi = {
     const data = await apiClient<unknown>("/api/filters/purchase-statuses");
     return normalizeGenericOptions(data);
   },
+
+  // Get all user roles
+  getRoles: async (): Promise<FilterOption[]> => {
+    const data = await apiClient<unknown>("/api/filters/user-roles");
+    // Roles API returns { id, status } instead of { id, name }
+    const roles = ensureArray(data).map((item) => {
+      const id = item["id"] ?? item["_id"];
+      if (!id) return null;
+      const status = item["status"] ?? "";
+      return {
+        ...item,
+        id: String(id),
+        name: String(status || id), // Map status to name for consistency
+        status: String(status),
+      } satisfies FilterOption;
+    }).filter(Boolean) as FilterOption[];
+    return roles;
+  },
 };
 
 // Hook-like utility to fetch all filters at once (optional)
@@ -175,6 +193,7 @@ export const fetchAllFilters = async () => {
       leadSources,
       nationalities,
       purchaseStatuses,
+      roles,
     ] = await Promise.all([
       filtersApi.getDevelopers(),
       filtersApi.getAgents(),
@@ -187,6 +206,7 @@ export const fetchAllFilters = async () => {
       filtersApi.getLeadSources(),
       filtersApi.getNationalities(),
       filtersApi.getPurchaseStatuses(),
+      filtersApi.getRoles(),
     ]);
 
     return {
@@ -201,6 +221,7 @@ export const fetchAllFilters = async () => {
       leadSources,
       nationalities,
       purchaseStatuses,
+      roles,
     };
   } catch (error) {
     console.error("Error fetching filters:", error);

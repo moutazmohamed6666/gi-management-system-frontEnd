@@ -17,7 +17,6 @@ import {
   LayoutDashboard,
   FileText,
   BarChart3,
-  Settings,
   LogOut,
 } from "lucide-react";
 import Link from "next/link";
@@ -130,7 +129,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       },
     }[TAB_PRESET];
 
-    const navItems = [];
+    let navItems: { view: string; label: string; icon: React.ElementType }[] =
+      [];
 
     navItems.push({
       view: "/dashboard",
@@ -156,12 +156,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     }
 
     if (currentRole === "admin") {
+      navItems = [];
       navItems.push({ view: "/users", label: "User Management", icon: Users });
-      navItems.push({
-        view: "/commission",
-        label: "Commission Rules",
-        icon: Settings,
-      });
     }
 
     return (

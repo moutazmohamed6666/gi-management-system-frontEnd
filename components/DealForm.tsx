@@ -724,7 +724,9 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="statusId">Status</Label>
+                    <Label htmlFor="statusId">
+                      Status <span className="text-red-500">*</span>
+                    </Label>
                     <Controller
                       name="statusId"
                       control={control}
@@ -800,7 +802,9 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
               <CardContent>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="developerId">Developer</Label>
+                    <Label htmlFor="developerId">
+                      Developer <span className="text-red-500">*</span>
+                    </Label>
                     <Controller
                       name="developerId"
                       control={control}
@@ -835,7 +839,9 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="projectId">Project</Label>
+                    <Label htmlFor="projectId">
+                      Project <span className="text-red-500">*</span>
+                    </Label>
                     <Controller
                       name="projectId"
                       control={control}
@@ -1250,7 +1256,9 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                 <div className="space-y-4">
                   {/* Basic Commission Fields */}
                   <div>
-                    <Label htmlFor="salesValue">Sales Value (AED)</Label>
+                    <Label htmlFor="salesValue">
+                      Sales Value (AED) <span className="text-red-500">*</span>
+                    </Label>
                     <Input
                       id="salesValue"
                       type="text"
@@ -1313,10 +1321,17 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                       type="text"
                       {...register("commRate", {
                         onChange: (e) => {
-                          const numericValue = e.target.value.replace(
-                            /[^0-9]/g,
+                          // Allow digits and decimal point
+                          let numericValue = e.target.value.replace(
+                            /[^0-9.]/g,
                             ""
                           );
+                          // Ensure only one decimal point
+                          const parts = numericValue.split(".");
+                          if (parts.length > 2) {
+                            numericValue =
+                              parts[0] + "." + parts.slice(1).join("");
+                          }
                           setValue("commRate", numericValue, {
                             shouldValidate: true,
                           });

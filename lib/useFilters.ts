@@ -16,6 +16,7 @@ interface UseFiltersReturn {
   leadSources: FilterOption[];
   nationalities: FilterOption[];
   purchaseStatuses: FilterOption[];
+  roles: FilterOption[];
   isLoading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -36,6 +37,7 @@ export function useFilters(): UseFiltersReturn {
     leadSources: [],
     nationalities: [],
     purchaseStatuses: [],
+    roles: [],
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +59,7 @@ export function useFilters(): UseFiltersReturn {
         leadSources,
         nationalities,
         purchaseStatuses,
+        roles,
       ] = await Promise.all([
         filtersApi.getDevelopers(),
         filtersApi.getAgents(),
@@ -69,6 +72,7 @@ export function useFilters(): UseFiltersReturn {
         filtersApi.getLeadSources(),
         filtersApi.getNationalities(),
         filtersApi.getPurchaseStatuses(),
+        filtersApi.getRoles(),
       ]);
 
       setFilters({
@@ -83,6 +87,7 @@ export function useFilters(): UseFiltersReturn {
         leadSources,
         nationalities,
         purchaseStatuses,
+        roles,
       });
     } catch (err: unknown) {
       const message =

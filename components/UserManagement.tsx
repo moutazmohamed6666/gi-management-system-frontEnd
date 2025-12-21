@@ -1,30 +1,86 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { mockUsers } from "@/lib/mockData";
-import { Plus, Search, Edit, Trash2, Lock } from "lucide-react";
+import { usersApi, type User } from "@/lib/users";
+import { toast } from "sonner";
+import { Plus, AlertCircle } from "lucide-react";
+import { UserFilters } from "./user-management/UserFilters";
+import { UserTable } from "./user-management/UserTable";
+import { CreateUserModal } from "./user-management/CreateUserModal";
+import { EditUserModal } from "./user-management/EditUserModal";
+import { DeleteUserDialog } from "./user-management/DeleteUserDialog";
 
 export function UserManagement() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editFormData, setEditFormData] = useState<{
+    name: string;
+    email: string;
+    username: string;
+    password: string;
+    roleId: string;
+    defaultCommissionTypeId: string;
+    defaultCommissionValue: number;
+    manager: string;
+  } | null>(null);
 
-  const filteredUsers = mockUsers.filter(user => {
-    const matchesSearch = 
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesRole = roleFilter === "all" || user.role === roleFilter;
-    
-    return matchesSearch && matchesRole;
-  });
+  // Fetch users from API
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const params: {
+          search?: string;
+          role?: string;
+        } = {};
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
+        if (searchTerm) {
+          params.search = searchTerm;
+        }
+        if (roleFilter !== "all") {
+          params.role = roleFilter;
+        }
+
+        const response = await usersApi.getUsers(params);
+        const usersList = Array.isArray(response.data) ? response.data : [];
+        setUsers(usersList);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load users";
+        setError(errorMessage);
+        toast.error("Error loading users", {
+          description: errorMessage,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Debounce search to avoid too many API calls
+    const timeoutId = setTimeout(
+      () => {
+        fetchUsers();
+      },
+      searchTerm ? 500 : 0
+    );
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, roleFilter]);
+
+  const getRoleBadgeColor = (role: string | undefined) => {
+    const roleName = role?.toLowerCase() || "";
+    switch (roleName) {
       case "agent":
         return "bg-blue-600";
       case "finance":
@@ -38,165 +94,276 @@ export function UserManagement() {
     }
   };
 
+  const getRoleDisplayName = (user: User) => {
+    return user.roleName || user.role || "Unknown";
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "-";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString();
+    } catch {
+      return dateString;
+    }
+  };
+
+  const handleCreateUser = async (data: {
+    name: string;
+    email: string;
+    username: string;
+    password: string;
+    roleId: string;
+    defaultCommissionTypeId: string;
+    defaultCommissionValue: number;
+    manager: string;
+  }) => {
+    setIsSubmitting(true);
+    try {
+      await usersApi.createUser({
+        name: data.name,
+        email: data.email,
+        username: data.username,
+        password: data.password,
+        roleId: data.roleId,
+        defaultCommissionTypeId: data.defaultCommissionTypeId || undefined,
+        defaultCommissionValue: data.defaultCommissionValue || undefined,
+        manager: data.manager || undefined,
+      });
+
+      toast.success("User Created", {
+        description: "User has been created successfully!",
+      });
+
+      setShowCreateModal(false);
+
+      // Refresh users list
+      const response = await usersApi.getUsers({
+        search: searchTerm || undefined,
+        role: roleFilter !== "all" ? roleFilter : undefined,
+      });
+      setUsers(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to create user";
+      toast.error("Error Creating User", {
+        description: errorMessage,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user);
+    setEditFormData({
+      name: user.name,
+      email: user.email,
+      username: user.username || "",
+      password: "",
+      roleId: user.roleId || "",
+      defaultCommissionTypeId: user.defaultCommissionTypeId || "",
+      defaultCommissionValue: user.defaultCommissionValue || 0,
+      manager: user.manager || "",
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateUser = async (data: {
+    name: string;
+    email: string;
+    username: string;
+    password: string;
+    roleId: string;
+    defaultCommissionTypeId: string;
+    defaultCommissionValue: number;
+    manager: string;
+  }) => {
+    if (!selectedUser) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const updateData: {
+        name: string;
+        email: string;
+        roleId?: string;
+        defaultCommissionTypeId?: string;
+        defaultCommissionValue?: number;
+        manager?: string;
+        password?: string;
+      } = {
+        name: data.name,
+        email: data.email,
+        roleId: data.roleId,
+      };
+
+      if (data.defaultCommissionTypeId) {
+        updateData.defaultCommissionTypeId = data.defaultCommissionTypeId;
+      }
+
+      if (data.defaultCommissionValue !== undefined) {
+        updateData.defaultCommissionValue = data.defaultCommissionValue;
+      }
+
+      if (data.manager) {
+        updateData.manager = data.manager;
+      }
+
+      if (data.password) {
+        updateData.password = data.password;
+      }
+
+      await usersApi.updateUser(selectedUser.id, updateData);
+
+      toast.success("User Updated", {
+        description: "User has been updated successfully!",
+      });
+
+      setShowEditModal(false);
+      setSelectedUser(null);
+      setEditFormData(null);
+
+      // Refresh users list
+      const response = await usersApi.getUsers({
+        search: searchTerm || undefined,
+        role: roleFilter !== "all" ? roleFilter : undefined,
+      });
+      setUsers(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to update user";
+      toast.error("Error Updating User", {
+        description: errorMessage,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+
+    setIsSubmitting(true);
+    try {
+      await usersApi.deleteUser(selectedUser.id);
+
+      toast.success("User Deleted", {
+        description: "User has been deleted successfully!",
+      });
+
+      setShowDeleteDialog(false);
+      setSelectedUser(null);
+
+      // Refresh users list
+      const response = await usersApi.getUsers({
+        search: searchTerm || undefined,
+        role: roleFilter !== "all" ? roleFilter : undefined,
+      });
+      setUsers(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to delete user";
+      toast.error("Error Deleting User", {
+        description: errorMessage,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-gray-900">User Management</h2>
-          <p className="text-gray-600">Manage system users and permissions</p>
+          <h2 className="text-gray-900 dark:text-gray-100">User Management</h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            Manage system users and permissions
+          </p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2">
+        <Button
+          onClick={() => setShowCreateModal(true)}
+          className="flex items-center gap-2"
+        >
           <Plus className="h-4 w-4" />
           Create User
         </Button>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search by name or email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+      <UserFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        roleFilter={roleFilter}
+        onRoleFilterChange={setRoleFilter}
+      />
+
+      {/* Error State */}
+      {error && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
+              <AlertCircle className="h-5 w-5" />
+              <div>
+                <p className="font-medium">Error loading users</p>
+                <p className="text-sm">{error}</p>
+              </div>
             </div>
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-md bg-white"
-            >
-              <option value="all">All Roles</option>
-              <option value="agent">Agent</option>
-              <option value="finance">Finance Team</option>
-              <option value="ceo">CEO / Management</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Users Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{filteredUsers.length} Users Found</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                <tr>
-                  <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">User ID</th>
-                  <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">Name</th>
-                  <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">Email</th>
-                  <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">Role</th>
-                  <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">Manager</th>
-                  <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">Status</th>
-                  <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">Created</th>
-                  <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.map((user) => (
-                  <tr key={user.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                    <td className="py-3 px-4 text-gray-900 dark:text-gray-100">{user.id}</td>
-                    <td className="py-3 px-4 text-gray-900 dark:text-gray-100">{user.name}</td>
-                    <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{user.email}</td>
-                    <td className="py-3 px-4">
-                      <span className={`inline-block px-2 py-1 rounded text-white ${getRoleBadgeColor(user.role)}`}>
-                        {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{user.manager || "-"}</td>
-                    <td className="py-3 px-4">
-                      <span className={`inline-block px-2 py-1 rounded text-white ${
-                        user.status === "Active" ? "bg-green-600 dark:bg-green-500" : "bg-red-600 dark:bg-red-500"
-                      }`}>
-                        {user.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{user.createdDate}</td>
-                    <td className="py-3 px-4">
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm" className="dark:hover:bg-gray-700">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="dark:hover:bg-gray-700">
-                          <Lock className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="dark:hover:bg-gray-700">
-                          <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+      <UserTable
+        users={users}
+        isLoading={isLoading}
+        onEdit={handleEditUser}
+        onDelete={(user) => {
+          setSelectedUser(user);
+          setShowDeleteDialog(true);
+        }}
+        getRoleBadgeColor={getRoleBadgeColor}
+        getRoleDisplayName={getRoleDisplayName}
+        formatDate={formatDate}
+      />
 
       {/* Create User Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <CardTitle>Create New User</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input id="name" placeholder="Enter full name" />
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder="Enter email" />
-                  </div>
-                  <div>
-                    <Label htmlFor="role">Role</Label>
-                    <select
-                      id="role"
-                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"
-                    >
-                      <option value="">Select role</option>
-                      <option value="agent">Agent</option>
-                      <option value="finance">Finance Team</option>
-                      <option value="ceo">CEO / Management</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="manager">Manager (Optional)</Label>
-                    <Input id="manager" placeholder="Enter manager name" />
-                  </div>
-                  <div>
-                    <Label htmlFor="password">Temporary Password</Label>
-                    <Input id="password" type="password" placeholder="Enter password" />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={() => setShowCreateModal(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={() => {
-                    alert("User created successfully!");
-                    setShowCreateModal(false);
-                  }}>
-                    Create User
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <CreateUserModal
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+        onSubmit={handleCreateUser}
+        isSubmitting={isSubmitting}
+      />
+
+      {/* Edit User Modal */}
+      <EditUserModal
+        open={showEditModal}
+        onOpenChange={(open) => {
+          setShowEditModal(open);
+          if (!open) {
+            setSelectedUser(null);
+            setEditFormData(null);
+          }
+        }}
+        initialData={editFormData || undefined}
+        onSubmit={handleUpdateUser}
+        isSubmitting={isSubmitting}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteUserDialog
+        open={showDeleteDialog}
+        onOpenChange={(open) => {
+          setShowDeleteDialog(open);
+          if (!open) {
+            setSelectedUser(null);
+          }
+        }}
+        user={selectedUser}
+        onConfirm={handleDeleteUser}
+        isSubmitting={isSubmitting}
+      />
     </div>
   );
 }
-

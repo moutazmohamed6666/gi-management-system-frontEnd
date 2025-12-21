@@ -44,10 +44,17 @@ export function CollectionHistoryTable({
             <tbody>
               {collections.map((collection) => {
                 // Use actual API fields if available, fallback to mapped fields
-                const date = collection.collectionDate || collection.receivedDate || collection.createdAt;
-                const sourceName = collection.source?.name || collection.sourceType || "Unknown";
-                const paymentMethod = collection.collectionType?.name || collection.paymentMethod || "Unknown";
-                
+                const date =
+                  collection.collectionDate ||
+                  collection.receivedDate ||
+                  collection.createdAt;
+                const sourceName =
+                  collection.source?.name || collection.sourceType || "Unknown";
+                const paymentMethod =
+                  collection.collectionType?.name ||
+                  collection.paymentMethod ||
+                  "Unknown";
+
                 return (
                   <tr
                     key={collection.id}
@@ -78,4 +85,3 @@ export function CollectionHistoryTable({
     </Card>
   );
 }
-

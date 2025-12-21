@@ -232,7 +232,7 @@ export const commissionsApi = {
     const response = await apiClient<GetDealCollectionsApiResponse>(
       `/api/commissions/collections/deal/${dealId}`
     );
-    
+
     // Map API response to DealCollection format with computed fields
     return response.collections.map((collection) => ({
       ...collection,
@@ -251,19 +251,16 @@ export const commissionsApi = {
   transferCommission: async (
     data: TransferCommissionRequest
   ): Promise<TransferCommissionResponse> => {
-    return apiClient<TransferCommissionResponse>(
-      "/api/commissions/transfer",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          dealId: data.dealId,
-          recipientId: data.recipientId,
-          recipientType: data.recipientType,
-          amount: data.amount,
-          notes: data.notes,
-        }),
-      }
-    );
+    return apiClient<TransferCommissionResponse>("/api/commissions/transfer", {
+      method: "POST",
+      body: JSON.stringify({
+        dealId: data.dealId,
+        recipientId: data.recipientId,
+        recipientType: data.recipientType,
+        amount: data.amount,
+        notes: data.notes,
+      }),
+    });
   },
 
   // Complete a pending transfer
@@ -301,9 +298,8 @@ export const commissionsApi = {
     // Only use provided totalTransferred if available, otherwise don't calculate it
     // totalTransferred should come from actual transfer API data, not from commission.paidAmount
     const remainingToCollect = totalExpected - totalCollected;
-    const remainingToTransfer = totalTransferred !== undefined 
-      ? totalCollected - totalTransferred 
-      : 0;
+    const remainingToTransfer =
+      totalTransferred !== undefined ? totalCollected - totalTransferred : 0;
 
     // Determine status based on collected amount, not transferred amount
     let status: CommissionStatusType = "Pending";
@@ -324,4 +320,3 @@ export const commissionsApi = {
     };
   },
 };
-
