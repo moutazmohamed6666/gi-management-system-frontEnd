@@ -8,6 +8,30 @@ import { Button } from "./ui/button";
 import { Eye, CheckCircle, XCircle, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
+// Type for API response structure (status as object, not string)
+type DealApiResponse = Deal & {
+  status?: {
+    id: string;
+    name: string;
+  };
+  totalCommission?: {
+    value: number | null;
+    commissionValue: number | null;
+    type?: {
+      id: string;
+      name: string;
+    } | null;
+  };
+  agentCommissions?: {
+    mainAgent?: {
+      status?: {
+        id: string;
+        name: string;
+      };
+    };
+  };
+};
+
 interface CEODealsListProps {
   onViewDeal: (dealId: string) => void;
 }
@@ -15,7 +39,9 @@ interface CEODealsListProps {
 export function CEODealsList({ onViewDeal }: CEODealsListProps) {
   const [approvingDealId, setApprovingDealId] = useState<string | null>(null);
   const [rejectingDealId, setRejectingDealId] = useState<string | null>(null);
-  const [dealsRequiringAction, setDealsRequiringAction] = useState<Deal[]>([]);
+  const [dealsRequiringAction, setDealsRequiringAction] = useState<
+    DealApiResponse[]
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,18 +56,27 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
         const response = await dealsApi.getDeals();
         const allDeals = Array.isArray(response.data) ? response.data : [];
 
-        // Filter deals that require CEO action (based on commission status or deal status)
-        // Note: Since API doesn't have direct status field, we'll filter by commission status
-        const dealsRequiringAction = allDeals.filter((deal) => {
-          // For now, show deals with pending commission or specific status
-          const statusId = deal.statusId || "";
-          return (
-            deal.commission?.status === "Pending" ||
-            statusId === "Finance Review" ||
-            statusId === "Approved" ||
-            statusId === "Submitted"
-          );
-        });
+        // Filter deals that require CEO action (based on deal status)
+        // API returns status as an object with { id, name }, not statusId as string
+        const dealsRequiringAction = allDeals.filter(
+          (deal): deal is DealApiResponse => {
+            const dealApi = deal as DealApiResponse;
+            // Get status name from status object or fallback to statusId
+            const statusName = dealApi.status?.name || deal.statusId || "";
+            const commissionStatus =
+              dealApi.agentCommissions?.mainAgent?.status?.name;
+
+            // Show deals with statuses that require CEO action
+            return (
+              statusName === "Finance Review" ||
+              statusName === "Submitted" ||
+              statusName === "Approved" ||
+              // Also include deals with pending/expected commission status
+              commissionStatus === "Expected" ||
+              commissionStatus === "Pending"
+            );
+          }
+        );
 
         setDealsRequiringAction(dealsRequiringAction);
       } catch (err) {
@@ -60,18 +95,22 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
     fetchDeals();
   }, []);
 
-  const getStatusColor = (deal: Deal) => {
-    const status = (deal.commission?.status ||
-      deal.statusId ||
-      "Pending") as string;
+  const getStatusColor = (deal: DealApiResponse) => {
+    // Get status name from status object or fallback to statusId
+    const statusName = deal.status?.name || deal.statusId || "";
+    const commissionStatus = deal.agentCommissions?.mainAgent?.status?.name;
+    const status = statusName || commissionStatus || "Pending";
+
     switch (status) {
       case "Finance Review":
         return "bg-orange-600";
       case "Approved":
+      case "CEO Approved":
         return "bg-blue-600";
       case "Submitted":
         return "bg-yellow-600";
       case "Pending":
+      case "Expected":
         return "bg-gray-600";
       default:
         return "bg-gray-600";
@@ -254,23 +293,36 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
                       </td>
                       <td className="py-3 px-4">
                         <div className="text-gray-900 dark:text-gray-100">
-                          AED {deal.dealValue.toLocaleString()}
+                          AED {Number(deal.dealValue).toLocaleString()}
                         </div>
                       </td>
                       <td className="py-3 px-4">
                         <div className="text-gray-900 dark:text-gray-100">
-                          {deal.commission?.total
-                            ? `AED ${deal.commission.total.toLocaleString()}`
-                            : "-"}
+                          {(() => {
+                            const dealApi = deal as DealApiResponse;
+                            const commissionValue =
+                              dealApi.totalCommission?.commissionValue ??
+                              dealApi.totalCommission?.value ??
+                              deal.commission?.total;
+                            return commissionValue
+                              ? `AED ${Number(
+                                  commissionValue
+                                ).toLocaleString()}`
+                              : "-";
+                          })()}
                         </div>
                       </td>
                       <td className="py-3 px-4">
                         <span
                           className={`inline-block px-3 py-1 rounded-full text-white text-sm ${getStatusColor(
-                            deal
+                            deal as DealApiResponse
                           )}`}
                         >
-                          {deal.commission?.status || deal.statusId || "Pending"}
+                          {(deal as DealApiResponse).status?.name ||
+                            (deal as DealApiResponse).agentCommissions
+                              ?.mainAgent?.status?.name ||
+                            deal.statusId ||
+                            "Pending"}
                         </span>
                       </td>
                       <td className="py-3 px-4">

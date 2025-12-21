@@ -4,14 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { dealsApi, type Deal } from "@/lib/deals";
-import {
-  ArrowLeft,
-  CheckCircle,
-  XCircle,
-  Loader2,
-  AlertCircle,
-} from "lucide-react";
+import { Loader2, AlertCircle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { CEODealHeader } from "./ceo/CEODealHeader";
+import { CEODealInfo } from "./ceo/CEODealInfo";
+import { CEOPropertyDetails } from "./ceo/CEOPropertyDetails";
 
 interface CEODealViewProps {
   dealId: string;
@@ -140,391 +137,133 @@ export function CEODealView({ dealId, onBack }: CEODealViewProps) {
   const buyer = deal.buyerSellerDetails?.find((d) => d.isBuyer === true);
   const seller = deal.buyerSellerDetails?.find((d) => d.isBuyer === false);
 
-  // Calculate commission totals
-  const totalCommission =
-    deal.commissions?.reduce(
-      (sum, c) => sum + parseFloat(c.expectedAmount || "0"),
-      0
-    ) ||
-    parseFloat(deal.totalCommissionValue || "0") ||
-    0;
-  const paidAmount =
-    deal.commissions?.reduce(
-      (sum, c) => sum + parseFloat(c.paidAmount || "0"),
-      0
-    ) || 0;
-
-  // Format date helper
-  const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return "-";
-    try {
-      return new Date(dateString).toLocaleDateString();
-    } catch {
-      return dateString;
-    }
-  };
-
-  // Format currency helper
-  const formatCurrency = (value: string | number | undefined) => {
-    if (!value) return "-";
-    const numValue = typeof value === "string" ? parseFloat(value) : value;
-    if (isNaN(numValue)) return "-";
-    return `AED ${numValue.toLocaleString()}`;
-  };
-
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Deals
-          </Button>
-          <div>
-            <h2 className="text-gray-900 dark:text-white">
-              Deal Review - {deal.dealNumber}
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              {deal.project?.name || "-"} • {buyer?.name || "-"}
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          {isRejecting ? (
-            <Button
-              variant="outline"
-              disabled
-              className="flex items-center gap-2 border-red-600 text-red-600"
-            >
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Rejecting...
-            </Button>
-          ) : (
-            <Button
-              variant="outline"
-              onClick={handleReject}
-              className="flex items-center gap-2 border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-            >
-              <XCircle className="h-4 w-4" />
-              Reject Deal
-            </Button>
-          )}
-          {isApproving ? (
-            <Button
-              variant="default"
-              disabled
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-            >
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Approving...
-            </Button>
-          ) : (
-            <Button
-              variant="default"
-              onClick={handleApprove}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
-            >
-              <CheckCircle className="h-4 w-4" />
-              Approve Deal
-            </Button>
-          )}
-        </div>
-      </div>
+      <CEODealHeader
+        dealNumber={deal.dealNumber}
+        projectName={deal.project?.name || "-"}
+        buyerName={buyer?.name || "-"}
+        onBack={onBack}
+        onApprove={handleApprove}
+        onReject={handleReject}
+        isApproving={isApproving}
+        isRejecting={isRejecting}
+      />
 
       {/* Deal Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Deal Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                Deal Number
-              </div>
-              <div className="text-base text-gray-900 dark:text-white font-medium">
-                {deal.dealNumber || "-"}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                Deal Value
-              </div>
-              <div className="text-base text-gray-900 dark:text-white font-medium">
-                {formatCurrency(deal.dealValue)}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                Close Date
-              </div>
-              <div className="text-base text-gray-900 dark:text-white font-medium">
-                {formatDate(deal.closeDate)}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                Booking Date
-              </div>
-              <div className="text-base text-gray-900 dark:text-white font-medium">
-                {formatDate(deal.bookingDate)}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                CF Expiry
-              </div>
-              <div className="text-base text-gray-900 dark:text-white font-medium">
-                {formatDate(deal.cfExpiry)}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                Created At
-              </div>
-              <div className="text-base text-gray-900 dark:text-white font-medium">
-                {formatDate(deal.createdAt)}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <CEODealInfo deal={deal} />
 
       {/* Property Details */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Property Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                Developer
-              </div>
-              <div className="text-base text-gray-900 dark:text-white font-medium">
-                {deal.developer?.name || "-"}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                Project
-              </div>
-              <div className="text-base text-gray-900 dark:text-white font-medium">
-                {deal.project?.name || "-"}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                Property Name
-              </div>
-              <div className="text-base text-gray-900 dark:text-white font-medium">
-                {deal.propertyName || "-"}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                Unit Number
-              </div>
-              <div className="text-base text-gray-900 dark:text-white font-medium">
-                {deal.unitNumber || "-"}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                Size
-              </div>
-              <div className="text-base text-gray-900 dark:text-white font-medium">
-                {deal.size ? `${deal.size} sqft` : "-"}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                Number of Deals
-              </div>
-              <div className="text-base text-gray-900 dark:text-white font-medium">
-                {deal.numberOfDeal || "-"}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <CEOPropertyDetails deal={deal} />
 
-      {/* Buyer Information */}
-      {buyer && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Buyer Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                  Buyer Name
-                </div>
-                <div className="text-base text-gray-900 dark:text-white font-medium">
-                  {buyer.name || "-"}
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                  Buyer Phone
-                </div>
-                <div className="text-base text-gray-900 dark:text-white font-medium">
-                  {buyer.phone || "-"}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Seller Information */}
-      {seller && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Seller Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                  Seller Name
-                </div>
-                <div className="text-base text-gray-900 dark:text-white font-medium">
-                  {seller.name || "-"}
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                  Seller Phone
-                </div>
-                <div className="text-base text-gray-900 dark:text-white font-medium">
-                  {seller.phone || "-"}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Agent Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Agent Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                Agent Name
-              </div>
-              <div className="text-base text-gray-900 dark:text-white font-medium">
-                {deal.agent?.name || "-"}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                Agent Email
-              </div>
-              <div className="text-base text-gray-900 dark:text-white font-medium">
-                {deal.agent?.email || "-"}
-              </div>
-            </div>
-            {deal.manager && (
-              <>
+      {/* Buyer, Seller, and Agent Information - Side by Side */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Buyer Information */}
+        {buyer && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Buyer Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
                 <div>
                   <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                    Manager Name
+                    Buyer Name
                   </div>
                   <div className="text-base text-gray-900 dark:text-white font-medium">
-                    {deal.manager.name || "-"}
+                    {buyer.name || "-"}
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                    Manager Email
+                    Buyer Phone
                   </div>
                   <div className="text-base text-gray-900 dark:text-white font-medium">
-                    {deal.manager.email || "-"}
+                    {buyer.phone || "-"}
                   </div>
                 </div>
-              </>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-      {/* Commission Details */}
-      {totalCommission > 0 && (
+        {/* Seller Information */}
+        {seller && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Seller Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    Seller Name
+                  </div>
+                  <div className="text-base text-gray-900 dark:text-white font-medium">
+                    {seller.name || "-"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    Seller Phone
+                  </div>
+                  <div className="text-base text-gray-900 dark:text-white font-medium">
+                    {seller.phone || "-"}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Agent Information */}
         <Card>
           <CardHeader>
-            <CardTitle>Commission Details</CardTitle>
+            <CardTitle>Agent Information</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
               <div>
                 <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                  Total Commission
+                  Agent Name
                 </div>
-                <div className="text-lg text-gray-900 dark:text-white font-semibold">
-                  {formatCurrency(totalCommission)}
+                <div className="text-base text-gray-900 dark:text-white font-medium">
+                  {deal.agent?.name || "-"}
                 </div>
               </div>
               <div>
                 <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                  Paid Amount
+                  Agent Email
                 </div>
-                <div className="text-lg text-gray-900 dark:text-white font-semibold">
-                  {formatCurrency(paidAmount)}
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                  Remaining Amount
-                </div>
-                <div className="text-lg text-gray-900 dark:text-white font-semibold">
-                  {formatCurrency(totalCommission - paidAmount)}
+                <div className="text-base text-gray-900 dark:text-white font-medium">
+                  {deal.agent?.email || "-"}
                 </div>
               </div>
-              {deal.commissions && deal.commissions.length > 0 && (
-                <div className="md:col-span-2">
-                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                    Commission Breakdown
+              {deal.manager && (
+                <>
+                  <div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      Manager Name
+                    </div>
+                    <div className="text-base text-gray-900 dark:text-white font-medium">
+                      {deal.manager.name || "-"}
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    {deal.commissions.map((commission) => (
-                      <div
-                        key={commission.id}
-                        className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
-                      >
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              Expected:{" "}
-                              {formatCurrency(commission.expectedAmount)}
-                            </div>
-                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                              Paid: {formatCurrency(commission.paidAmount)}
-                            </div>
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {commission.paidDate
-                              ? `Paid: ${formatDate(commission.paidDate)}`
-                              : commission.dueDate
-                              ? `Due: ${formatDate(commission.dueDate)}`
-                              : "Pending"}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                  <div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      Manager Email
+                    </div>
+                    <div className="text-base text-gray-900 dark:text-white font-medium">
+                      {deal.manager.email || "-"}
+                    </div>
                   </div>
-                </div>
+                </>
               )}
             </div>
           </CardContent>
         </Card>
-      )}
+      </div>
     </div>
   );
 }

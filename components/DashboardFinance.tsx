@@ -15,7 +15,6 @@ import { financeApi } from "@/lib/finance";
 import type {
   KPIsResponse,
   DealsByStageResponse,
-  ExceptionsSummaryResponse,
   CommissionTransfersResponse,
   TopPerformanceResponse,
   ReceivablesForecastResponse,
@@ -27,7 +26,6 @@ import { CommissionBreakdown } from "./finance/CommissionBreakdown";
 import { ReceivablesForecast } from "./finance/ReceivablesForecast";
 import { DealsByStageChart } from "./finance/DealsByStageChart";
 import { CommissionTransfers } from "./finance/CommissionTransfers";
-import { ExceptionsList } from "./finance/ExceptionsList";
 import { TopPerformance } from "./finance/TopPerformance";
 import { MonthlyTrendsChart } from "./finance/MonthlyTrendsChart";
 import { FinanceNotesTable } from "./finance/FinanceNotesTable";
@@ -35,7 +33,6 @@ import { useFilters } from "@/lib/useFilters";
 
 type DashboardSectionErrorKey =
   | "kpis"
-  | "exceptions"
   | "commissionTransfers"
   | "topPerformance"
   | "receivablesForecast"
@@ -53,7 +50,6 @@ export function DashboardFinance() {
   // API Data States
   const [kpis, setKpis] = useState<KPIsResponse | null>(null);
   const [dealsByStage, setDealsByStage] = useState<DealsByStageResponse>([]);
-  const [exceptions, setExceptions] = useState<ExceptionsSummaryResponse>([]);
   const [commissionTransfers, setCommissionTransfers] =
     useState<CommissionTransfersResponse | null>(null);
   const [topPerformance, setTopPerformance] =
@@ -114,7 +110,6 @@ export function DashboardFinance() {
       const results = await Promise.allSettled([
         financeApi.getKPIs(),
         financeApi.getDealsByStage(),
-        financeApi.getExceptionsSummary(),
         financeApi.getCommissionTransfers(),
         financeApi.getTopPerformance(),
         financeApi.getReceivablesForecast(),
@@ -125,7 +120,6 @@ export function DashboardFinance() {
       const [
         kpisRes,
         dealsByStageRes,
-        exceptionsRes,
         commissionTransfersRes,
         topPerformanceRes,
         receivablesForecastRes,
@@ -149,17 +143,6 @@ export function DashboardFinance() {
       } else {
         setDealsByStage([]);
         console.error("Error fetching deals-by-stage:", dealsByStageRes.reason);
-      }
-
-      if (exceptionsRes.status === "fulfilled") {
-        setExceptions(exceptionsRes.value);
-      } else {
-        nextErrors.exceptions = getErrorMessage(
-          exceptionsRes.reason,
-          "Failed to load exceptions"
-        );
-        setExceptions([]);
-        console.error("Error fetching exceptions:", exceptionsRes.reason);
       }
 
       if (commissionTransfersRes.status === "fulfilled") {
@@ -409,15 +392,6 @@ export function DashboardFinance() {
         )}
       </div>
 
-      {/* Exception Alerts */}
-      {sectionErrors.exceptions ? (
-        <SectionErrorCard
-          title="Exceptions Requiring Action"
-          message={String(sectionErrors.exceptions)}
-        />
-      ) : (
-        <ExceptionsList exceptions={exceptions} />
-      )}
 
       {/* Top Performance Mini-Tables */}
       {sectionErrors.topPerformance ? (

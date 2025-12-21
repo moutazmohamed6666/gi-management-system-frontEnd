@@ -12,6 +12,7 @@ interface StyledDatePickerProps {
   placeholder?: string;
   label?: string;
   id?: string;
+  disabled?: boolean;
 }
 
 // Helper function to format date
@@ -52,6 +53,7 @@ export function StyledDatePicker({
   placeholder = "Select date",
   label,
   id,
+  disabled = false,
 }: StyledDatePickerProps) {
   const [dateValue, setDateValue] = useState<Value>(null);
 
@@ -108,10 +110,13 @@ export function StyledDatePicker({
                 "w-full h-[42px] px-3 py-2 text-sm rounded-md border",
                 "border-border bg-background text-foreground",
                 "hover:border-ring focus-within:border-ring focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-                "transition-colors cursor-pointer flex items-center gap-2",
-                !dateValue && "text-muted-foreground"
+                "transition-colors flex items-center gap-2",
+                !dateValue && "text-muted-foreground",
+                disabled
+                  ? "opacity-50 cursor-not-allowed bg-muted"
+                  : "cursor-pointer"
               )}
-              onClick={openCalendar}
+              onClick={disabled ? undefined : openCalendar}
             >
               <CalendarIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <span className="flex-1 text-left">{displayValue}</span>

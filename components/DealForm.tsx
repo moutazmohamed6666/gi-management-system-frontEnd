@@ -193,11 +193,22 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
   const defaultStatusId = useMemo(() => {
     if (isEditMode) return "";
     if (statuses.length === 0) return "";
+
+    // For agents, always use "submitted" status
+    if (currentRole === "agent") {
+      const submittedStatus =
+        statuses.find((s) =>
+          String(s.name).toLowerCase().includes("submitted")
+        ) ?? statuses.find((s) => String(s.name).toLowerCase().includes("new"));
+      return submittedStatus?.id ?? statuses[0]?.id ?? "";
+    }
+
+    // For other roles, use "new" status
     const preferred =
       statuses.find((s) => String(s.name).toLowerCase().includes("new")) ??
       statuses[0];
     return preferred?.id ?? "";
-  }, [isEditMode, statuses]);
+  }, [isEditMode, statuses, currentRole]);
 
   const watchedStatusId = watch("statusId");
   const effectiveStatusId = watchedStatusId || defaultStatusId;
@@ -410,8 +421,11 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     // Use effectiveStatusId (either from form or default)
     const finalStatusId = data.statusId || defaultStatusId;
 
-    // Prepare API payload
-    const payload: CreateDealRequest = {
+    // For agents creating deals, exclude closeDate from payload
+    const isAgentCreating = currentRole === "agent" && !dealId;
+
+    // Prepare base payload
+    const basePayload = {
       dealValue: parseFloat(data.salesValue) || 0,
       developerId: data.developerId,
       projectId: data.projectId,
@@ -420,7 +434,6 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
       cfExpiry: data.cfExpiry
         ? new Date(data.cfExpiry).toISOString()
         : new Date().toISOString(),
-      closeDate: new Date(data.closeDate).toISOString(),
       dealTypeId: data.dealTypeId,
       statusId: finalStatusId,
       numberOfDeal: 1, // Default to 1, discuss with backend
@@ -483,6 +496,20 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
         : undefined,
     };
 
+    // For agents creating deals, exclude closeDate from payload
+    // For other roles or when editing, include closeDate
+    const payload: CreateDealRequest = isAgentCreating
+      ? ({
+          ...basePayload,
+          closeDate: new Date().toISOString(), // Required by type but won't be used by backend for agents
+        } as CreateDealRequest)
+      : {
+          ...basePayload,
+          closeDate: data.closeDate
+            ? new Date(data.closeDate).toISOString()
+            : new Date().toISOString(),
+        };
+
     try {
       if (dealId) {
         await dealsApi.updateDeal(dealId, payload);
@@ -490,7 +517,16 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
           description: "Deal has been updated successfully!",
         });
       } else {
-        await dealsApi.createDeal(payload);
+        // For agents creating deals, remove closeDate from payload before sending
+        let payloadToSend: CreateDealRequest;
+        if (isAgentCreating) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { closeDate, ...rest } = payload;
+          payloadToSend = rest as CreateDealRequest;
+        } else {
+          payloadToSend = payload;
+        }
+        await dealsApi.createDeal(payloadToSend);
         toast.success("Deal Created", {
           description: "Deal has been created successfully!",
         });
@@ -669,29 +705,33 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                       />
                     </div>
                   </div>
-                  <div>
-                    <Label htmlFor="closeDate">Close Date</Label>
-                    <div className="mt-1">
-                      <Controller
-                        name="closeDate"
-                        control={control}
-                        rules={{ required: "Close date is required" }}
-                        render={({ field }) => (
-                          <StyledDatePicker
-                            id="closeDate"
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Select close date"
-                          />
-                        )}
-                      />
+                  {!(currentRole === "agent" && !isEditMode) && (
+                    <div>
+                      <Label htmlFor="closeDate">Close Date</Label>
+                      <div className="mt-1">
+                        <Controller
+                          name="closeDate"
+                          control={control}
+                          rules={{
+                            required: "Close date is required",
+                          }}
+                          render={({ field }) => (
+                            <StyledDatePicker
+                              id="closeDate"
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="Select close date"
+                            />
+                          )}
+                        />
+                      </div>
+                      {errors.closeDate && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.closeDate.message}
+                        </p>
+                      )}
                     </div>
-                    {errors.closeDate && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.closeDate.message}
-                      </p>
-                    )}
-                  </div>
+                  )}
                   <div>
                     <Label htmlFor="dealTypeId">Deal Type</Label>
                     <Controller
@@ -726,6 +766,11 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                   <div>
                     <Label htmlFor="statusId">
                       Status <span className="text-red-500">*</span>
+                      {currentRole === "agent" && !isEditMode && (
+                        <span className="text-gray-500 text-xs ml-2">
+                          (Auto-set to Submitted)
+                        </span>
+                      )}
                     </Label>
                     <Controller
                       name="statusId"
@@ -744,7 +789,10 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                         <Select
                           value={field.value || defaultStatusId}
                           onValueChange={field.onChange}
-                          disabled={filtersLoading}
+                          disabled={
+                            filtersLoading ||
+                            (currentRole === "agent" && !isEditMode)
+                          }
                         >
                           <SelectTrigger className="w-full mt-1">
                             <SelectValue placeholder="Select status" />
@@ -765,31 +813,33 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                       </p>
                     )}
                   </div>
-                  <div>
-                    <Label htmlFor="purchaseStatusId">Purchase Status</Label>
-                    <Controller
-                      name="purchaseStatusId"
-                      control={control}
-                      render={({ field }) => (
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          disabled={filtersLoading}
-                        >
-                          <SelectTrigger className="w-full mt-1">
-                            <SelectValue placeholder="Select purchase status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {purchaseStatuses.map((status) => (
-                              <SelectItem key={status.id} value={status.id}>
-                                {status.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </div>
+                  {currentRole !== "agent" && (
+                    <div>
+                      <Label htmlFor="purchaseStatusId">Purchase Status</Label>
+                      <Controller
+                        name="purchaseStatusId"
+                        control={control}
+                        render={({ field }) => (
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            disabled={filtersLoading}
+                          >
+                            <SelectTrigger className="w-full mt-1">
+                              <SelectValue placeholder="Select purchase status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {purchaseStatuses.map((status) => (
+                                <SelectItem key={status.id} value={status.id}>
+                                  {status.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -930,7 +980,13 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
               <CardTitle>Unit Details</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div
+                className={`grid grid-cols-1 gap-4 ${
+                  currentRole !== "agent" && currentRole !== "finance"
+                    ? "md:grid-cols-4"
+                    : "md:grid-cols-3"
+                }`}
+              >
                 <div>
                   <Label htmlFor="unitNumber">Unit #</Label>
                   <Input
@@ -1002,32 +1058,34 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                     className="mt-1"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="bedrooms">BR (Bedrooms)</Label>
-                  <Controller
-                    name="bedrooms"
-                    control={control}
-                    render={({ field }) => (
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <SelectTrigger className="w-full mt-1">
-                          <SelectValue placeholder="Select bedrooms" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Studio">Studio</SelectItem>
-                          <SelectItem value="1">1</SelectItem>
-                          <SelectItem value="2">2</SelectItem>
-                          <SelectItem value="3">3</SelectItem>
-                          <SelectItem value="4">4</SelectItem>
-                          <SelectItem value="5">5</SelectItem>
-                          <SelectItem value="6+">6+</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </div>
+                {currentRole !== "agent" && currentRole !== "finance" && (
+                  <div>
+                    <Label htmlFor="bedrooms">BR (Bedrooms)</Label>
+                    <Controller
+                      name="bedrooms"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger className="w-full mt-1">
+                            <SelectValue placeholder="Select bedrooms" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Studio">Studio</SelectItem>
+                            <SelectItem value="1">1</SelectItem>
+                            <SelectItem value="2">2</SelectItem>
+                            <SelectItem value="3">3</SelectItem>
+                            <SelectItem value="4">4</SelectItem>
+                            <SelectItem value="5">5</SelectItem>
+                            <SelectItem value="6+">6+</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -1342,63 +1400,65 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                     />
                   </div>
 
-                  {/* Total Commission Fields */}
-                  <div
-                    className="pt-4 border-t"
-                    style={{ borderColor: "var(--gi-green-40)" }}
-                  >
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="totalCommissionTypeId">
-                          Total Commission Type
-                        </Label>
-                        <Controller
-                          name="totalCommissionTypeId"
-                          control={control}
-                          render={({ field }) => (
-                            <Select
-                              value={field.value}
-                              onValueChange={field.onChange}
-                              disabled={filtersLoading}
-                            >
-                              <SelectTrigger className="w-full mt-1">
-                                <SelectValue placeholder="Select type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {commissionTypes.map((type) => (
-                                  <SelectItem key={type.id} value={type.id}>
-                                    {type.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="totalCommissionValue">
-                          Total Commission Value
-                        </Label>
-                        <Input
-                          id="totalCommissionValue"
-                          type="text"
-                          {...register("totalCommissionValue", {
-                            onChange: (e) => {
-                              const numericValue = e.target.value.replace(
-                                /[^0-9]/g,
-                                ""
-                              );
-                              setValue("totalCommissionValue", numericValue, {
-                                shouldValidate: true,
-                              });
-                            },
-                          })}
-                          placeholder="Enter value"
-                          className="mt-1"
-                        />
+                  {/* Total Commission Fields - Hidden for agents */}
+                  {currentRole !== "agent" && (
+                    <div
+                      className="pt-4 border-t"
+                      style={{ borderColor: "var(--gi-green-40)" }}
+                    >
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="totalCommissionTypeId">
+                            Total Commission Type
+                          </Label>
+                          <Controller
+                            name="totalCommissionTypeId"
+                            control={control}
+                            render={({ field }) => (
+                              <Select
+                                value={field.value}
+                                onValueChange={field.onChange}
+                                disabled={filtersLoading}
+                              >
+                                <SelectTrigger className="w-full mt-1">
+                                  <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {commissionTypes.map((type) => (
+                                    <SelectItem key={type.id} value={type.id}>
+                                      {type.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="totalCommissionValue">
+                            Total Commission Value
+                          </Label>
+                          <Input
+                            id="totalCommissionValue"
+                            type="text"
+                            {...register("totalCommissionValue", {
+                              onChange: (e) => {
+                                const numericValue = e.target.value.replace(
+                                  /[^0-9]/g,
+                                  ""
+                                );
+                                setValue("totalCommissionValue", numericValue, {
+                                  shouldValidate: true,
+                                });
+                              },
+                            })}
+                            placeholder="Enter value"
+                            className="mt-1"
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Additional Agent Toggle */}
                   <div

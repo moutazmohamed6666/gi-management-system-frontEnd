@@ -31,6 +31,43 @@ import { CollectCommissionModal } from "./CollectCommissionModal";
 import { TransferCommissionModal } from "./TransferCommissionModal";
 import { useFilters } from "@/lib/useFilters";
 
+// Type for API response structure (status as object, not string)
+type DealApiResponse = Deal & {
+  status?: {
+    id: string;
+    name: string;
+  };
+  totalCommission?: {
+    value: number | null;
+    commissionValue: number | null;
+    type?: {
+      id: string;
+      name: string;
+    } | null;
+  };
+  agentCommissions?: {
+    mainAgent?: {
+      status?: {
+        id: string;
+        name: string;
+      };
+    };
+    totalExpected?: number;
+    totalPaid?: number;
+  };
+  dealValue?: number | string; // Can be number or string in API
+  buyer?: {
+    id: string;
+    name: string;
+    phone?: string;
+  };
+  seller?: {
+    id: string;
+    name: string;
+    phone?: string;
+  };
+};
+
 interface DealsListProps {
   role: string;
   onViewDeal: (dealId: string) => void;
@@ -96,35 +133,42 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
       setIsLoading(true);
       setError(null);
       try {
-        const userId = sessionStorage.getItem("userId");
-        const params: {
-          search?: string;
-          agent_id?: string;
-          developer_id?: string;
-          project_id?: string;
-          status_id?: string;
-          page: number;
-          page_size: number;
-        } = {
-          search: searchTerm || undefined,
-          page,
-          page_size: pageSize,
-        };
-
-        // For agents, always filter by their user ID
+        // For agents, use the dedicated agent deals endpoint
         if (role === "agent") {
-          if (userId) params.agent_id = userId;
-        } else if (agentFilter !== "all") {
-          params.agent_id = agentFilter;
+          const response = await dealsApi.getAgentDeals({
+            page,
+            page_size: pageSize,
+          });
+          setDeals(Array.isArray(response.data) ? response.data : []);
+          setTotal(typeof response.total === "number" ? response.total : 0);
+        } else {
+          // For other roles, use the standard deals endpoint with filters
+          const params: {
+            search?: string;
+            agent_id?: string;
+            developer_id?: string;
+            project_id?: string;
+            status_id?: string;
+            page: number;
+            page_size: number;
+          } = {
+            search: searchTerm || undefined,
+            page,
+            page_size: pageSize,
+          };
+
+          if (agentFilter !== "all") {
+            params.agent_id = agentFilter;
+          }
+
+          if (developerFilter !== "all") params.developer_id = developerFilter;
+          if (projectFilter !== "all") params.project_id = projectFilter;
+          if (statusIdFilter !== "all") params.status_id = statusIdFilter;
+
+          const response = await dealsApi.getDeals(params);
+          setDeals(Array.isArray(response.data) ? response.data : []);
+          setTotal(typeof response.total === "number" ? response.total : 0);
         }
-
-        if (developerFilter !== "all") params.developer_id = developerFilter;
-        if (projectFilter !== "all") params.project_id = projectFilter;
-        if (statusIdFilter !== "all") params.status_id = statusIdFilter;
-
-        const response = await dealsApi.getDeals(params);
-        setDeals(Array.isArray(response.data) ? response.data : []);
-        setTotal(typeof response.total === "number" ? response.total : 0);
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Failed to load deals";
@@ -162,10 +206,17 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
   const canPrev = page > 1;
   const canNext = page < totalPages && deals.length === pageSize;
 
-  const getStatusName = (statusId?: string): string => {
-    if (!statusId) return "Unknown";
-    const status = statuses.find((s) => s.id === statusId);
-    return status?.name || statusId;
+  const getStatusName = (deal: Deal | DealApiResponse): string => {
+    const dealApi = deal as DealApiResponse;
+    // Prefer status object name, fallback to statusId lookup, then "Unknown"
+    if (dealApi.status?.name) {
+      return dealApi.status.name;
+    }
+    if (deal.statusId) {
+      const status = statuses.find((s) => s.id === deal.statusId);
+      return status?.name || deal.statusId;
+    }
+    return "Unknown";
   };
 
   const getStatusColor = (status: string) => {
@@ -220,35 +271,40 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
         statuses.find((s) => s.id === newStatusId)?.name || "Unknown";
 
       // Refresh deals list to get updated data
-      const userId = sessionStorage.getItem("userId");
-      const params: {
-        search?: string;
-        agent_id?: string;
-        developer_id?: string;
-        project_id?: string;
-        status_id?: string;
-        page: number;
-        page_size: number;
-      } = {
-        search: searchTerm || undefined,
-        page,
-        page_size: pageSize,
-      };
-
-      // Apply filters based on role
       if (role === "agent") {
-        if (userId) params.agent_id = userId;
-      } else if (agentFilter !== "all") {
-        params.agent_id = agentFilter;
+        const response = await dealsApi.getAgentDeals({
+          page,
+          page_size: pageSize,
+        });
+        setDeals(Array.isArray(response.data) ? response.data : []);
+        setTotal(typeof response.total === "number" ? response.total : 0);
+      } else {
+        const params: {
+          search?: string;
+          agent_id?: string;
+          developer_id?: string;
+          project_id?: string;
+          status_id?: string;
+          page: number;
+          page_size: number;
+        } = {
+          search: searchTerm || undefined,
+          page,
+          page_size: pageSize,
+        };
+
+        if (agentFilter !== "all") {
+          params.agent_id = agentFilter;
+        }
+
+        if (developerFilter !== "all") params.developer_id = developerFilter;
+        if (projectFilter !== "all") params.project_id = projectFilter;
+        if (statusIdFilter !== "all") params.status_id = statusIdFilter;
+
+        const response = await dealsApi.getDeals(params);
+        setDeals(Array.isArray(response.data) ? response.data : []);
+        setTotal(typeof response.total === "number" ? response.total : 0);
       }
-
-      if (developerFilter !== "all") params.developer_id = developerFilter;
-      if (projectFilter !== "all") params.project_id = projectFilter;
-      if (statusIdFilter !== "all") params.status_id = statusIdFilter;
-
-      const response = await dealsApi.getDeals(params);
-      setDeals(Array.isArray(response.data) ? response.data : []);
-      setTotal(typeof response.total === "number" ? response.total : 0);
 
       setIsUpdating(false);
       setEditingDealId(null);
@@ -293,40 +349,52 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
     });
 
     // Refresh deals list
-    const userId = sessionStorage.getItem("userId");
-    const params: {
-      search?: string;
-      agent_id?: string;
-      developer_id?: string;
-      project_id?: string;
-      status_id?: string;
-      page: number;
-      page_size: number;
-    } = {
-      search: searchTerm || undefined,
-      page,
-      page_size: pageSize,
-    };
-
     if (role === "agent") {
-      if (userId) params.agent_id = userId;
-    } else if (agentFilter !== "all") {
-      params.agent_id = agentFilter;
+      dealsApi
+        .getAgentDeals({
+          page,
+          page_size: pageSize,
+        })
+        .then((response) => {
+          setDeals(Array.isArray(response.data) ? response.data : []);
+          setTotal(typeof response.total === "number" ? response.total : 0);
+        })
+        .catch(() => {
+          // Silently fail - user can manually refresh if needed
+        });
+    } else {
+      const params: {
+        search?: string;
+        agent_id?: string;
+        developer_id?: string;
+        project_id?: string;
+        status_id?: string;
+        page: number;
+        page_size: number;
+      } = {
+        search: searchTerm || undefined,
+        page,
+        page_size: pageSize,
+      };
+
+      if (agentFilter !== "all") {
+        params.agent_id = agentFilter;
+      }
+
+      if (developerFilter !== "all") params.developer_id = developerFilter;
+      if (projectFilter !== "all") params.project_id = projectFilter;
+      if (statusIdFilter !== "all") params.status_id = statusIdFilter;
+
+      dealsApi
+        .getDeals(params)
+        .then((response) => {
+          setDeals(Array.isArray(response.data) ? response.data : []);
+          setTotal(typeof response.total === "number" ? response.total : 0);
+        })
+        .catch(() => {
+          // Silently fail - user can manually refresh if needed
+        });
     }
-
-    if (developerFilter !== "all") params.developer_id = developerFilter;
-    if (projectFilter !== "all") params.project_id = projectFilter;
-    if (statusIdFilter !== "all") params.status_id = statusIdFilter;
-
-    dealsApi
-      .getDeals(params)
-      .then((response) => {
-        setDeals(Array.isArray(response.data) ? response.data : []);
-        setTotal(typeof response.total === "number" ? response.total : 0);
-      })
-      .catch(() => {
-        // Silently fail - user can manually refresh if needed
-      });
   };
 
   const handleTransferCommissionClick = (deal: Deal) => {
@@ -351,40 +419,52 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
     });
 
     // Refresh deals list
-    const userId = sessionStorage.getItem("userId");
-    const params: {
-      search?: string;
-      agent_id?: string;
-      developer_id?: string;
-      project_id?: string;
-      status_id?: string;
-      page: number;
-      page_size: number;
-    } = {
-      search: searchTerm || undefined,
-      page,
-      page_size: pageSize,
-    };
-
     if (role === "agent") {
-      if (userId) params.agent_id = userId;
-    } else if (agentFilter !== "all") {
-      params.agent_id = agentFilter;
+      dealsApi
+        .getAgentDeals({
+          page,
+          page_size: pageSize,
+        })
+        .then((response) => {
+          setDeals(Array.isArray(response.data) ? response.data : []);
+          setTotal(typeof response.total === "number" ? response.total : 0);
+        })
+        .catch(() => {
+          // Silently fail - user can manually refresh if needed
+        });
+    } else {
+      const params: {
+        search?: string;
+        agent_id?: string;
+        developer_id?: string;
+        project_id?: string;
+        status_id?: string;
+        page: number;
+        page_size: number;
+      } = {
+        search: searchTerm || undefined,
+        page,
+        page_size: pageSize,
+      };
+
+      if (agentFilter !== "all") {
+        params.agent_id = agentFilter;
+      }
+
+      if (developerFilter !== "all") params.developer_id = developerFilter;
+      if (projectFilter !== "all") params.project_id = projectFilter;
+      if (statusIdFilter !== "all") params.status_id = statusIdFilter;
+
+      dealsApi
+        .getDeals(params)
+        .then((response) => {
+          setDeals(Array.isArray(response.data) ? response.data : []);
+          setTotal(typeof response.total === "number" ? response.total : 0);
+        })
+        .catch(() => {
+          // Silently fail - user can manually refresh if needed
+        });
     }
-
-    if (developerFilter !== "all") params.developer_id = developerFilter;
-    if (projectFilter !== "all") params.project_id = projectFilter;
-    if (statusIdFilter !== "all") params.status_id = statusIdFilter;
-
-    dealsApi
-      .getDeals(params)
-      .then((response) => {
-        setDeals(Array.isArray(response.data) ? response.data : []);
-        setTotal(typeof response.total === "number" ? response.total : 0);
-      })
-      .catch(() => {
-        // Silently fail - user can manually refresh if needed
-      });
   };
 
   return (
@@ -597,28 +677,75 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
                       </td>
                       <td className="py-3 px-4">
                         <div className="text-gray-900 dark:text-gray-100">
-                          AED {deal.dealValue.toLocaleString()}
+                          {(() => {
+                            const dealApi = deal as DealApiResponse;
+                            const value =
+                              typeof dealApi.dealValue === "number"
+                                ? dealApi.dealValue
+                                : typeof deal.dealValue === "string"
+                                ? parseFloat(deal.dealValue)
+                                : 0;
+                            return `AED ${value.toLocaleString()}`;
+                          })()}
                         </div>
                       </td>
                       <td className="py-3 px-4">
                         <div className="text-gray-900 dark:text-gray-100">
-                          {deal.commission?.total
-                            ? `AED ${deal.commission.total.toLocaleString()}`
-                            : "-"}
+                          {(() => {
+                            const dealApi = deal as DealApiResponse;
+                            // Use agentCommissions.totalExpected if available, otherwise fallback to commission.total or totalCommission.commissionValue
+                            const totalCommission =
+                              dealApi.agentCommissions?.totalExpected ??
+                              dealApi.totalCommission?.commissionValue ??
+                              deal.commission?.total ??
+                              null;
+                            return totalCommission
+                              ? `AED ${Number(
+                                  totalCommission
+                                ).toLocaleString()}`
+                              : "-";
+                          })()}
                         </div>
-                        {deal.commission?.status && (
-                          <div
-                            className={`text-white inline-block px-2 py-0.5 rounded text-xs mt-1 ${
-                              deal.commission.status === "Paid"
-                                ? "bg-green-600 dark:bg-green-500"
-                                : deal.commission.status === "Partially Paid"
-                                ? "bg-orange-600 dark:bg-orange-500"
-                                : "bg-gray-600 dark:bg-gray-500"
-                            }`}
-                          >
-                            {deal.commission.status}
-                          </div>
-                        )}
+                        {(() => {
+                          const dealApi = deal as DealApiResponse;
+                          const commissionStatus =
+                            dealApi.agentCommissions?.mainAgent?.status?.name;
+                          // Determine status based on paid vs expected
+                          let status: string | null = null;
+                          if (commissionStatus) {
+                            status = commissionStatus;
+                          } else if (
+                            dealApi.agentCommissions?.totalExpected &&
+                            dealApi.agentCommissions?.totalPaid !== undefined
+                          ) {
+                            const expected =
+                              dealApi.agentCommissions.totalExpected;
+                            const paid =
+                              dealApi.agentCommissions.totalPaid || 0;
+                            if (paid >= expected) {
+                              status = "Paid";
+                            } else if (paid > 0) {
+                              status = "Partially Paid";
+                            } else {
+                              status = "Pending";
+                            }
+                          } else if (deal.commission?.status) {
+                            status = deal.commission.status;
+                          }
+                          return status ? (
+                            <div
+                              className={`text-white inline-block px-2 py-0.5 rounded text-xs mt-1 ${
+                                status === "Paid"
+                                  ? "bg-green-600 dark:bg-green-500"
+                                  : status === "Partially Paid"
+                                  ? "bg-orange-600 dark:bg-orange-500"
+                                  : "bg-gray-600 dark:bg-gray-500"
+                              }`}
+                            >
+                              {status}
+                            </div>
+                          ) : null;
+                        })()}
                       </td>
                       <td className="py-3 px-4">
                         {editingDealId === deal.id ? (
@@ -659,10 +786,10 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
                         ) : (
                           <span
                             className={`inline-block px-3 py-1 rounded-full text-white text-sm ${getStatusColor(
-                              getStatusName(deal.statusId)
+                              getStatusName(deal)
                             )}`}
                           >
-                            {getStatusName(deal.statusId)}
+                            {getStatusName(deal)}
                           </span>
                         )}
                       </td>

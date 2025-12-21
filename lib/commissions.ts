@@ -131,9 +131,9 @@ export type GetDealCollectionsResponse = DealCollection[];
 
 export interface TransferCommissionRequest {
   dealId: string;
-  fromAccount: string; // Source account name
-  toAccount?: string; // Destination account name (if transferring between accounts)
-  toUserId?: string; // User ID (agent/manager) to transfer to (if transferring to user)
+  fromAccount: string; // Source account name (fixed to "from company")
+  toAccount: string; // Destination account name
+  toUserId: string; // User ID (agent/manager) to transfer to
   amount: number;
 }
 

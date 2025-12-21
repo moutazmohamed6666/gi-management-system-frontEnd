@@ -131,6 +131,8 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
 
   useEffect(() => {
     fetchDeal();
+    // Reset edit mode when dealId changes
+    setIsEditingOverview(false);
   }, [fetchDeal]);
 
   // Update state when deal is loaded
@@ -385,10 +387,14 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
         isDealApproved={isDealApproved}
         isEditingOverview={isEditingOverview}
         isSaving={isSaving}
+        isLoading={isLoading}
         onBack={onBack}
         onEdit={() => {
-          setIsEditingOverview(true);
-          onEdit();
+          // Only allow editing if deal is loaded
+          if (deal && !isLoading) {
+            setIsEditingOverview(true);
+            onEdit();
+          }
         }}
         onCancelEdit={handleCancelEdit}
         onSaveOverview={handleSaveOverview}

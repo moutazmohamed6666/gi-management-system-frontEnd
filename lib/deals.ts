@@ -146,6 +146,19 @@ export interface GetDealsResponse {
   page_size: number;
 }
 
+// Agent Deals Parameters (for /api/deals/agent/my-deals endpoint)
+export interface GetAgentDealsParams {
+  page?: number;
+  page_size?: number;
+}
+
+export interface GetAgentDealsResponse {
+  data: Deal[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
 // Create Deal Request (matching actual API payload)
 export interface AdditionalAgent {
   agentId?: string;
@@ -266,9 +279,38 @@ export interface DealAgent {
   commission?: number;
 }
 
+// New API response structure for /api/deals/{id}/agents
+export interface CommissionType {
+  id?: string;
+  name?: string;
+}
+
+export interface DealAgentResponse {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  commissionType?: CommissionType;
+  commissionValue?: number;
+  manager?: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
+}
+
+export interface ExternalAgentResponse {
+  name: string;
+  commissionType?: CommissionType;
+  commissionValue?: number;
+}
+
 export interface GetDealAgentsResponse {
-  agents: DealAgent[];
-  managers: DealAgent[];
+  mainAgent: DealAgentResponse;
+  manager: DealAgentResponse | null;
+  internalAgents: DealAgentResponse[];
+  externalAgents: ExternalAgentResponse[];
 }
 
 // ============================================================================
@@ -309,6 +351,27 @@ export const dealsApi = {
     const endpoint = `/api/deals${queryString ? `?${queryString}` : ""}`;
 
     return apiClient<GetDealsResponse>(endpoint);
+  },
+
+  // Get agent's deals (for agent role)
+  getAgentDeals: async (
+    params?: GetAgentDealsParams
+  ): Promise<GetAgentDealsResponse> => {
+    const queryParams = new URLSearchParams();
+
+    if (params?.page) {
+      queryParams.append("page", params.page.toString());
+    }
+    if (params?.page_size) {
+      queryParams.append("page_size", params.page_size.toString());
+    }
+
+    const queryString = queryParams.toString();
+    const endpoint = `/api/deals/agent/my-deals${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    return apiClient<GetAgentDealsResponse>(endpoint);
   },
 
   // Create a new deal (auto-generates deal number, auto-assigns manager)

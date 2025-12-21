@@ -17,6 +17,7 @@ interface FinanceReviewHeaderProps {
   isDealApproved: boolean;
   isEditingOverview: boolean;
   isSaving: boolean;
+  isLoading?: boolean;
   onBack: () => void;
   onEdit: () => void;
   onCancelEdit: () => void;
@@ -32,6 +33,7 @@ export function FinanceReviewHeader({
   isDealApproved,
   isEditingOverview,
   isSaving,
+  isLoading = false,
   onBack,
   onEdit,
   onCancelEdit,
@@ -87,6 +89,7 @@ export function FinanceReviewHeader({
                 <Button
                   variant="outline"
                   onClick={onEdit}
+                  disabled={isLoading || isSaving}
                   className="flex items-center gap-2"
                 >
                   <Edit2 className="h-4 w-4" />
