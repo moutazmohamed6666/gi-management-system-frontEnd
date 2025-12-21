@@ -170,16 +170,16 @@ export function DashboardAgent() {
 
   // Use API data for metrics, fallback to calculated values if API data not available
   const commissionPaid =
-    myPerformance?.paid_commission ||
+    myPerformance?.paidTransferred ||
     agentDeals.reduce((sum, d) => sum + getCommissionPaid(d), 0);
   const commissionUnpaid =
-    myPerformance?.pending_commission ||
-    (myPerformance?.total_commission
-      ? myPerformance.total_commission - commissionPaid
+    myPerformance?.pending ||
+    (myPerformance?.totalCommission
+      ? myPerformance.totalCommission - commissionPaid
       : agentDeals.reduce((sum, d) => sum + getCommissionTotal(d), 0) -
         commissionPaid);
   const developersClosed =
-    myPerformance?.developers_count ||
+    myPerformance?.numberOfDevelopers ||
     new Set(
       agentDeals
         .filter((d) => {
@@ -197,41 +197,63 @@ export function DashboardAgent() {
       return [];
     }
 
-    return monthlyPerformance.data.map((item) => ({
-      month: item.month_label || item.month,
-      deals: item.deals || 0,
-      commission: item.commission || 0,
-    }));
+    return monthlyPerformance.data.map((item) => {
+      // Format month from "2025-12" to "Dec" or "Dec 2025"
+      let monthLabel = item.month;
+      try {
+        const [year, month] = item.month.split("-");
+        const date = new Date(parseInt(year), parseInt(month) - 1);
+        monthLabel = date.toLocaleString("en-US", { month: "short" });
+      } catch {
+        // If parsing fails, use the original value
+      }
+
+      return {
+        month: monthLabel,
+        deals: 0, // Not provided in API response
+        commission: item.totalCommission || 0,
+      };
+    });
   }, [monthlyPerformance]);
 
-  // Status breakdown from API
+  // Status breakdown - calculated from deals since API doesn't provide this
   const statusData = useMemo(() => {
-    if (!myPerformance) {
-      return [
-        { name: "Closed", value: 0, color: "var(--gi-dark-green)" },
-        { name: "In Progress", value: 0, color: "#3b82f6" },
-        { name: "Pending", value: 0, color: "#94a3b8" },
-      ];
-    }
+    // Calculate from agentDeals since API doesn't provide deal status breakdown
+    const closed = agentDeals.filter((d) => {
+      const paidAmount = getCommissionPaid(d);
+      const totalAmount = getCommissionTotal(d);
+      return paidAmount >= totalAmount && totalAmount > 0;
+    }).length;
+
+    const inProgress = agentDeals.filter((d) => {
+      const paidAmount = getCommissionPaid(d);
+      const totalAmount = getCommissionTotal(d);
+      return paidAmount > 0 && paidAmount < totalAmount;
+    }).length;
+
+    const pending = agentDeals.filter((d) => {
+      const paidAmount = getCommissionPaid(d);
+      return paidAmount === 0;
+    }).length;
 
     return [
       {
         name: "Closed",
-        value: myPerformance.deals_closed || 0,
+        value: closed,
         color: "var(--gi-dark-green)",
       },
       {
         name: "In Progress",
-        value: myPerformance.deals_in_progress || 0,
+        value: inProgress,
         color: "#3b82f6",
       },
       {
         name: "Pending",
-        value: myPerformance.deals_pending || 0,
+        value: pending,
         color: "#94a3b8",
       },
     ];
-  }, [myPerformance]);
+  }, [agentDeals]);
 
   // Check if all status values are zero
   const totalStatusValue = statusData.reduce(
@@ -510,7 +532,9 @@ export function DashboardAgent() {
                       boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                     }}
                     formatter={(value: number) => [
-                      `AED ${value.toLocaleString()}`,
+                      `${
+                        monthlyPerformance?.currency || "AED"
+                      } ${value.toLocaleString()}`,
                       "Commission",
                     ]}
                   />

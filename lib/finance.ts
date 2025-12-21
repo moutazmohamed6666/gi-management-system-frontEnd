@@ -121,29 +121,23 @@ export interface AgentMetricsResponse {
 
 // Agent My Performance Response
 export interface AgentMyPerformanceResponse {
-  total_commission: number;
-  paid_commission: number;
-  pending_commission: number;
-  units_sold: number;
-  deals_closed: number;
-  deals_in_progress: number;
-  deals_pending: number;
-  developers_count: number;
-  currency?: string;
+  unitsSold: number;
+  totalCommission: number;
+  paidTransferred: number;
+  pending: number;
+  numberOfDevelopers: number;
+  currency: string;
 }
 
 // Agent Monthly Performance Response
 export interface MonthlyPerformanceData {
   month: string;
-  month_label?: string;
-  commission: number;
-  deals: number;
-  units_sold?: number;
+  totalCommission: number;
 }
 
 export interface AgentMonthlyPerformanceResponse {
   data: MonthlyPerformanceData[];
-  period?: string;
+  currency: string;
 }
 
 // Finance Metrics Response

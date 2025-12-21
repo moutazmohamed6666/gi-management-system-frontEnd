@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import type { Deal } from "@/lib/deals";
 import { dealsApi } from "@/lib/deals";
+import { filtersApi } from "@/lib/filters";
 import { Button } from "./ui/button";
 import { Eye, CheckCircle, XCircle, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -39,59 +40,75 @@ interface CEODealsListProps {
 export function CEODealsList({ onViewDeal }: CEODealsListProps) {
   const [approvingDealId, setApprovingDealId] = useState<string | null>(null);
   const [rejectingDealId, setRejectingDealId] = useState<string | null>(null);
-  const [dealsRequiringAction, setDealsRequiringAction] = useState<
-    DealApiResponse[]
-  >([]);
+  const [allDeals, setAllDeals] = useState<DealApiResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [ceoApprovedStatusId, setCeoApprovedStatusId] = useState<string | null>(
+    null
+  );
+  const [ceoRejectedStatusId, setCeoRejectedStatusId] = useState<string | null>(
+    null
+  );
 
-  // Fetch deals that require CEO action
+  // Fetch statuses to get CEO Approved and CEO Rejected IDs
   useEffect(() => {
-    const fetchDeals = async () => {
-      setIsLoading(true);
-      setError(null);
+    const fetchStatuses = async () => {
       try {
-        // Fetch all deals and filter client-side for CEO action
-        // Note: API requires statusId (UUID) for filtering, so we filter client-side for now
-        const response = await dealsApi.getDeals();
-        const allDeals = Array.isArray(response.data) ? response.data : [];
+        const statusList = await filtersApi.getStatuses();
 
-        // Filter deals that require CEO action (based on deal status)
-        // API returns status as an object with { id, name }, not statusId as string
-        const dealsRequiringAction = allDeals.filter(
-          (deal): deal is DealApiResponse => {
-            const dealApi = deal as DealApiResponse;
-            // Get status name from status object or fallback to statusId
-            const statusName = dealApi.status?.name || deal.statusId || "";
-            const commissionStatus =
-              dealApi.agentCommissions?.mainAgent?.status?.name;
-
-            // Show deals with statuses that require CEO action
-            return (
-              statusName === "Finance Review" ||
-              statusName === "Submitted" ||
-              statusName === "Approved" ||
-              // Also include deals with pending/expected commission status
-              commissionStatus === "Expected" ||
-              commissionStatus === "Pending"
-            );
-          }
+        // Find CEO Approved and CEO Rejected status IDs (case-insensitive)
+        const approvedStatus = statusList.find(
+          (s) =>
+            s.name.toLowerCase() === "ceo approved" ||
+            s.name.toLowerCase() === "ceo approve"
+        );
+        const rejectedStatus = statusList.find(
+          (s) =>
+            s.name.toLowerCase() === "ceo rejected" ||
+            s.name.toLowerCase() === "ceo reject"
         );
 
-        setDealsRequiringAction(dealsRequiringAction);
+        if (approvedStatus) {
+          setCeoApprovedStatusId(approvedStatus.id);
+        }
+        if (rejectedStatus) {
+          setCeoRejectedStatusId(rejectedStatus.id);
+        }
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to load deals";
-        setError(errorMessage);
-        toast.error("Error loading deals", {
-          description:
-            errorMessage || "Failed to fetch deals. Please try again.",
-        });
-      } finally {
-        setIsLoading(false);
+        console.error("Error fetching statuses:", err);
       }
     };
 
+    fetchStatuses();
+  }, []);
+
+  // Fetch all deals function
+  const fetchDeals = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      // Fetch all deals
+      const response = await dealsApi.getDeals();
+      const deals = Array.isArray(response.data) ? response.data : [];
+
+      // Cast all deals to DealApiResponse type
+      const typedDeals = deals.map((deal) => deal as DealApiResponse);
+
+      setAllDeals(typedDeals);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load deals";
+      setError(errorMessage);
+      toast.error("Error loading deals", {
+        description: errorMessage || "Failed to fetch deals. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch all deals on mount
+  useEffect(() => {
     fetchDeals();
   }, []);
 
@@ -118,25 +135,26 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
   };
 
   const handleApprove = async (dealId: string) => {
+    if (!ceoApprovedStatusId) {
+      toast.error("Status ID not found", {
+        description:
+          "CEO Approved status ID not available. Please refresh the page.",
+      });
+      return;
+    }
+
     setApprovingDealId(dealId);
 
     try {
-      // Update status to "Approved" - requires statusId UUID
-      // TODO: Implement status name to UUID mapping
-      toast.warning("Status Update", {
-        description:
-          "Status update requires statusId (UUID) mapping. Please implement status mapping.",
-        duration: 3000,
-      });
+      // Call API to update deal status to CEO Approved
+      await dealsApi.updateDealStatus(dealId, ceoApprovedStatusId);
 
-      // Remove from list or update status
-      setDealsRequiringAction((prev) =>
-        prev.filter((deal) => deal.id !== dealId)
-      );
+      // Refetch all deals to get updated data
+      await fetchDeals();
 
       setApprovingDealId(null);
       toast.success("Deal Approved", {
-        description: `Deal ${dealId} has been approved and moved to the next stage.`,
+        description: `Deal has been approved and moved to the next stage.`,
         duration: 3000,
       });
     } catch (err) {
@@ -152,25 +170,26 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
   };
 
   const handleReject = async (dealId: string) => {
+    if (!ceoRejectedStatusId) {
+      toast.error("Status ID not found", {
+        description:
+          "CEO Rejected status ID not available. Please refresh the page.",
+      });
+      return;
+    }
+
     setRejectingDealId(dealId);
 
     try {
-      // Update status to "Finance Review" - requires statusId UUID
-      // TODO: Implement status name to UUID mapping
-      toast.warning("Status Update", {
-        description:
-          "Status update requires statusId (UUID) mapping. Please implement status mapping.",
-        duration: 3000,
-      });
+      // Call API to update deal status to CEO Rejected
+      await dealsApi.updateDealStatus(dealId, ceoRejectedStatusId);
 
-      // Remove from list or update status
-      setDealsRequiringAction((prev) =>
-        prev.filter((deal) => deal.id !== dealId)
-      );
+      // Refetch all deals to get updated data
+      await fetchDeals();
 
       setRejectingDealId(null);
       toast.success("Deal Rejected", {
-        description: `Deal ${dealId} has been rejected and returned for review.`,
+        description: `Deal has been rejected and returned for review.`,
         duration: 3000,
       });
     } catch (err) {
@@ -185,29 +204,59 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
     }
   };
 
+  // Calculate deals requiring action for the header badge
+  const dealsRequiringAction = allDeals.filter((deal) => {
+    const dealApi = deal as DealApiResponse;
+    const statusName = dealApi.status?.name || deal.statusId || "";
+    const statusId = dealApi.status?.id || deal.statusId || "";
+
+    // Exclude deals that are already CEO Approved or CEO Rejected
+    const isAlreadyApproved =
+      (ceoApprovedStatusId && statusId === ceoApprovedStatusId) ||
+      statusName.toLowerCase() === "ceo approved" ||
+      statusName.toLowerCase() === "ceo approve";
+    const isAlreadyRejected =
+      (ceoRejectedStatusId && statusId === ceoRejectedStatusId) ||
+      statusName.toLowerCase() === "ceo rejected" ||
+      statusName.toLowerCase() === "ceo reject";
+
+    if (isAlreadyApproved || isAlreadyRejected) {
+      return false;
+    }
+
+    // Include deals that require CEO action
+    return (
+      statusName === "Finance Review" ||
+      statusName === "Submitted" ||
+      statusName === "Approved" ||
+      dealApi.agentCommissions?.mainAgent?.status?.name === "Expected" ||
+      dealApi.agentCommissions?.mainAgent?.status?.name === "Pending"
+    );
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-gray-900 dark:text-white">
-            Deals Requiring Action
-          </h2>
+          <h2 className="text-gray-900 dark:text-white">All Deals</h2>
           <p className="text-gray-600 dark:text-gray-400">
-            Review and approve deals pending your action
+            View and manage all deals
           </p>
         </div>
-        <div className="px-4 py-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg border border-orange-200 dark:border-orange-800">
-          <p className="text-orange-700 dark:text-orange-300 font-medium">
-            {dealsRequiringAction.length} deals pending approval
-          </p>
-        </div>
+        {dealsRequiringAction.length > 0 && (
+          <div className="px-4 py-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg border border-orange-200 dark:border-orange-800">
+            <p className="text-orange-700 dark:text-orange-300 font-medium">
+              {dealsRequiringAction.length} deals pending approval
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Deals Table */}
       <Card className="border-0 shadow-lg">
         <CardHeader className="pb-4">
           <CardTitle>
-            {dealsRequiringAction.length} Deals Requiring Action
+            {allDeals.length} {allDeals.length === 1 ? "Deal" : "Deals"}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -225,10 +274,10 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
                 {error}
               </span>
             </div>
-          ) : dealsRequiringAction.length === 0 ? (
+          ) : allDeals.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-600 dark:text-gray-400">
-                No deals currently require your action.
+                No deals found.
               </p>
             </div>
           ) : (
@@ -263,7 +312,7 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {dealsRequiringAction.map((deal) => (
+                  {allDeals.map((deal) => (
                     <tr
                       key={deal.id}
                       className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
@@ -336,48 +385,74 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
                             <Eye className="h-4 w-4" />
                             View
                           </Button>
-                          {approvingDealId === deal.id ? (
-                            <Button
-                              variant="default"
-                              size="sm"
-                              disabled
-                              className="flex items-center gap-1 bg-green-600 hover:bg-green-700"
-                            >
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              Approving...
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={() => handleApprove(deal.id)}
-                              className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white"
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                              Approve
-                            </Button>
-                          )}
-                          {rejectingDealId === deal.id ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled
-                              className="flex items-center gap-1 border-red-600 text-red-600"
-                            >
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              Rejecting...
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleReject(deal.id)}
-                              className="flex items-center gap-1 border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                            >
-                              <XCircle className="h-4 w-4" />
-                              Reject
-                            </Button>
-                          )}
+                          {(() => {
+                            const dealApi = deal as DealApiResponse;
+                            const statusName =
+                              dealApi.status?.name || deal.statusId || "";
+                            const statusId =
+                              dealApi.status?.id || deal.statusId || "";
+                            const isAlreadyApproved =
+                              (ceoApprovedStatusId &&
+                                statusId === ceoApprovedStatusId) ||
+                              statusName.toLowerCase() === "ceo approved" ||
+                              statusName.toLowerCase() === "ceo approve";
+                            const isAlreadyRejected =
+                              (ceoRejectedStatusId &&
+                                statusId === ceoRejectedStatusId) ||
+                              statusName.toLowerCase() === "ceo rejected" ||
+                              statusName.toLowerCase() === "ceo reject";
+
+                            return (
+                              <>
+                                {!isAlreadyApproved && !isAlreadyRejected && (
+                                  <>
+                                    {approvingDealId === deal.id ? (
+                                      <Button
+                                        variant="default"
+                                        size="sm"
+                                        disabled
+                                        className="flex items-center gap-1 bg-green-600 hover:bg-green-700"
+                                      >
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Approving...
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        variant="default"
+                                        size="sm"
+                                        onClick={() => handleApprove(deal.id)}
+                                        className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white"
+                                      >
+                                        <CheckCircle className="h-4 w-4" />
+                                        Approve
+                                      </Button>
+                                    )}
+                                    {rejectingDealId === deal.id ? (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled
+                                        className="flex items-center gap-1 border-red-600 text-red-600"
+                                      >
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Rejecting...
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleReject(deal.id)}
+                                        className="flex items-center gap-1 border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                      >
+                                        <XCircle className="h-4 w-4" />
+                                        Reject
+                                      </Button>
+                                    )}
+                                  </>
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                       </td>
                     </tr>

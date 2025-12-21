@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { dealsApi, type Deal } from "@/lib/deals";
+import { filtersApi } from "@/lib/filters";
 import { Loader2, AlertCircle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { CEODealHeader } from "./ceo/CEODealHeader";
@@ -22,6 +23,44 @@ export function CEODealView({ dealId, onBack }: CEODealViewProps) {
   const [error, setError] = useState<string | null>(null);
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
+  const [ceoApprovedStatusId, setCeoApprovedStatusId] = useState<string | null>(
+    null
+  );
+  const [ceoRejectedStatusId, setCeoRejectedStatusId] = useState<string | null>(
+    null
+  );
+
+  // Fetch statuses to get CEO Approved and CEO Rejected IDs
+  useEffect(() => {
+    const fetchStatuses = async () => {
+      try {
+        const statusList = await filtersApi.getStatuses();
+
+        // Find CEO Approved and CEO Rejected status IDs (case-insensitive)
+        const approvedStatus = statusList.find(
+          (s) =>
+            s.name.toLowerCase() === "ceo approved" ||
+            s.name.toLowerCase() === "ceo approve"
+        );
+        const rejectedStatus = statusList.find(
+          (s) =>
+            s.name.toLowerCase() === "ceo rejected" ||
+            s.name.toLowerCase() === "ceo reject"
+        );
+
+        if (approvedStatus) {
+          setCeoApprovedStatusId(approvedStatus.id);
+        }
+        if (rejectedStatus) {
+          setCeoRejectedStatusId(rejectedStatus.id);
+        }
+      } catch (err) {
+        console.error("Error fetching statuses:", err);
+      }
+    };
+
+    fetchStatuses();
+  }, []);
 
   const fetchDeal = useCallback(async () => {
     if (!dealId) {
@@ -53,10 +92,18 @@ export function CEODealView({ dealId, onBack }: CEODealViewProps) {
   const handleApprove = async () => {
     if (!deal) return;
 
+    if (!ceoApprovedStatusId) {
+      toast.error("Status ID not found", {
+        description:
+          "CEO Approved status ID not available. Please refresh the page.",
+      });
+      return;
+    }
+
     setIsApproving(true);
     try {
-      // TODO: Implement actual approval API call
-      // await dealsApi.approveDeal(dealId);
+      // Call API to update deal status to CEO Approved
+      await dealsApi.updateDealStatus(deal.id, ceoApprovedStatusId);
 
       toast.success("Deal Approved", {
         description: `Deal ${deal.dealNumber} has been approved and moved to the next stage.`,
@@ -79,12 +126,20 @@ export function CEODealView({ dealId, onBack }: CEODealViewProps) {
   const handleReject = async () => {
     if (!deal) return;
 
+    if (!ceoRejectedStatusId) {
+      toast.error("Status ID not found", {
+        description:
+          "CEO Rejected status ID not available. Please refresh the page.",
+      });
+      return;
+    }
+
     setIsRejecting(true);
     try {
-      // TODO: Implement actual rejection API call
-      // await dealsApi.rejectDeal(dealId);
+      // Call API to update deal status to CEO Rejected
+      await dealsApi.updateDealStatus(deal.id, ceoRejectedStatusId);
 
-      toast.error("Deal Rejected", {
+      toast.success("Deal Rejected", {
         description: `Deal ${deal.dealNumber} has been rejected and returned for review.`,
         duration: 3000,
       });
@@ -138,6 +193,28 @@ export function CEODealView({ dealId, onBack }: CEODealViewProps) {
   const buyer = deal.buyerSellerDetails?.find((d) => d.isBuyer === true);
   const seller = deal.buyerSellerDetails?.find((d) => d.isBuyer === false);
 
+  // Check if deal is already CEO Approved or CEO Rejected
+  // Deal API response may have status as object or statusId as string
+  type DealWithStatus = Deal & {
+    status?: {
+      id: string;
+      name: string;
+    };
+  };
+  const dealWithStatus = deal as DealWithStatus;
+  const dealStatus = dealWithStatus.status;
+  const statusName = dealStatus?.name || "";
+  const statusId = dealStatus?.id || deal.statusId || "";
+  const isAlreadyApproved =
+    (ceoApprovedStatusId && statusId === ceoApprovedStatusId) ||
+    statusName.toLowerCase() === "ceo approved" ||
+    statusName.toLowerCase() === "ceo approve";
+  const isAlreadyRejected =
+    (ceoRejectedStatusId && statusId === ceoRejectedStatusId) ||
+    statusName.toLowerCase() === "ceo rejected" ||
+    statusName.toLowerCase() === "ceo reject";
+  const showActions = !isAlreadyApproved && !isAlreadyRejected;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -150,6 +227,7 @@ export function CEODealView({ dealId, onBack }: CEODealViewProps) {
         onReject={handleReject}
         isApproving={isApproving}
         isRejecting={isRejecting}
+        showActions={showActions}
       />
 
       {/* Deal Information */}

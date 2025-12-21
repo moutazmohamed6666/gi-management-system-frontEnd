@@ -12,6 +12,7 @@ interface CEODealHeaderProps {
   onReject: () => void;
   isApproving: boolean;
   isRejecting: boolean;
+  showActions?: boolean;
 }
 
 export function CEODealHeader({
@@ -23,6 +24,7 @@ export function CEODealHeader({
   onReject,
   isApproving,
   isRejecting,
+  showActions = true,
 }: CEODealHeaderProps) {
   return (
     <div className="flex items-center justify-between">
@@ -40,46 +42,48 @@ export function CEODealHeader({
           </p>
         </div>
       </div>
-      <div className="flex gap-2">
-        {isRejecting ? (
-          <Button
-            variant="outline"
-            disabled
-            className="flex items-center gap-2 border-red-600 text-red-600"
-          >
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Rejecting...
-          </Button>
-        ) : (
-          <Button
-            variant="outline"
-            onClick={onReject}
-            className="flex items-center gap-2 border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-          >
-            <XCircle className="h-4 w-4" />
-            Reject Deal
-          </Button>
-        )}
-        {isApproving ? (
-          <Button
-            variant="default"
-            disabled
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-          >
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Approving...
-          </Button>
-        ) : (
-          <Button
-            variant="default"
-            onClick={onApprove}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
-          >
-            <CheckCircle className="h-4 w-4" />
-            Approve Deal
-          </Button>
-        )}
-      </div>
+      {showActions && (
+        <div className="flex gap-2">
+          {isRejecting ? (
+            <Button
+              variant="outline"
+              disabled
+              className="flex items-center gap-2 border-red-600 text-red-600"
+            >
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Rejecting...
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={onReject}
+              className="flex items-center gap-2 border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+            >
+              <XCircle className="h-4 w-4" />
+              Reject Deal
+            </Button>
+          )}
+          {isApproving ? (
+            <Button
+              variant="default"
+              disabled
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+            >
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Approving...
+            </Button>
+          ) : (
+            <Button
+              variant="default"
+              onClick={onApprove}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+            >
+              <CheckCircle className="h-4 w-4" />
+              Approve Deal
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
