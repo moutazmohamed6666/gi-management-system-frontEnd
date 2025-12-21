@@ -94,22 +94,35 @@ export function CollectCommissionModal({
 
   if (!isOpen) return null;
 
-  const buyer = deal.buyerSellerDetails?.find((d) => d.isBuyer === true);
+  const buyer =
+    deal.buyerSellerDetails?.find((d) => d.isBuyer === true) || deal.buyer;
 
   // Calculate total commission and remaining
+  // Use new agentCommissions structure if available, otherwise fallback to old structure
   const totalCommission =
-    deal.commissions?.reduce(
-      (sum, c) => sum + parseFloat(c.expectedAmount || "0"),
-      0
-    ) ||
-    parseFloat(deal.totalCommissionValue || "0") ||
+    deal.agentCommissions?.totalExpected ??
+    (deal.commissions && deal.commissions.length > 0
+      ? deal.commissions.reduce(
+          (sum, c) => sum + parseFloat(c.expectedAmount || "0"),
+          0
+        )
+      : null) ??
+    deal.totalCommission?.commissionValue ??
+    deal.totalCommission?.value ??
+    (deal.totalCommissionValue
+      ? parseFloat(deal.totalCommissionValue)
+      : null) ??
     0;
 
   const paidAmount =
-    deal.commissions?.reduce(
-      (sum, c) => sum + parseFloat(c.paidAmount || "0"),
-      0
-    ) || 0;
+    deal.agentCommissions?.totalPaid ??
+    (deal.commissions && deal.commissions.length > 0
+      ? deal.commissions.reduce(
+          (sum, c) => sum + parseFloat(c.paidAmount || "0"),
+          0
+        )
+      : null) ??
+    0;
 
   const remainingAmount = totalCommission - paidAmount;
 

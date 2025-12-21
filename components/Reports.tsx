@@ -293,7 +293,7 @@ export function Reports() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div>
+            {/* <div>
               <Label htmlFor="reportType">Report Type</Label>
               <Select
                 value={reportType}
@@ -315,7 +315,7 @@ export function Reports() {
                   </SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </div> */}
             <div>
               <Label htmlFor="developer">Developer</Label>
               <Select

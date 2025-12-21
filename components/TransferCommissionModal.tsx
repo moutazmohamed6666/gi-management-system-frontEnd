@@ -38,7 +38,9 @@ export function TransferCommissionModal({
   const [amount, setAmount] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingAgents, setIsLoadingAgents] = useState(false);
-  const [dealAgents, setDealAgents] = useState<GetDealAgentsResponse | null>(null);
+  const [dealAgents, setDealAgents] = useState<GetDealAgentsResponse | null>(
+    null
+  );
   const [amountError, setAmountError] = useState<string>("");
 
   // Fetch agents and managers when modal opens
@@ -67,9 +69,14 @@ export function TransferCommissionModal({
   // Get all available users for transfer (mainAgent, manager, internalAgents)
   const getAvailableUsers = () => {
     if (!dealAgents) return [];
-    
-    const users: Array<{ id: string; name: string; email: string; role: string }> = [];
-    
+
+    const users: Array<{
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+    }> = [];
+
     // Add main agent
     if (dealAgents.mainAgent) {
       users.push({
@@ -79,7 +86,7 @@ export function TransferCommissionModal({
         role: dealAgents.mainAgent.role,
       });
     }
-    
+
     // Add manager if exists
     if (dealAgents.manager) {
       users.push({
@@ -89,7 +96,7 @@ export function TransferCommissionModal({
         role: dealAgents.manager.role,
       });
     }
-    
+
     // Add internal agents
     if (dealAgents.internalAgents && dealAgents.internalAgents.length > 0) {
       dealAgents.internalAgents.forEach((agent) => {
@@ -101,26 +108,41 @@ export function TransferCommissionModal({
         });
       });
     }
-    
+
     return users;
   };
 
   if (!isOpen) return null;
 
-  const buyer = deal.buyerSellerDetails?.find((d) => d.isBuyer === true);
+  const buyer =
+    deal.buyerSellerDetails?.find((d) => d.isBuyer === true) || deal.buyer;
 
   // Calculate available amount to transfer
+  // Use new agentCommissions structure if available, otherwise fallback to old structure
   const totalCollected =
-    deal.commissions?.reduce(
-      (sum, c) => sum + parseFloat(c.paidAmount || "0"),
-      0
-    ) || 0;
+    deal.agentCommissions?.totalPaid ??
+    (deal.commissions && deal.commissions.length > 0
+      ? deal.commissions.reduce(
+          (sum, c) => sum + parseFloat(c.paidAmount || "0"),
+          0
+        )
+      : null) ??
+    0;
 
   const totalCommission =
-    deal.commissions?.reduce(
-      (sum, c) => sum + parseFloat(c.expectedAmount || "0"),
-      0
-    ) || parseFloat(deal.totalCommissionValue || "0") || 0;
+    deal.agentCommissions?.totalExpected ??
+    (deal.commissions && deal.commissions.length > 0
+      ? deal.commissions.reduce(
+          (sum, c) => sum + parseFloat(c.expectedAmount || "0"),
+          0
+        )
+      : null) ??
+    deal.totalCommission?.commissionValue ??
+    deal.totalCommission?.value ??
+    (deal.totalCommissionValue
+      ? parseFloat(deal.totalCommissionValue)
+      : null) ??
+    0;
 
   const handleAmountChange = (value: string) => {
     // Only allow numbers and one decimal point
@@ -159,14 +181,18 @@ export function TransferCommissionModal({
 
       const recipientName = getRecipientName(toUserId);
       toast.success("Commission Transferred", {
-        description: `AED ${parseFloat(amount).toLocaleString()} transferred to ${recipientName}.`,
+        description: `AED ${parseFloat(
+          amount
+        ).toLocaleString()} transferred to ${recipientName}.`,
       });
 
       onSuccess(response);
       handleReset();
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to transfer commission";
+        error instanceof Error
+          ? error.message
+          : "Failed to transfer commission";
       toast.error("Transfer Failed", {
         description: errorMessage,
       });
@@ -252,10 +278,10 @@ export function TransferCommissionModal({
                 Deal Value
               </div>
               <div className="text-sm font-medium text-gray-900 dark:text-white">
-                AED {(
-                  typeof deal.dealValue === 'string' 
-                    ? parseFloat(deal.dealValue) 
-                    : deal.dealValue || 0
+                AED{" "}
+                {(typeof deal.dealValue === "string"
+                  ? parseFloat(deal.dealValue)
+                  : deal.dealValue || 0
                 ).toLocaleString()}
               </div>
             </div>
@@ -276,12 +302,12 @@ export function TransferCommissionModal({
               </div>
             </div>
             <div>
-              <div className="text-xs text-gray-600 dark:text-gray-400">
+              {/* <div className="text-xs text-gray-600 dark:text-gray-400">
                 Available to Transfer
               </div>
               <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
                 AED {totalCollected.toLocaleString()}
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
@@ -322,10 +348,7 @@ export function TransferCommissionModal({
           </div>
 
           <div>
-            <Label
-              htmlFor="toUserId"
-              className="text-gray-900 dark:text-white"
-            >
+            <Label htmlFor="toUserId" className="text-gray-900 dark:text-white">
               Select User <span className="text-red-500">*</span>
             </Label>
             <Select value={toUserId} onValueChange={setToUserId}>
@@ -382,7 +405,6 @@ export function TransferCommissionModal({
               </p>
             )}
           </div>
-
         </div>
 
         {/* Footer Actions */}
@@ -397,12 +419,7 @@ export function TransferCommissionModal({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={
-              !toAccount ||
-              !toUserId ||
-              !amount ||
-              isSubmitting
-            }
+            disabled={!toAccount || !toUserId || !amount || isSubmitting}
             className="gi-bg-dark-green dark:bg-green-600 dark:hover:bg-green-700"
           >
             {isSubmitting ? (
