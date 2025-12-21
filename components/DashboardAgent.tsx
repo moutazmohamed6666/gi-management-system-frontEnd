@@ -380,7 +380,11 @@ export function DashboardAgent() {
             <div className="flex items-baseline gap-2">
               <div className="text-2xl text-gray-900 dark:text-gray-100">
                 {agentMetrics.total_commission.currency}{" "}
-                {(agentMetrics.total_commission.value / 1000).toFixed(0)}K
+                {agentMetrics.total_commission.value < 1000
+                  ? agentMetrics.total_commission.value
+                  : `${(agentMetrics.total_commission.value / 1000).toFixed(
+                      0
+                    )}K`}
               </div>
               <div className="flex items-center gap-1 text-green-600 dark:text-green-400 text-sm">
                 <ArrowUpRight className="h-4 w-4" />
@@ -409,7 +413,10 @@ export function DashboardAgent() {
           <CardContent>
             <div className="flex items-baseline gap-2">
               <div className="text-2xl text-gray-900 dark:text-gray-100">
-                AED {(commissionPaid / 1000).toFixed(0)}K
+                AED{" "}
+                {commissionPaid < 1000
+                  ? commissionPaid
+                  : `${(commissionPaid / 1000).toFixed(0)}K`}
               </div>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -431,7 +438,10 @@ export function DashboardAgent() {
           <CardContent>
             <div className="flex items-baseline gap-2">
               <div className="text-2xl text-gray-900 dark:text-gray-100">
-                AED {(commissionUnpaid / 1000).toFixed(0)}K
+                AED{" "}
+                {commissionUnpaid < 1000
+                  ? commissionUnpaid
+                  : `${(commissionUnpaid / 1000).toFixed(0)}K`}
               </div>
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
