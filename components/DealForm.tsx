@@ -1401,8 +1401,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                     />
                   </div>
 
-                  {/* Total Commission Fields - Hidden for agents */}
-                  {currentRole !== "agent" && (
+                  {/* Total Commission Fields */}
                     <div
                       className="pt-4 border-t"
                       style={{ borderColor: "var(--gi-green-40)" }}
@@ -1459,7 +1458,6 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                         </div>
                       </div>
                     </div>
-                  )}
 
                   {/* Additional Agent Toggle */}
                   <div
