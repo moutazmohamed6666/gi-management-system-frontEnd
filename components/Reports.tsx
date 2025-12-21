@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
-import { Calendar } from "./ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { StyledDatePicker } from "./StyledDatePicker";
 import {
   Select,
   SelectContent,
@@ -23,9 +22,7 @@ import {
   Loader2,
   AlertCircle,
   RefreshCw,
-  ChevronDownIcon,
 } from "lucide-react";
-import { format } from "date-fns";
 import { Label } from "./ui/label";
 import { useFilters } from "@/lib/useFilters";
 import {
@@ -74,8 +71,6 @@ export function Reports() {
   );
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [startDateOpen, setStartDateOpen] = useState(false);
-  const [endDateOpen, setEndDateOpen] = useState(false);
 
   // API state
   const [isLoading, setIsLoading] = useState(false);
@@ -358,69 +353,21 @@ export function Reports() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex flex-col gap-1">
-              <Label className="px-1">From Date</Label>
-              <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-between font-normal"
-                  >
-                    {startDate
-                      ? new Date(startDate).toLocaleDateString()
-                      : "Select date"}
-                    <ChevronDownIcon />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-auto overflow-hidden p-0"
-                  align="start"
-                >
-                  <Calendar
-                    mode="single"
-                    selected={startDate ? new Date(startDate) : undefined}
-                    captionLayout="dropdown"
-                    onSelect={(date) => {
-                      handleStartDateChange(
-                        date ? format(date, "yyyy-MM-dd") : ""
-                      );
-                      setStartDateOpen(false);
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
+            <div>
+              <StyledDatePicker
+                value={startDate}
+                onChange={handleStartDateChange}
+                placeholder="Select start date"
+                label="From Date"
+              />
             </div>
-            <div className="flex flex-col gap-1">
-              <Label className="px-1">To Date</Label>
-              <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-between font-normal"
-                  >
-                    {endDate
-                      ? new Date(endDate).toLocaleDateString()
-                      : "Select date"}
-                    <ChevronDownIcon />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-auto overflow-hidden p-0"
-                  align="start"
-                >
-                  <Calendar
-                    mode="single"
-                    selected={endDate ? new Date(endDate) : undefined}
-                    captionLayout="dropdown"
-                    onSelect={(date) => {
-                      handleEndDateChange(
-                        date ? format(date, "yyyy-MM-dd") : ""
-                      );
-                      setEndDateOpen(false);
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
+            <div>
+              <StyledDatePicker
+                value={endDate}
+                onChange={handleEndDateChange}
+                placeholder="Select end date"
+                label="To Date"
+              />
             </div>
           </div>
         </CardContent>

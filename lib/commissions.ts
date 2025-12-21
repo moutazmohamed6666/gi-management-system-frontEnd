@@ -97,13 +97,32 @@ export interface DealCollection {
   id: string;
   dealId: string;
   amount: string;
-  paymentMethod: string;
-  sourceType: string;
+  collectionDate: string;
+  collectionTypeId: string;
   sourceId: string | null;
-  receivedDate: string;
-  reference: string | null;
   notes: string | null;
   createdAt: string;
+  updatedAt: string;
+  // Nested objects from API
+  source?: {
+    id: string;
+    name: string;
+  };
+  collectionType?: {
+    id: string;
+    name: string;
+  };
+  // Computed/mapped fields for compatibility
+  paymentMethod?: string; // Mapped from collectionType.name
+  sourceType?: string; // Mapped from source.name
+  receivedDate?: string; // Mapped from collectionDate
+  reference?: string | null;
+}
+
+// API Response structure
+export interface GetDealCollectionsApiResponse {
+  collections: DealCollection[];
+  totalCollected: string;
 }
 
 export type GetDealCollectionsResponse = DealCollection[];
@@ -151,7 +170,7 @@ export interface CompleteTransferResponse {
 export interface CommissionSummary {
   totalExpected: number;
   totalCollected: number;
-  totalTransferred: number;
+  totalTransferred?: number; // Optional - only set if transfer data is available from API
   pendingTransfers: number;
   remainingToCollect: number;
   remainingToTransfer: number;
@@ -210,9 +229,22 @@ export const commissionsApi = {
   getDealCollections: async (
     dealId: string
   ): Promise<GetDealCollectionsResponse> => {
-    return apiClient<GetDealCollectionsResponse>(
+    const response = await apiClient<GetDealCollectionsApiResponse>(
       `/api/commissions/collections/deal/${dealId}`
     );
+    
+    // Map API response to DealCollection format with computed fields
+    return response.collections.map((collection) => ({
+      ...collection,
+      // Map collectionType.name to paymentMethod for backward compatibility
+      paymentMethod: collection.collectionType?.name || "",
+      // Map source.name to sourceType for backward compatibility
+      sourceType: collection.source?.name || "",
+      // Map collectionDate to receivedDate for backward compatibility
+      receivedDate: collection.collectionDate,
+      // Reference field (not in API response, set to null)
+      reference: null,
+    }));
   },
 
   // Transfer commission to agent/manager
@@ -254,7 +286,8 @@ export const commissionsApi = {
   // Helper: Calculate commission summary for a deal
   calculateSummary: (
     commissions: Array<{ expectedAmount: string; paidAmount: string }>,
-    collections: DealCollection[]
+    collections: DealCollection[],
+    totalTransferred?: number // Optional - pass actual transfer data from API if available
   ): CommissionSummary => {
     const totalExpected = commissions.reduce(
       (sum, c) => sum + parseFloat(c.expectedAmount || "0"),
@@ -264,25 +297,26 @@ export const commissionsApi = {
       (sum, c) => sum + parseFloat(c.amount || "0"),
       0
     );
-    const totalTransferred = commissions.reduce(
-      (sum, c) => sum + parseFloat(c.paidAmount || "0"),
-      0
-    );
 
+    // Only use provided totalTransferred if available, otherwise don't calculate it
+    // totalTransferred should come from actual transfer API data, not from commission.paidAmount
     const remainingToCollect = totalExpected - totalCollected;
-    const remainingToTransfer = totalCollected - totalTransferred;
+    const remainingToTransfer = totalTransferred !== undefined 
+      ? totalCollected - totalTransferred 
+      : 0;
 
+    // Determine status based on collected amount, not transferred amount
     let status: CommissionStatusType = "Pending";
-    if (totalTransferred >= totalExpected && totalExpected > 0) {
+    if (totalCollected >= totalExpected && totalExpected > 0) {
       status = "Paid";
-    } else if (totalTransferred > 0 || totalCollected > 0) {
+    } else if (totalCollected > 0) {
       status = "Partially Paid";
     }
 
     return {
       totalExpected,
       totalCollected,
-      totalTransferred,
+      totalTransferred, // Only set if provided from API
       pendingTransfers: remainingToTransfer > 0 ? remainingToTransfer : 0,
       remainingToCollect: remainingToCollect > 0 ? remainingToCollect : 0,
       remainingToTransfer: remainingToTransfer > 0 ? remainingToTransfer : 0,

@@ -162,31 +162,38 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
   const canPrev = page > 1;
   const canNext = page < totalPages && deals.length === pageSize;
 
+  const getStatusName = (statusId?: string): string => {
+    if (!statusId) return "Unknown";
+    const status = statuses.find((s) => s.id === statusId);
+    return status?.name || statusId;
+  };
+
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Closed":
-      case "Paid":
-        return "bg-green-600";
-      case "Commission Transferred":
-      case "Commission Received":
-      case "Approved":
-        return "bg-blue-600";
-      case "Finance Review":
-      case "Partially Paid":
-        return "bg-orange-600";
-      case "Submitted":
-        return "bg-yellow-600";
-      case "Pending":
-        return "bg-gray-600";
-      default:
-        return "bg-gray-600";
+    const statusLower = status.toLowerCase();
+    if (statusLower.includes("closed") || statusLower.includes("paid")) {
+      return "bg-green-600";
     }
+    if (
+      statusLower.includes("transferred") ||
+      statusLower.includes("received") ||
+      statusLower.includes("approved")
+    ) {
+      return "bg-blue-600";
+    }
+    if (statusLower.includes("finance") || statusLower.includes("partially")) {
+      return "bg-orange-600";
+    }
+    if (statusLower.includes("submitted")) {
+      return "bg-yellow-600";
+    }
+    return "bg-gray-600";
   };
 
   const handleEditClick = (deal: Deal) => {
     setOpenPopoverId(null); // Close popover
     setEditingDealId(deal.id);
-    setEditingStatus(deal.commission?.status || deal.statusId || "");
+    // Use statusId from deal, or find matching status from filters
+    setEditingStatus(deal.statusId || "");
   };
 
   const handleCancelEdit = () => {
@@ -194,8 +201,8 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
     setEditingStatus("");
   };
 
-  const handleStatusChange = async (newStatus: string) => {
-    if (newStatus === editingStatus || !editingDealId) {
+  const handleStatusChange = async (newStatusId: string) => {
+    if (newStatusId === editingStatus || !editingDealId) {
       // No change, just exit edit mode
       handleCancelEdit();
       return;
@@ -205,33 +212,43 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
     setIsUpdating(true);
 
     try {
-      // Note: This requires statusId (UUID) mapping - for now we'll update commission status locally
-      // TODO: Implement status name to UUID mapping for proper API integration
+      // Call API to update deal status
+      await dealsApi.updateDealStatus(editingDealId, newStatusId);
 
-      // Update commission status locally if it's a commission status
-      if (["Pending", "Partially Paid", "Paid"].includes(newStatus)) {
-        setDeals((prevDeals) =>
-          prevDeals.map((deal) =>
-            deal.id === editingDealId
-              ? {
-                  ...deal,
-                  commission: {
-                    total: deal.commission?.total ?? 0,
-                    paid: deal.commission?.paid ?? 0,
-                    status: newStatus as "Pending" | "Partially Paid" | "Paid",
-                  },
-                }
-              : deal
-          )
-        );
-      } else {
-        // For other statuses, we'd need statusId UUID - show warning
-        toast.warning("Status Update", {
-          description:
-            "Status update requires statusId (UUID) mapping. Please implement status mapping.",
-          duration: 3000,
-        });
+      // Find the status name for the toast message
+      const statusName =
+        statuses.find((s) => s.id === newStatusId)?.name || "Unknown";
+
+      // Refresh deals list to get updated data
+      const userId = sessionStorage.getItem("userId");
+      const params: {
+        search?: string;
+        agent_id?: string;
+        developer_id?: string;
+        project_id?: string;
+        status_id?: string;
+        page: number;
+        page_size: number;
+      } = {
+        search: searchTerm || undefined,
+        page,
+        page_size: pageSize,
+      };
+
+      // Apply filters based on role
+      if (role === "agent") {
+        if (userId) params.agent_id = userId;
+      } else if (agentFilter !== "all") {
+        params.agent_id = agentFilter;
       }
+
+      if (developerFilter !== "all") params.developer_id = developerFilter;
+      if (projectFilter !== "all") params.project_id = projectFilter;
+      if (statusIdFilter !== "all") params.status_id = statusIdFilter;
+
+      const response = await dealsApi.getDeals(params);
+      setDeals(Array.isArray(response.data) ? response.data : []);
+      setTotal(typeof response.total === "number" ? response.total : 0);
 
       setIsUpdating(false);
       setEditingDealId(null);
@@ -239,7 +256,7 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
 
       // Show success toast
       toast.success("Status Updated", {
-        description: `Deal status changed to "${newStatus}" successfully.`,
+        description: `Deal status changed to "${statusName}" successfully.`,
         duration: 3000,
       });
     } catch (err) {
@@ -265,17 +282,51 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
     setSelectedDealForCollection(null);
   };
 
-  const handleConfirmCollection = (paymentMethod: string, amount: string) => {
+  const handleCollectSuccess = (_collection: unknown) => {
     // Close modal
     handleCollectModalClose();
 
     // Show success toast
     toast.success("Commission Collected", {
-      description: `Successfully collected AED ${parseFloat(
-        amount
-      ).toLocaleString()} via ${paymentMethod.replace("-", " ")}.`,
+      description: "Commission collected successfully.",
       duration: 4000,
     });
+
+    // Refresh deals list
+    const userId = sessionStorage.getItem("userId");
+    const params: {
+      search?: string;
+      agent_id?: string;
+      developer_id?: string;
+      project_id?: string;
+      status_id?: string;
+      page: number;
+      page_size: number;
+    } = {
+      search: searchTerm || undefined,
+      page,
+      page_size: pageSize,
+    };
+
+    if (role === "agent") {
+      if (userId) params.agent_id = userId;
+    } else if (agentFilter !== "all") {
+      params.agent_id = agentFilter;
+    }
+
+    if (developerFilter !== "all") params.developer_id = developerFilter;
+    if (projectFilter !== "all") params.project_id = projectFilter;
+    if (statusIdFilter !== "all") params.status_id = statusIdFilter;
+
+    dealsApi
+      .getDeals(params)
+      .then((response) => {
+        setDeals(Array.isArray(response.data) ? response.data : []);
+        setTotal(typeof response.total === "number" ? response.total : 0);
+      })
+      .catch(() => {
+        // Silently fail - user can manually refresh if needed
+      });
   };
 
   const handleTransferCommissionClick = (deal: Deal) => {
@@ -289,21 +340,51 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
     setSelectedDealForTransfer(null);
   };
 
-  const handleConfirmTransfer = (
-    recipientType: string,
-    recipientName: string,
-    amount: string
-  ) => {
+  const handleTransferSuccess = (_transfer: unknown) => {
     // Close modal
     handleTransferModalClose();
 
     // Show success toast
     toast.success("Commission Transferred", {
-      description: `Successfully transferred AED ${parseFloat(
-        amount
-      ).toLocaleString()} to ${recipientName} (${recipientType}).`,
+      description: "Commission transferred successfully.",
       duration: 4000,
     });
+
+    // Refresh deals list
+    const userId = sessionStorage.getItem("userId");
+    const params: {
+      search?: string;
+      agent_id?: string;
+      developer_id?: string;
+      project_id?: string;
+      status_id?: string;
+      page: number;
+      page_size: number;
+    } = {
+      search: searchTerm || undefined,
+      page,
+      page_size: pageSize,
+    };
+
+    if (role === "agent") {
+      if (userId) params.agent_id = userId;
+    } else if (agentFilter !== "all") {
+      params.agent_id = agentFilter;
+    }
+
+    if (developerFilter !== "all") params.developer_id = developerFilter;
+    if (projectFilter !== "all") params.project_id = projectFilter;
+    if (statusIdFilter !== "all") params.status_id = statusIdFilter;
+
+    dealsApi
+      .getDeals(params)
+      .then((response) => {
+        setDeals(Array.isArray(response.data) ? response.data : []);
+        setTotal(typeof response.total === "number" ? response.total : 0);
+      })
+      .catch(() => {
+        // Silently fail - user can manually refresh if needed
+      });
   };
 
   return (
@@ -551,35 +632,26 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
                               <Select
                                 value={editingStatus}
                                 onValueChange={handleStatusChange}
+                                disabled={filtersLoading}
                               >
                                 <SelectTrigger className="w-[180px] h-8 text-sm">
-                                  <SelectValue />
+                                  <SelectValue placeholder="Select status" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="Pending">
-                                    Pending
-                                  </SelectItem>
-                                  <SelectItem value="Partially Paid">
-                                    Partially Paid
-                                  </SelectItem>
-                                  <SelectItem value="Paid">Paid</SelectItem>
-                                  <SelectItem value="Draft">Draft</SelectItem>
-                                  <SelectItem value="Submitted">
-                                    Submitted
-                                  </SelectItem>
-                                  <SelectItem value="Finance Review">
-                                    Finance Review
-                                  </SelectItem>
-                                  <SelectItem value="Approved">
-                                    Approved
-                                  </SelectItem>
-                                  <SelectItem value="Commission Received">
-                                    Commission Received
-                                  </SelectItem>
-                                  <SelectItem value="Commission Transferred">
-                                    Commission Transferred
-                                  </SelectItem>
-                                  <SelectItem value="Closed">Closed</SelectItem>
+                                  {statuses.length === 0 ? (
+                                    <SelectItem value="" disabled>
+                                      Loading statuses...
+                                    </SelectItem>
+                                  ) : (
+                                    statuses.map((status) => (
+                                      <SelectItem
+                                        key={status.id}
+                                        value={status.id}
+                                      >
+                                        {status.name}
+                                      </SelectItem>
+                                    ))
+                                  )}
                                 </SelectContent>
                               </Select>
                             )}
@@ -587,14 +659,10 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
                         ) : (
                           <span
                             className={`inline-block px-3 py-1 rounded-full text-white text-sm ${getStatusColor(
-                              deal.commission?.status ||
-                                deal.statusId ||
-                                "Pending"
+                              getStatusName(deal.statusId)
                             )}`}
                           >
-                            {deal.commission?.status ||
-                              deal.statusId ||
-                              "Pending"}
+                            {getStatusName(deal.statusId)}
                           </span>
                         )}
                       </td>
@@ -767,7 +835,7 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
           deal={selectedDealForCollection}
           isOpen={isCollectModalOpen}
           onClose={handleCollectModalClose}
-          onConfirm={handleConfirmCollection}
+          onSuccess={handleCollectSuccess}
         />
       )}
 
@@ -777,7 +845,7 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
           deal={selectedDealForTransfer}
           isOpen={isTransferModalOpen}
           onClose={handleTransferModalClose}
-          onConfirm={handleConfirmTransfer}
+          onSuccess={handleTransferSuccess}
         />
       )}
     </div>

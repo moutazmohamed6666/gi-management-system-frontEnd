@@ -42,28 +42,35 @@ export function CollectionHistoryTable({
               </tr>
             </thead>
             <tbody>
-              {collections.map((collection) => (
-                <tr
-                  key={collection.id}
-                  className="border-b dark:border-gray-700"
-                >
-                  <td className="py-3 px-4 text-gray-900 dark:text-white">
-                    {new Date(collection.receivedDate).toLocaleDateString()}
-                  </td>
-                  <td className="py-3 px-4 text-gray-900 dark:text-white capitalize">
-                    {collection.sourceType}
-                  </td>
-                  <td className="py-3 px-4 text-gray-900 dark:text-white">
-                    {collection.paymentMethod.replace("-", " ")}
-                  </td>
-                  <td className="py-3 px-4 text-right text-green-600 dark:text-green-400 font-medium">
-                    AED {parseFloat(collection.amount).toLocaleString()}
-                  </td>
-                  <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
-                    {collection.reference || "-"}
-                  </td>
-                </tr>
-              ))}
+              {collections.map((collection) => {
+                // Use actual API fields if available, fallback to mapped fields
+                const date = collection.collectionDate || collection.receivedDate || collection.createdAt;
+                const sourceName = collection.source?.name || collection.sourceType || "Unknown";
+                const paymentMethod = collection.collectionType?.name || collection.paymentMethod || "Unknown";
+                
+                return (
+                  <tr
+                    key={collection.id}
+                    className="border-b dark:border-gray-700"
+                  >
+                    <td className="py-3 px-4 text-gray-900 dark:text-white">
+                      {new Date(date).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 px-4 text-gray-900 dark:text-white capitalize">
+                      {sourceName}
+                    </td>
+                    <td className="py-3 px-4 text-gray-900 dark:text-white">
+                      {paymentMethod.replace("-", " ")}
+                    </td>
+                    <td className="py-3 px-4 text-right text-green-600 dark:text-green-400 font-medium">
+                      AED {parseFloat(collection.amount).toLocaleString()}
+                    </td>
+                    <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
+                      {collection.reference || "-"}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

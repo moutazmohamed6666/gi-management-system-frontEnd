@@ -244,6 +244,7 @@ export interface FinanceUpdateDealResponse {
 // Update Deal Status Request
 export interface UpdateDealStatusRequest {
   statusId: string; // UUID
+  purchasestatusId?: string; // UUID (optional)
 }
 
 // Update Deal Status Response
@@ -332,11 +333,16 @@ export const dealsApi = {
   // Update deal status
   updateDealStatus: async (
     dealId: string,
-    statusId: string
+    statusId: string,
+    purchasestatusId?: string
   ): Promise<UpdateDealStatusResponse> => {
+    const body: UpdateDealStatusRequest = { statusId };
+    if (purchasestatusId) {
+      body.purchasestatusId = purchasestatusId;
+    }
     return apiClient<UpdateDealStatusResponse>(`/api/deals/${dealId}/status`, {
       method: "PATCH",
-      body: JSON.stringify({ statusId }),
+      body: JSON.stringify(body),
     });
   },
 
@@ -355,9 +361,12 @@ export const dealsApi = {
     dealId: string,
     data: FinanceUpdateDealRequest
   ): Promise<FinanceUpdateDealResponse> => {
-    return apiClient<FinanceUpdateDealResponse>(`/api/deals/${dealId}/finance`, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    });
+    return apiClient<FinanceUpdateDealResponse>(
+      `/api/deals/${dealId}/finance`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }
+    );
   },
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useMemo, useState } from "react";
+import { useForm, Controller } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -38,6 +39,54 @@ const LOCKED_STAGES = [
   "completed",
 ];
 
+// Form data type for react-hook-form
+type DealFormData = {
+  // Deal Information
+  bookingDate: string;
+  cfExpiry: string;
+  closeDate: string;
+  dealTypeId: string;
+  statusId: string;
+  purchaseStatusId: string;
+
+  // Property Details
+  developerId: string;
+  projectId: string;
+  propertyName: string;
+  propertyTypeId: string;
+  unitNumber: string;
+  unitTypeId: string;
+  size: string;
+  bedrooms: string;
+
+  // Seller Information
+  sellerName: string;
+  sellerPhone: string;
+  sellerNationalityId: string;
+  sellerSourceId: string;
+
+  // Buyer Information
+  buyerName: string;
+  buyerPhone: string;
+  buyerNationalityId: string;
+  buyerSourceId: string;
+
+  // Commission Details
+  salesValue: string;
+  commRate: string;
+  agentCommissionTypeId: string;
+  totalCommissionTypeId: string;
+  totalCommissionValue: string;
+  hasAdditionalAgent: boolean;
+  additionalAgentType: "internal" | "external";
+  additionalAgentId: string;
+  agencyName: string;
+  agencyComm: string;
+  agencyCommissionTypeId: string;
+
+  notes: string;
+};
+
 export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
   // Fetch filter data for dropdowns
   const {
@@ -56,52 +105,71 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     error: filtersError,
   } = useFilters();
 
-  const [formData, setFormData] = useState({
-    // Deal Information
-    bookingDate: "",
-    cfExpiry: "",
-    closeDate: "", // NEW: Added closeDate field
-    dealTypeId: "", // Changed from dealType to dealTypeId (UUID)
-    statusId: "", // NEW: Required for create deal (UUID)
-    purchaseStatusId: "", // NEW: Purchase status (UUID)
+  // Initialize form with useForm hook
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<DealFormData>({
+    mode: "onChange", // Validate on change for better UX
+    defaultValues: {
+      // Deal Information
+      bookingDate: "",
+      cfExpiry: "",
+      closeDate: "",
+      dealTypeId: "",
+      statusId: "",
+      purchaseStatusId: "",
 
-    // Property Details
-    developerId: "", // Changed from developer to developerId (UUID)
-    projectId: "", // Changed from projectName to projectId (UUID)
-    propertyName: "", // NEW: Added propertyName field
-    propertyTypeId: "", // Changed from propertyType to propertyTypeId (UUID)
-    unitNumber: "",
-    unitTypeId: "", // Changed from unitType to unitTypeId (UUID)
-    size: "", // Changed from sizeSqFt to size (will convert to number)
-    bedrooms: "", // Keep for now, discuss with backend
+      // Property Details
+      developerId: "",
+      projectId: "",
+      propertyName: "",
+      propertyTypeId: "",
+      unitNumber: "",
+      unitTypeId: "",
+      size: "",
+      bedrooms: "",
 
-    // Seller Information
-    sellerName: "",
-    sellerPhone: "",
-    sellerNationalityId: "", // Changed from sellerNationality to sellerNationalityId (UUID)
-    sellerSourceId: "", // Changed from sellerSource to sellerSourceId (UUID)
+      // Seller Information
+      sellerName: "",
+      sellerPhone: "",
+      sellerNationalityId: "",
+      sellerSourceId: "",
 
-    // Buyer Information
-    buyerName: "",
-    buyerPhone: "",
-    buyerNationalityId: "", // Changed from buyerNationality to buyerNationalityId (UUID)
-    buyerSourceId: "", // Changed from buyerSource to buyerSourceId (UUID)
+      // Buyer Information
+      buyerName: "",
+      buyerPhone: "",
+      buyerNationalityId: "",
+      buyerSourceId: "",
 
-    // Commission Details
-    salesValue: "",
-    commRate: "",
-    agentCommissionTypeId: "", // NEW: For commission type
-    totalCommissionTypeId: "", // NEW: Total commission type (UUID)
-    totalCommissionValue: "", // NEW: Total commission value
-    hasAdditionalAgent: false, // Renamed from hasExternalAgent
-    additionalAgentType: "external" as "internal" | "external", // NEW: Type of additional agent
-    additionalAgentId: "", // NEW: For internal agent selection
-    agencyName: "",
-    agencyComm: "",
-    agencyCommissionTypeId: "", // NEW: For external agent commission type
+      // Commission Details
+      salesValue: "",
+      commRate: "",
+      agentCommissionTypeId: "",
+      totalCommissionTypeId: "",
+      totalCommissionValue: "",
+      hasAdditionalAgent: false,
+      additionalAgentType: "external",
+      additionalAgentId: "",
+      agencyName: "",
+      agencyComm: "",
+      agencyCommissionTypeId: "",
 
-    notes: "", // Keep for now, discuss with backend
+      notes: "",
+    },
   });
+
+  // Watch fields for conditional rendering and filtering
+  const watchedDeveloperId = watch("developerId");
+  const watchedHasAdditionalAgent = watch("hasAdditionalAgent");
+  const watchedAdditionalAgentType = watch("additionalAgentType");
+  const watchedSalesValue = watch("salesValue");
+  const watchedAgencyComm = watch("agencyComm");
 
   const [dealError, setDealError] = useState<string | null>(null);
   const [loadedDealId, setLoadedDealId] = useState<string | null>(null);
@@ -131,19 +199,13 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     return preferred?.id ?? "";
   }, [isEditMode, statuses]);
 
-  const effectiveStatusId = formData.statusId || defaultStatusId;
+  const watchedStatusId = watch("statusId");
+  const effectiveStatusId = watchedStatusId || defaultStatusId;
 
   const statusNameFromFilters = useMemo(() => {
     if (!effectiveStatusId) return "";
     return statuses.find((s) => s.id === effectiveStatusId)?.name || "";
   }, [effectiveStatusId, statuses]);
-
-  const isValidUuid = (value: string) => {
-    // UUID v1-v5
-    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      value
-    );
-  };
 
   // Finance can always edit deals (same as agent create form)
   // Agents can only create, not edit
@@ -223,8 +285,8 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
         const agencyCommissionTypeId =
           firstAdditionalAgent?.commissionTypeId || "";
 
-        setFormData((prev) => ({
-          ...prev,
+        // Reset form with deal data
+        reset({
           // Deal Information
           bookingDate: isoToYmd(deal.bookingDate),
           cfExpiry: isoToYmd(deal.cfExpiry),
@@ -241,6 +303,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
           unitNumber: deal.unitNumber || "",
           unitTypeId: deal.unitTypeId || "",
           size: deal.size ? String(deal.size) : "",
+          bedrooms: "", // Keep for now
 
           // Seller
           sellerName: seller?.name || "",
@@ -270,7 +333,9 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
           agencyName: agencyName,
           agencyComm: agencyComm,
           agencyCommissionTypeId: agencyCommissionTypeId,
-        }));
+
+          notes: "", // Keep for now
+        });
 
         setLoadedDealId(dealId);
       })
@@ -284,37 +349,28 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     return () => {
       cancelled = true;
     };
-  }, [dealId, loadedDealId, dealFetchNonce]);
+  }, [dealId, loadedDealId, dealFetchNonce, reset]);
 
   // Filter projects by selected developer
   // Note: If API doesn't provide developerId in project objects,
   // we may need to fetch projects with ?developerId={id} parameter
   const filteredProjects = useMemo(() => {
-    if (!formData.developerId) return [];
+    if (!watchedDeveloperId) return [];
     // Try to filter by developerId if it exists in project object
     // Otherwise show all projects (backend should filter or we need to update API)
     type ProjectOption = { developerId?: string };
     const projectsWithDeveloper = allProjects.filter((project) => {
       const devId = (project as unknown as ProjectOption).developerId;
-      return devId === formData.developerId;
+      return devId === watchedDeveloperId;
     });
     // If no projects have developerId property, show all projects
     // (This means API doesn't include developerId, and we should update API call)
     return projectsWithDeveloper.length > 0
       ? projectsWithDeveloper
       : allProjects;
-  }, [allProjects, formData.developerId]);
+  }, [allProjects, watchedDeveloperId]);
 
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
-
-  const handleChange = (field: string, value: string | boolean | null) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
-    }
-  };
-
+  // Phone validation function
   const validatePhone = (phone: string): boolean => {
     // Phone regex: allows international format with + and numbers, 10-15 digits
     const phoneRegex =
@@ -322,90 +378,22 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     return phoneRegex.test(phone);
   };
 
-  const handlePhoneChange = (field: string, value: string) => {
-    handleChange(field, value);
-    if (value && !validatePhone(value)) {
-      setErrors((prev) => ({
-        ...prev,
-        [field]: "Invalid phone number format",
-      }));
-    }
+  // UUID validation function
+  const isValidUuid = (value: string) => {
+    // UUID v1-v5
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value
+    );
   };
 
-  const handleNumberOnly = (field: string, value: string) => {
-    // Only allow numbers
-    const numericValue = value.replace(/[^0-9]/g, "");
-    handleChange(field, numericValue);
-  };
-
-  const handleSave = async () => {
+  // Form submission handler
+  const onSubmit = async (data: DealFormData) => {
     if (isReadOnly) {
       toast.error("Permission denied", {
         description:
           currentRole === "agent"
             ? "Agents can create deals, but cannot edit an existing deal."
             : "This deal is approved and cannot be edited.",
-      });
-      return;
-    }
-
-    // Validate phones before saving
-    const newErrors: { [key: string]: string } = {};
-
-    // Required field validations
-    if (!formData.developerId) {
-      newErrors.developerId = "Developer is required";
-    }
-    if (!formData.projectId) {
-      newErrors.projectId = "Project is required";
-    }
-    if (!formData.dealTypeId) {
-      newErrors.dealTypeId = "Deal type is required";
-    }
-    if (!effectiveStatusId) {
-      newErrors.statusId = "Status is required";
-    } else if (!isValidUuid(effectiveStatusId)) {
-      newErrors.statusId = "Status must be a valid UUID";
-    }
-    if (!formData.propertyTypeId) {
-      newErrors.propertyTypeId = "Property type is required";
-    }
-    if (!formData.unitTypeId) {
-      newErrors.unitTypeId = "Unit type is required";
-    }
-    if (!formData.buyerName) {
-      newErrors.buyerName = "Buyer name is required";
-    }
-    if (!formData.buyerPhone) {
-      newErrors.buyerPhone = "Buyer phone is required";
-    }
-    if (!formData.sellerName) {
-      newErrors.sellerName = "Seller name is required";
-    }
-    if (!formData.sellerPhone) {
-      newErrors.sellerPhone = "Seller phone is required";
-    }
-    if (!formData.salesValue) {
-      newErrors.salesValue = "Sales value is required";
-    }
-    if (!formData.bookingDate) {
-      newErrors.bookingDate = "Booking date is required";
-    }
-    if (!formData.closeDate) {
-      newErrors.closeDate = "Close date is required";
-    }
-
-    if (formData.sellerPhone && !validatePhone(formData.sellerPhone)) {
-      newErrors.sellerPhone = "Invalid phone number format";
-    }
-    if (formData.buyerPhone && !validatePhone(formData.buyerPhone)) {
-      newErrors.buyerPhone = "Invalid phone number format";
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      toast.error("Validation Error", {
-        description: "Please fix the validation errors before saving",
       });
       return;
     }
@@ -419,72 +407,75 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
       return;
     }
 
+    // Use effectiveStatusId (either from form or default)
+    const finalStatusId = data.statusId || defaultStatusId;
+
     // Prepare API payload
     const payload: CreateDealRequest = {
-      dealValue: parseFloat(formData.salesValue) || 0,
-      developerId: formData.developerId,
-      projectId: formData.projectId,
+      dealValue: parseFloat(data.salesValue) || 0,
+      developerId: data.developerId,
+      projectId: data.projectId,
       agentId: agentId,
-      bookingDate: new Date(formData.bookingDate).toISOString(),
-      cfExpiry: formData.cfExpiry
-        ? new Date(formData.cfExpiry).toISOString()
+      bookingDate: new Date(data.bookingDate).toISOString(),
+      cfExpiry: data.cfExpiry
+        ? new Date(data.cfExpiry).toISOString()
         : new Date().toISOString(),
-      closeDate: new Date(formData.closeDate).toISOString(),
-      dealTypeId: formData.dealTypeId,
-      statusId: effectiveStatusId,
+      closeDate: new Date(data.closeDate).toISOString(),
+      dealTypeId: data.dealTypeId,
+      statusId: finalStatusId,
       numberOfDeal: 1, // Default to 1, discuss with backend
-      propertyName: formData.propertyName || "", // Use propertyName or project name
-      propertyTypeId: formData.propertyTypeId,
-      unitNumber: formData.unitNumber,
-      unitTypeId: formData.unitTypeId,
-      size: parseFloat(formData.size) || 0,
+      propertyName: data.propertyName || "",
+      propertyTypeId: data.propertyTypeId,
+      unitNumber: data.unitNumber,
+      unitTypeId: data.unitTypeId,
+      size: parseFloat(data.size) || 0,
       buyer: {
-        name: formData.buyerName,
-        phone: formData.buyerPhone,
-        nationalityId: formData.buyerNationalityId,
-        sourceId: formData.buyerSourceId,
+        name: data.buyerName,
+        phone: data.buyerPhone,
+        nationalityId: data.buyerNationalityId,
+        sourceId: data.buyerSourceId,
       },
       seller: {
-        name: formData.sellerName,
-        phone: formData.sellerPhone,
-        nationalityId: formData.sellerNationalityId,
-        sourceId: formData.sellerSourceId,
+        name: data.sellerName,
+        phone: data.sellerPhone,
+        nationalityId: data.sellerNationalityId,
+        sourceId: data.sellerSourceId,
       },
       // Optional fields
-      agentCommissionTypeId: formData.agentCommissionTypeId || undefined,
-      agentCommissionValue: formData.commRate
-        ? parseFloat(formData.commRate)
+      agentCommissionTypeId: data.agentCommissionTypeId || undefined,
+      agentCommissionValue: data.commRate
+        ? parseFloat(data.commRate)
         : undefined,
       // Total Commission fields
-      totalCommissionTypeId: formData.totalCommissionTypeId || undefined,
-      totalCommissionValue: formData.totalCommissionValue
-        ? parseFloat(formData.totalCommissionValue)
+      totalCommissionTypeId: data.totalCommissionTypeId || undefined,
+      totalCommissionValue: data.totalCommissionValue
+        ? parseFloat(data.totalCommissionValue)
         : undefined,
       // Purchase status
-      purchaseStatusId: formData.purchaseStatusId || undefined,
+      purchaseStatusId: data.purchaseStatusId || undefined,
       // Additional agents if enabled
-      additionalAgents: formData.hasAdditionalAgent
+      additionalAgents: data.hasAdditionalAgent
         ? [
-            formData.additionalAgentType === "internal"
+            data.additionalAgentType === "internal"
               ? {
-                  agentId: formData.additionalAgentId,
+                  agentId: data.additionalAgentId,
                   commissionTypeId:
-                    formData.agencyCommissionTypeId ||
-                    formData.agentCommissionTypeId ||
+                    data.agencyCommissionTypeId ||
+                    data.agentCommissionTypeId ||
                     "",
-                  commissionValue: formData.agencyComm
-                    ? parseFloat(formData.agencyComm)
+                  commissionValue: data.agencyComm
+                    ? parseFloat(data.agencyComm)
                     : 0,
                   isInternal: true,
                 }
               : {
-                  externalAgentName: formData.agencyName,
+                  externalAgentName: data.agencyName,
                   commissionTypeId:
-                    formData.agencyCommissionTypeId ||
-                    formData.agentCommissionTypeId ||
+                    data.agencyCommissionTypeId ||
+                    data.agentCommissionTypeId ||
                     "",
-                  commissionValue: formData.agencyComm
-                    ? parseFloat(formData.agencyComm)
+                  commissionValue: data.agencyComm
+                    ? parseFloat(data.agencyComm)
                     : 0,
                   isInternal: false,
                 },
@@ -590,11 +581,22 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
         </Button>
         {!isReadOnly ? (
           <Button
-            onClick={handleSave}
+            type="submit"
+            form="deal-form"
+            disabled={isSubmitting}
             className="gi-bg-dark-green flex items-center gap-2"
           >
-            <Save className="h-4 w-4" />
-            {isEditMode ? "Update Deal" : "Save Deal"}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {isEditMode ? "Updating..." : "Saving..."}
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4" />
+                {isEditMode ? "Update Deal" : "Save Deal"}
+              </>
+            )}
           </Button>
         ) : (
           <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -613,800 +615,975 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
         </div>
       )}
 
-      <fieldset
-        disabled={isReadOnly}
-        className={isReadOnly ? "opacity-80" : ""}
-      >
-        {/* Row 1: Deal Information & Property Details */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Deal Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Deal Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="bookingDate">Booking Date</Label>
-                  <div className="mt-1">
-                    <StyledDatePicker
-                      id="bookingDate"
-                      value={formData.bookingDate}
-                      onChange={(date) => handleChange("bookingDate", date)}
-                      placeholder="Select booking date"
-                    />
-                  </div>
-                  {errors.bookingDate && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.bookingDate}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="cfExpiry">CF Expiry</Label>
-                  <div className="mt-1">
-                    <StyledDatePicker
-                      id="cfExpiry"
-                      value={formData.cfExpiry}
-                      onChange={(date) => handleChange("cfExpiry", date)}
-                      placeholder="Select CF expiry date"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="closeDate">Close Date</Label>
-                  <div className="mt-1">
-                    <StyledDatePicker
-                      id="closeDate"
-                      value={formData.closeDate}
-                      onChange={(date) => handleChange("closeDate", date)}
-                      placeholder="Select close date"
-                    />
-                  </div>
-                  {errors.closeDate && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.closeDate}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="dealTypeId">Deal Type</Label>
-                  <Select
-                    value={formData.dealTypeId}
-                    onValueChange={(value) => handleChange("dealTypeId", value)}
-                    disabled={filtersLoading}
-                  >
-                    <SelectTrigger className="w-full mt-1">
-                      <SelectValue placeholder="Select deal type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {dealTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.dealTypeId && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.dealTypeId}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="statusId">Status</Label>
-                  <Select
-                    value={formData.statusId || defaultStatusId}
-                    onValueChange={(value) => handleChange("statusId", value)}
-                    disabled={filtersLoading}
-                  >
-                    <SelectTrigger className="w-full mt-1">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statuses.map((status) => (
-                        <SelectItem key={status.id} value={status.id}>
-                          {status.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.statusId && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.statusId}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="purchaseStatusId">Purchase Status</Label>
-                  <Select
-                    value={formData.purchaseStatusId}
-                    onValueChange={(value) =>
-                      handleChange("purchaseStatusId", value)
-                    }
-                    disabled={filtersLoading}
-                  >
-                    <SelectTrigger className="w-full mt-1">
-                      <SelectValue placeholder="Select purchase status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {purchaseStatuses.map((status) => (
-                        <SelectItem key={status.id} value={status.id}>
-                          {status.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Property Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Property Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="developerId">Developer</Label>
-                  <Select
-                    value={formData.developerId}
-                    onValueChange={(value) => {
-                      handleChange("developerId", value);
-                      // Reset project when developer changes
-                      handleChange("projectId", "");
-                    }}
-                    disabled={filtersLoading}
-                  >
-                    <SelectTrigger className="w-full mt-1">
-                      <SelectValue placeholder="Select developer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {developers.map((dev) => (
-                        <SelectItem key={dev.id} value={dev.id}>
-                          {dev.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.developerId && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.developerId}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="projectId">Project</Label>
-                  <Select
-                    value={formData.projectId}
-                    onValueChange={(value) => handleChange("projectId", value)}
-                    disabled={filtersLoading || !formData.developerId}
-                  >
-                    <SelectTrigger className="w-full mt-1">
-                      <SelectValue placeholder="Select project" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredProjects.length === 0 ? (
-                        <SelectItem value="__no_projects__" disabled>
-                          {formData.developerId
-                            ? "No projects available"
-                            : "Select developer first"}
-                        </SelectItem>
-                      ) : (
-                        filteredProjects.map((project) => (
-                          <SelectItem key={project.id} value={project.id}>
-                            {project.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {errors.projectId && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.projectId}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="propertyName">Property Name</Label>
-                  <Input
-                    id="propertyName"
-                    value={formData.propertyName}
-                    onChange={(e) =>
-                      handleChange("propertyName", e.target.value)
-                    }
-                    placeholder="Enter property name"
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="propertyTypeId">Property Type</Label>
-                  <Select
-                    value={formData.propertyTypeId}
-                    onValueChange={(value) =>
-                      handleChange("propertyTypeId", value)
-                    }
-                    disabled={filtersLoading}
-                  >
-                    <SelectTrigger className="w-full mt-1">
-                      <SelectValue placeholder="Select property type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {propertyTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.propertyTypeId && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.propertyTypeId}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Row 2: Additional Property Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Unit Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <Label htmlFor="unitNumber">Unit #</Label>
-                <Input
-                  id="unitNumber"
-                  type="text"
-                  value={formData.unitNumber}
-                  onChange={(e) =>
-                    handleNumberOnly("unitNumber", e.target.value)
-                  }
-                  placeholder="Enter unit number"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="unitTypeId">Unit Type</Label>
-                <Select
-                  value={formData.unitTypeId}
-                  onValueChange={(value) => handleChange("unitTypeId", value)}
-                  disabled={filtersLoading}
-                >
-                  <SelectTrigger className="w-full mt-1">
-                    <SelectValue placeholder="Select unit type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {unitTypes.map((type) => (
-                      <SelectItem key={type.id} value={type.id}>
-                        {type.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.unitTypeId && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.unitTypeId}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="size">Size (sq.ft)</Label>
-                <Input
-                  id="size"
-                  type="text"
-                  value={formData.size}
-                  onChange={(e) => handleNumberOnly("size", e.target.value)}
-                  placeholder="Enter size in sq.ft"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="bedrooms">BR (Bedrooms)</Label>
-                <Select
-                  value={formData.bedrooms}
-                  onValueChange={(value) => handleChange("bedrooms", value)}
-                >
-                  <SelectTrigger className="w-full mt-1">
-                    <SelectValue placeholder="Select bedrooms" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Studio">Studio</SelectItem>
-                    <SelectItem value="1">1</SelectItem>
-                    <SelectItem value="2">2</SelectItem>
-                    <SelectItem value="3">3</SelectItem>
-                    <SelectItem value="4">4</SelectItem>
-                    <SelectItem value="5">5</SelectItem>
-                    <SelectItem value="6+">6+</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Row 3: Seller & Buyer */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Seller Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Seller</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="sellerName">Name</Label>
-                  <Input
-                    id="sellerName"
-                    value={formData.sellerName}
-                    onChange={(e) => handleChange("sellerName", e.target.value)}
-                    placeholder="Enter seller name"
-                    className={`mt-1 ${
-                      errors.sellerName ? "border-red-500" : ""
-                    }`}
-                  />
-                  {errors.sellerName && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.sellerName}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="sellerPhone">Phone</Label>
-                  <Input
-                    id="sellerPhone"
-                    type="tel"
-                    value={formData.sellerPhone}
-                    onChange={(e) =>
-                      handlePhoneChange("sellerPhone", e.target.value)
-                    }
-                    placeholder="+971 50 123 4567"
-                    className={`mt-1 ${
-                      errors.sellerPhone ? "border-red-500" : ""
-                    }`}
-                  />
-                  {errors.sellerPhone && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.sellerPhone}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="sellerNationalityId">Nationality</Label>
-                  <Select
-                    value={formData.sellerNationalityId}
-                    onValueChange={(value) =>
-                      handleChange("sellerNationalityId", value)
-                    }
-                    disabled={filtersLoading}
-                  >
-                    <SelectTrigger className="w-full mt-1">
-                      <SelectValue placeholder="Select nationality" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {nationalities.map((nationality) => (
-                        <SelectItem key={nationality.id} value={nationality.id}>
-                          {nationality.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="sellerSourceId">Source</Label>
-                  <Select
-                    value={formData.sellerSourceId}
-                    onValueChange={(value) =>
-                      handleChange("sellerSourceId", value)
-                    }
-                    disabled={filtersLoading}
-                  >
-                    <SelectTrigger className="w-full mt-1">
-                      <SelectValue placeholder="Select source" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {leadSources.map((source) => (
-                        <SelectItem key={source.id} value={source.id}>
-                          {source.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Buyer Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Buyer</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="buyerName">Name</Label>
-                  <Input
-                    id="buyerName"
-                    value={formData.buyerName}
-                    onChange={(e) => handleChange("buyerName", e.target.value)}
-                    placeholder="Enter buyer name"
-                    className={`mt-1 ${
-                      errors.buyerName ? "border-red-500" : ""
-                    }`}
-                  />
-                  {errors.buyerName && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.buyerName}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="buyerPhone">Phone</Label>
-                  <Input
-                    id="buyerPhone"
-                    type="tel"
-                    value={formData.buyerPhone}
-                    onChange={(e) =>
-                      handlePhoneChange("buyerPhone", e.target.value)
-                    }
-                    placeholder="+971 50 123 4567"
-                    className={`mt-1 ${
-                      errors.buyerPhone ? "border-red-500" : ""
-                    }`}
-                  />
-                  {errors.buyerPhone && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.buyerPhone}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="buyerNationalityId">Nationality</Label>
-                  <Select
-                    value={formData.buyerNationalityId}
-                    onValueChange={(value) =>
-                      handleChange("buyerNationalityId", value)
-                    }
-                    disabled={filtersLoading}
-                  >
-                    <SelectTrigger className="w-full mt-1">
-                      <SelectValue placeholder="Select nationality" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {nationalities.map((nationality) => (
-                        <SelectItem key={nationality.id} value={nationality.id}>
-                          {nationality.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="buyerSourceId">Source</Label>
-                  <Select
-                    value={formData.buyerSourceId}
-                    onValueChange={(value) =>
-                      handleChange("buyerSourceId", value)
-                    }
-                    disabled={filtersLoading}
-                  >
-                    <SelectTrigger className="w-full mt-1">
-                      <SelectValue placeholder="Select source" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {leadSources.map((source) => (
-                        <SelectItem key={source.id} value={source.id}>
-                          {source.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Row 4: Commission Details & Additional Notes */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Commission Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Commission Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Basic Commission Fields */}
-                <div>
-                  <Label htmlFor="salesValue">Sales Value (AED)</Label>
-                  <Input
-                    id="salesValue"
-                    type="text"
-                    value={formData.salesValue}
-                    onChange={(e) =>
-                      handleNumberOnly("salesValue", e.target.value)
-                    }
-                    placeholder="Enter sales value"
-                    className={`mt-1 ${
-                      errors.salesValue ? "border-red-500" : ""
-                    }`}
-                  />
-                  {errors.salesValue && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.salesValue}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="agentCommissionTypeId">Commission Type</Label>
-                  <Select
-                    value={formData.agentCommissionTypeId}
-                    onValueChange={(value) =>
-                      handleChange("agentCommissionTypeId", value)
-                    }
-                    disabled={filtersLoading}
-                  >
-                    <SelectTrigger className="w-full mt-1">
-                      <SelectValue placeholder="Select commission type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {commissionTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="commRate">Agent Commission Rate/Value</Label>
-                  <Input
-                    id="commRate"
-                    type="text"
-                    value={formData.commRate}
-                    onChange={(e) =>
-                      handleNumberOnly("commRate", e.target.value)
-                    }
-                    placeholder="Enter agent commission rate (%) or fixed amount"
-                    className="mt-1"
-                  />
-                </div>
-
-                {/* Total Commission Fields */}
-                <div
-                  className="pt-4 border-t"
-                  style={{ borderColor: "var(--gi-green-40)" }}
-                >
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="totalCommissionTypeId">
-                        Total Commission Type
-                      </Label>
-                      <Select
-                        value={formData.totalCommissionTypeId}
-                        onValueChange={(value) =>
-                          handleChange("totalCommissionTypeId", value)
-                        }
-                        disabled={filtersLoading}
-                      >
-                        <SelectTrigger className="w-full mt-1">
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {commissionTypes.map((type) => (
-                            <SelectItem key={type.id} value={type.id}>
-                              {type.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+      <form id="deal-form" onSubmit={handleSubmit(onSubmit)}>
+        <fieldset
+          disabled={isReadOnly || isSubmitting}
+          className={isReadOnly ? "opacity-80" : ""}
+        >
+          {/* Row 1: Deal Information & Property Details */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Deal Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Deal Information</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="bookingDate">Booking Date</Label>
+                    <div className="mt-1">
+                      <Controller
+                        name="bookingDate"
+                        control={control}
+                        rules={{ required: "Booking date is required" }}
+                        render={({ field }) => (
+                          <StyledDatePicker
+                            id="bookingDate"
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Select booking date"
+                          />
+                        )}
+                      />
                     </div>
-                    <div>
-                      <Label htmlFor="totalCommissionValue">
-                        Total Commission Value
-                      </Label>
-                      <Input
-                        id="totalCommissionValue"
-                        type="text"
-                        value={formData.totalCommissionValue}
-                        onChange={(e) =>
-                          handleNumberOnly(
-                            "totalCommissionValue",
-                            e.target.value
-                          )
-                        }
-                        placeholder="Enter value"
-                        className="mt-1"
+                    {errors.bookingDate && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.bookingDate.message}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="cfExpiry">CF Expiry</Label>
+                    <div className="mt-1">
+                      <Controller
+                        name="cfExpiry"
+                        control={control}
+                        render={({ field }) => (
+                          <StyledDatePicker
+                            id="cfExpiry"
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Select CF expiry date"
+                          />
+                        )}
                       />
                     </div>
                   </div>
-                </div>
-
-                {/* Additional Agent Toggle */}
-                <div
-                  className="flex items-center justify-between pt-4 border-t"
-                  style={{ borderColor: "var(--gi-green-40)" }}
-                >
-                  <Label htmlFor="hasAdditionalAgent" className="text-gray-900">
-                    Additional Agent
-                  </Label>
-                  <Switch
-                    id="hasAdditionalAgent"
-                    checked={formData.hasAdditionalAgent}
-                    onCheckedChange={(checked) =>
-                      handleChange("hasAdditionalAgent", checked)
-                    }
-                  />
-                </div>
-
-                {/* Additional Agent Fields - Shown when toggle is enabled */}
-                {formData.hasAdditionalAgent && (
-                  <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                    {/* Agent Type Selection */}
-                    <div>
-                      <Label className="mb-2 block">Agent Type</Label>
-                      <div className="flex gap-4">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="additionalAgentType"
-                            value="internal"
-                            checked={
-                              formData.additionalAgentType === "internal"
-                            }
-                            onChange={(e) =>
-                              handleChange(
-                                "additionalAgentType",
-                                e.target.value
-                              )
-                            }
-                            className="w-4 h-4"
+                  <div>
+                    <Label htmlFor="closeDate">Close Date</Label>
+                    <div className="mt-1">
+                      <Controller
+                        name="closeDate"
+                        control={control}
+                        rules={{ required: "Close date is required" }}
+                        render={({ field }) => (
+                          <StyledDatePicker
+                            id="closeDate"
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Select close date"
                           />
-                          <span className="text-sm">Internal Agent</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="additionalAgentType"
-                            value="external"
-                            checked={
-                              formData.additionalAgentType === "external"
-                            }
-                            onChange={(e) =>
-                              handleChange(
-                                "additionalAgentType",
-                                e.target.value
-                              )
-                            }
-                            className="w-4 h-4"
-                          />
-                          <span className="text-sm">External Agent</span>
-                        </label>
-                      </div>
+                        )}
+                      />
                     </div>
-
-                    {/* Internal Agent Selection */}
-                    {formData.additionalAgentType === "internal" && (
-                      <div>
-                        <Label htmlFor="additionalAgentId">Select Agent</Label>
+                    {errors.closeDate && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.closeDate.message}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="dealTypeId">Deal Type</Label>
+                    <Controller
+                      name="dealTypeId"
+                      control={control}
+                      rules={{ required: "Deal type is required" }}
+                      render={({ field }) => (
                         <Select
-                          value={formData.additionalAgentId}
-                          onValueChange={(value) =>
-                            handleChange("additionalAgentId", value)
-                          }
+                          value={field.value}
+                          onValueChange={field.onChange}
                           disabled={filtersLoading}
                         >
                           <SelectTrigger className="w-full mt-1">
-                            <SelectValue placeholder="Select internal agent" />
+                            <SelectValue placeholder="Select deal type" />
                           </SelectTrigger>
                           <SelectContent>
-                            {allAgents.map((agent) => (
-                              <SelectItem key={agent.id} value={agent.id}>
-                                {agent.name}
+                            {dealTypes.map((type) => (
+                              <SelectItem key={type.id} value={type.id}>
+                                {type.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                      </div>
+                      )}
+                    />
+                    {errors.dealTypeId && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.dealTypeId.message}
+                      </p>
                     )}
-
-                    {/* External Agent Name */}
-                    {formData.additionalAgentType === "external" && (
-                      <div>
-                        <Label htmlFor="agencyName">Agency/Agent Name</Label>
-                        <Input
-                          id="agencyName"
-                          value={formData.agencyName}
-                          onChange={(e) =>
-                            handleChange("agencyName", e.target.value)
-                          }
-                          placeholder="Enter agency or agent name"
-                          className="mt-1"
-                        />
-                      </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="statusId">Status</Label>
+                    <Controller
+                      name="statusId"
+                      control={control}
+                      rules={{
+                        required: "Status is required",
+                        validate: (value) => {
+                          const finalValue = value || defaultStatusId;
+                          if (!finalValue) return "Status is required";
+                          if (!isValidUuid(finalValue))
+                            return "Status must be a valid UUID";
+                          return true;
+                        },
+                      }}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value || defaultStatusId}
+                          onValueChange={field.onChange}
+                          disabled={filtersLoading}
+                        >
+                          <SelectTrigger className="w-full mt-1">
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {statuses.map((status) => (
+                              <SelectItem key={status.id} value={status.id}>
+                                {status.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {errors.statusId && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.statusId.message}
+                      </p>
                     )}
+                  </div>
+                  <div>
+                    <Label htmlFor="purchaseStatusId">Purchase Status</Label>
+                    <Controller
+                      name="purchaseStatusId"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          disabled={filtersLoading}
+                        >
+                          <SelectTrigger className="w-full mt-1">
+                            <SelectValue placeholder="Select purchase status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {purchaseStatuses.map((status) => (
+                              <SelectItem key={status.id} value={status.id}>
+                                {status.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-                    <div>
-                      <Label htmlFor="agencyCommissionTypeId">
-                        Commission Type
-                      </Label>
+            {/* Property Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Property Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="developerId">Developer</Label>
+                    <Controller
+                      name="developerId"
+                      control={control}
+                      rules={{ required: "Developer is required" }}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            // Reset project when developer changes
+                            setValue("projectId", "");
+                          }}
+                          disabled={filtersLoading}
+                        >
+                          <SelectTrigger className="w-full mt-1">
+                            <SelectValue placeholder="Select developer" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {developers.map((dev) => (
+                              <SelectItem key={dev.id} value={dev.id}>
+                                {dev.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {errors.developerId && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.developerId.message}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="projectId">Project</Label>
+                    <Controller
+                      name="projectId"
+                      control={control}
+                      rules={{ required: "Project is required" }}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          disabled={filtersLoading || !watchedDeveloperId}
+                        >
+                          <SelectTrigger className="w-full mt-1">
+                            <SelectValue placeholder="Select project" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {filteredProjects.length === 0 ? (
+                              <SelectItem value="__no_projects__" disabled>
+                                {watchedDeveloperId
+                                  ? "No projects available"
+                                  : "Select developer first"}
+                              </SelectItem>
+                            ) : (
+                              filteredProjects.map((project) => (
+                                <SelectItem key={project.id} value={project.id}>
+                                  {project.name}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {errors.projectId && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.projectId.message}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="propertyName">Property Name</Label>
+                    <Input
+                      id="propertyName"
+                      {...register("propertyName")}
+                      placeholder="Enter property name"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="propertyTypeId">Property Type</Label>
+                    <Controller
+                      name="propertyTypeId"
+                      control={control}
+                      rules={{ required: "Property type is required" }}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          disabled={filtersLoading}
+                        >
+                          <SelectTrigger className="w-full mt-1">
+                            <SelectValue placeholder="Select property type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {propertyTypes.map((type) => (
+                              <SelectItem key={type.id} value={type.id}>
+                                {type.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {errors.propertyTypeId && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.propertyTypeId.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Row 2: Additional Property Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Unit Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <Label htmlFor="unitNumber">Unit #</Label>
+                  <Input
+                    id="unitNumber"
+                    type="text"
+                    {...register("unitNumber", {
+                      onChange: (e) => {
+                        const numericValue = e.target.value.replace(
+                          /[^0-9]/g,
+                          ""
+                        );
+                        setValue("unitNumber", numericValue, {
+                          shouldValidate: true,
+                        });
+                      },
+                    })}
+                    placeholder="Enter unit number"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="unitTypeId">Unit Type</Label>
+                  <Controller
+                    name="unitTypeId"
+                    control={control}
+                    rules={{ required: "Unit type is required" }}
+                    render={({ field }) => (
                       <Select
-                        value={formData.agencyCommissionTypeId}
-                        onValueChange={(value) =>
-                          handleChange("agencyCommissionTypeId", value)
-                        }
+                        value={field.value}
+                        onValueChange={field.onChange}
                         disabled={filtersLoading}
                       >
                         <SelectTrigger className="w-full mt-1">
-                          <SelectValue placeholder="Select commission type" />
+                          <SelectValue placeholder="Select unit type" />
                         </SelectTrigger>
                         <SelectContent>
-                          {commissionTypes.map((type) => (
+                          {unitTypes.map((type) => (
                             <SelectItem key={type.id} value={type.id}>
                               {type.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="agencyComm">Commission Value</Label>
-                      <Input
-                        id="agencyComm"
-                        type="text"
-                        value={formData.agencyComm}
-                        onChange={(e) =>
-                          handleNumberOnly("agencyComm", e.target.value)
-                        }
-                        placeholder="Enter commission value"
-                        className="mt-1"
-                      />
-                      {formData.salesValue && formData.agencyComm && (
-                        <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded text-sm">
-                          <p className="text-blue-900 dark:text-blue-100 font-semibold">
-                            Commission: AED{" "}
-                            {parseFloat(formData.agencyComm).toLocaleString(
-                              "en-US",
-                              {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              }
-                            )}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+                    )}
+                  />
+                  {errors.unitTypeId && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.unitTypeId.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="size">Size (sq.ft)</Label>
+                  <Input
+                    id="size"
+                    type="text"
+                    {...register("size", {
+                      onChange: (e) => {
+                        const numericValue = e.target.value.replace(
+                          /[^0-9]/g,
+                          ""
+                        );
+                        setValue("size", numericValue, {
+                          shouldValidate: true,
+                        });
+                      },
+                    })}
+                    placeholder="Enter size in sq.ft"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="bedrooms">BR (Bedrooms)</Label>
+                  <Controller
+                    name="bedrooms"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger className="w-full mt-1">
+                          <SelectValue placeholder="Select bedrooms" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Studio">Studio</SelectItem>
+                          <SelectItem value="1">1</SelectItem>
+                          <SelectItem value="2">2</SelectItem>
+                          <SelectItem value="3">3</SelectItem>
+                          <SelectItem value="4">4</SelectItem>
+                          <SelectItem value="5">5</SelectItem>
+                          <SelectItem value="6+">6+</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Additional Notes */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Additional Notes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => handleChange("notes", e.target.value)}
-                placeholder="Enter any additional notes or comments..."
-                rows={10}
-                className="resize-none"
-              />
-            </CardContent>
-          </Card>
-        </div>
-      </fieldset>
+          {/* Row 3: Seller & Buyer */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Seller Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Seller</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="sellerName">Name</Label>
+                    <Input
+                      id="sellerName"
+                      {...register("sellerName", {
+                        required: "Seller name is required",
+                      })}
+                      placeholder="Enter seller name"
+                      className={`mt-1 ${
+                        errors.sellerName ? "border-red-500" : ""
+                      }`}
+                    />
+                    {errors.sellerName && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.sellerName.message}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="sellerPhone">Phone</Label>
+                    <Input
+                      id="sellerPhone"
+                      type="tel"
+                      {...register("sellerPhone", {
+                        required: "Seller phone is required",
+                        validate: (value) =>
+                          !value ||
+                          validatePhone(value) ||
+                          "Invalid phone number format",
+                      })}
+                      placeholder="+971 50 123 4567"
+                      className={`mt-1 ${
+                        errors.sellerPhone ? "border-red-500" : ""
+                      }`}
+                    />
+                    {errors.sellerPhone && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.sellerPhone.message}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="sellerNationalityId">Nationality</Label>
+                    <Controller
+                      name="sellerNationalityId"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          disabled={filtersLoading}
+                        >
+                          <SelectTrigger className="w-full mt-1">
+                            <SelectValue placeholder="Select nationality" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {nationalities.map((nationality) => (
+                              <SelectItem
+                                key={nationality.id}
+                                value={nationality.id}
+                              >
+                                {nationality.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="sellerSourceId">Source</Label>
+                    <Controller
+                      name="sellerSourceId"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          disabled={filtersLoading}
+                        >
+                          <SelectTrigger className="w-full mt-1">
+                            <SelectValue placeholder="Select source" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {leadSources.map((source) => (
+                              <SelectItem key={source.id} value={source.id}>
+                                {source.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Buyer Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Buyer</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="buyerName">Name</Label>
+                    <Input
+                      id="buyerName"
+                      {...register("buyerName", {
+                        required: "Buyer name is required",
+                      })}
+                      placeholder="Enter buyer name"
+                      className={`mt-1 ${
+                        errors.buyerName ? "border-red-500" : ""
+                      }`}
+                    />
+                    {errors.buyerName && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.buyerName.message}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="buyerPhone">Phone</Label>
+                    <Input
+                      id="buyerPhone"
+                      type="tel"
+                      {...register("buyerPhone", {
+                        required: "Buyer phone is required",
+                        validate: (value) =>
+                          !value ||
+                          validatePhone(value) ||
+                          "Invalid phone number format",
+                      })}
+                      placeholder="+971 50 123 4567"
+                      className={`mt-1 ${
+                        errors.buyerPhone ? "border-red-500" : ""
+                      }`}
+                    />
+                    {errors.buyerPhone && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.buyerPhone.message}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="buyerNationalityId">Nationality</Label>
+                    <Controller
+                      name="buyerNationalityId"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          disabled={filtersLoading}
+                        >
+                          <SelectTrigger className="w-full mt-1">
+                            <SelectValue placeholder="Select nationality" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {nationalities.map((nationality) => (
+                              <SelectItem
+                                key={nationality.id}
+                                value={nationality.id}
+                              >
+                                {nationality.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="buyerSourceId">Source</Label>
+                    <Controller
+                      name="buyerSourceId"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          disabled={filtersLoading}
+                        >
+                          <SelectTrigger className="w-full mt-1">
+                            <SelectValue placeholder="Select source" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {leadSources.map((source) => (
+                              <SelectItem key={source.id} value={source.id}>
+                                {source.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Row 4: Commission Details & Additional Notes */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Commission Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Commission Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Basic Commission Fields */}
+                  <div>
+                    <Label htmlFor="salesValue">Sales Value (AED)</Label>
+                    <Input
+                      id="salesValue"
+                      type="text"
+                      {...register("salesValue", {
+                        required: "Sales value is required",
+                        onChange: (e) => {
+                          const numericValue = e.target.value.replace(
+                            /[^0-9]/g,
+                            ""
+                          );
+                          setValue("salesValue", numericValue, {
+                            shouldValidate: true,
+                          });
+                        },
+                      })}
+                      placeholder="Enter sales value"
+                      className={`mt-1 ${
+                        errors.salesValue ? "border-red-500" : ""
+                      }`}
+                    />
+                    {errors.salesValue && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.salesValue.message}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="agentCommissionTypeId">
+                      Commission Type
+                    </Label>
+                    <Controller
+                      name="agentCommissionTypeId"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          disabled={filtersLoading}
+                        >
+                          <SelectTrigger className="w-full mt-1">
+                            <SelectValue placeholder="Select commission type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {commissionTypes.map((type) => (
+                              <SelectItem key={type.id} value={type.id}>
+                                {type.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="commRate">
+                      Agent Commission Rate/Value
+                    </Label>
+                    <Input
+                      id="commRate"
+                      type="text"
+                      {...register("commRate", {
+                        onChange: (e) => {
+                          const numericValue = e.target.value.replace(
+                            /[^0-9]/g,
+                            ""
+                          );
+                          setValue("commRate", numericValue, {
+                            shouldValidate: true,
+                          });
+                        },
+                      })}
+                      placeholder="Enter agent commission rate (%) or fixed amount"
+                      className="mt-1"
+                    />
+                  </div>
+
+                  {/* Total Commission Fields */}
+                  <div
+                    className="pt-4 border-t"
+                    style={{ borderColor: "var(--gi-green-40)" }}
+                  >
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="totalCommissionTypeId">
+                          Total Commission Type
+                        </Label>
+                        <Controller
+                          name="totalCommissionTypeId"
+                          control={control}
+                          render={({ field }) => (
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              disabled={filtersLoading}
+                            >
+                              <SelectTrigger className="w-full mt-1">
+                                <SelectValue placeholder="Select type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {commissionTypes.map((type) => (
+                                  <SelectItem key={type.id} value={type.id}>
+                                    {type.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="totalCommissionValue">
+                          Total Commission Value
+                        </Label>
+                        <Input
+                          id="totalCommissionValue"
+                          type="text"
+                          {...register("totalCommissionValue", {
+                            onChange: (e) => {
+                              const numericValue = e.target.value.replace(
+                                /[^0-9]/g,
+                                ""
+                              );
+                              setValue("totalCommissionValue", numericValue, {
+                                shouldValidate: true,
+                              });
+                            },
+                          })}
+                          placeholder="Enter value"
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Additional Agent Toggle */}
+                  <div
+                    className="flex items-center justify-between pt-4 border-t"
+                    style={{ borderColor: "var(--gi-green-40)" }}
+                  >
+                    <Label
+                      htmlFor="hasAdditionalAgent"
+                      className="text-gray-900"
+                    >
+                      Additional Agent
+                    </Label>
+                    <Controller
+                      name="hasAdditionalAgent"
+                      control={control}
+                      render={({ field }) => (
+                        <Switch
+                          id="hasAdditionalAgent"
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      )}
+                    />
+                  </div>
+
+                  {/* Additional Agent Fields - Shown when toggle is enabled */}
+                  {watchedHasAdditionalAgent && (
+                    <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                      {/* Agent Type Selection */}
+                      <div>
+                        <Label className="mb-2 block">Agent Type</Label>
+                        <div className="flex gap-4">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="additionalAgentType"
+                              value="internal"
+                              checked={
+                                watchedAdditionalAgentType === "internal"
+                              }
+                              onChange={(e) =>
+                                setValue(
+                                  "additionalAgentType",
+                                  e.target.value as "internal" | "external"
+                                )
+                              }
+                              className="w-4 h-4"
+                            />
+                            <span className="text-sm">Internal Agent</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="additionalAgentType"
+                              value="external"
+                              checked={
+                                watchedAdditionalAgentType === "external"
+                              }
+                              onChange={(e) =>
+                                setValue(
+                                  "additionalAgentType",
+                                  e.target.value as "internal" | "external"
+                                )
+                              }
+                              className="w-4 h-4"
+                            />
+                            <span className="text-sm">External Agent</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Internal Agent Selection */}
+                      {watchedAdditionalAgentType === "internal" && (
+                        <div>
+                          <Label htmlFor="additionalAgentId">
+                            Select Agent
+                          </Label>
+                          <Controller
+                            name="additionalAgentId"
+                            control={control}
+                            render={({ field }) => (
+                              <Select
+                                value={field.value}
+                                onValueChange={field.onChange}
+                                disabled={filtersLoading}
+                              >
+                                <SelectTrigger className="w-full mt-1">
+                                  <SelectValue placeholder="Select internal agent" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {allAgents.map((agent) => (
+                                    <SelectItem key={agent.id} value={agent.id}>
+                                      {agent.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          />
+                        </div>
+                      )}
+
+                      {/* External Agent Name */}
+                      {watchedAdditionalAgentType === "external" && (
+                        <div>
+                          <Label htmlFor="agencyName">Agency/Agent Name</Label>
+                          <Input
+                            id="agencyName"
+                            {...register("agencyName")}
+                            placeholder="Enter agency or agent name"
+                            className="mt-1"
+                          />
+                        </div>
+                      )}
+
+                      <div>
+                        <Label htmlFor="agencyCommissionTypeId">
+                          Commission Type
+                        </Label>
+                        <Controller
+                          name="agencyCommissionTypeId"
+                          control={control}
+                          render={({ field }) => (
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              disabled={filtersLoading}
+                            >
+                              <SelectTrigger className="w-full mt-1">
+                                <SelectValue placeholder="Select commission type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {commissionTypes.map((type) => (
+                                  <SelectItem key={type.id} value={type.id}>
+                                    {type.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="agencyComm">Commission Value</Label>
+                        <Input
+                          id="agencyComm"
+                          type="text"
+                          {...register("agencyComm", {
+                            onChange: (e) => {
+                              const numericValue = e.target.value.replace(
+                                /[^0-9]/g,
+                                ""
+                              );
+                              setValue("agencyComm", numericValue, {
+                                shouldValidate: true,
+                              });
+                            },
+                          })}
+                          placeholder="Enter commission value"
+                          className="mt-1"
+                        />
+                        {watchedSalesValue && watchedAgencyComm && (
+                          <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded text-sm">
+                            <p className="text-blue-900 dark:text-blue-100 font-semibold">
+                              Commission: AED{" "}
+                              {parseFloat(watchedAgencyComm).toLocaleString(
+                                "en-US",
+                                {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                }
+                              )}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Additional Notes */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Additional Notes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  id="notes"
+                  {...register("notes")}
+                  placeholder="Enter any additional notes or comments..."
+                  rows={10}
+                  className="resize-none"
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </fieldset>
+      </form>
 
       {/* Documents & Attachments (hidden for now - backend has no attachment APIs yet) */}
     </div>

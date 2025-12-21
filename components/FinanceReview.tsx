@@ -101,13 +101,15 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
         setCollections(collectionsData);
 
         // Calculate commission summary
+        // Note: totalCollected from API response is already included in collections array sum
         const summary = commissionsApi.calculateSummary(
           dealData.commissions || [],
           collectionsData
         );
         setCommissionSummary(summary);
-      } catch {
+      } catch (err) {
         // Collections API might not be available, use deal data
+        console.error("Error fetching collections:", err);
         setCollections([]);
         const summary = commissionsApi.calculateSummary(
           dealData.commissions || [],
