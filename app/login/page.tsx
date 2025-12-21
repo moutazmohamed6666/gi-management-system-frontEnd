@@ -30,8 +30,12 @@ export default function LoginPage() {
 
     // Token is already stored by Login component via setAuthToken
 
-    // Redirect to dashboard
-    router.push("/dashboard");
+    // Redirect based on role
+    if (role === "admin") {
+      router.push("/users");
+    } else {
+      router.push("/dashboard");
+    }
   };
 
   return <Login onLogin={handleLogin} />;

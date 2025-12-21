@@ -204,7 +204,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Header */}
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 transition-colors">
         <div className="px-6 py-3 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-4">
+          <Link href={currentRole === "admin" ? "/users" : "/dashboard"} className="flex items-center gap-4">
             <Image
               src="/images/722778733878cdd4ce162bb6767c5c939386c373.png"
               alt="Gi Properties"

@@ -20,6 +20,8 @@ export default function DashboardPage() {
 
     if (auth !== "true" || !role) {
       router.push("/login");
+    } else if (role === "admin") {
+      router.push("/users");
     } else {
       setCurrentRole(role);
       setIsLoading(false);
