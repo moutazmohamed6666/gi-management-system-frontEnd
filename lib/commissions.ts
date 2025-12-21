@@ -69,12 +69,10 @@ export interface UpdateCommissionStatusResponse {
 
 export interface CollectionRequest {
   dealId: string;
+  sourceId: string; // UUID of the source (buyerId/sellerId/developerId)
   amount: number;
-  paymentMethod: PaymentMethodType;
-  sourceType: "buyer" | "seller" | "developer";
-  sourceId?: string; // UUID of the source (buyerId/sellerId/developerId)
-  receivedDate?: string; // ISO date string, defaults to now
-  reference?: string; // Payment reference number
+  collectionDate: string; // ISO date string
+  collectionTypeId: string; // UUID of the collection type
   notes?: string;
 }
 
@@ -133,10 +131,10 @@ export type GetDealCollectionsResponse = DealCollection[];
 
 export interface TransferCommissionRequest {
   dealId: string;
-  recipientId: string; // Agent or Manager UUID
-  recipientType: "agent" | "manager";
+  fromAccount: string; // Source account name
+  toAccount?: string; // Destination account name (if transferring between accounts)
+  toUserId?: string; // User ID (agent/manager) to transfer to (if transferring to user)
   amount: number;
-  notes?: string;
 }
 
 export interface TransferCommissionResponse {
@@ -214,12 +212,10 @@ export const commissionsApi = {
       method: "POST",
       body: JSON.stringify({
         dealId: data.dealId,
-        amount: data.amount,
-        paymentMethod: data.paymentMethod,
-        sourceType: data.sourceType,
         sourceId: data.sourceId,
-        receivedDate: data.receivedDate || new Date().toISOString(),
-        reference: data.reference,
+        amount: data.amount,
+        collectionDate: data.collectionDate,
+        collectionTypeId: data.collectionTypeId,
         notes: data.notes,
       }),
     });
@@ -247,7 +243,7 @@ export const commissionsApi = {
     }));
   },
 
-  // Transfer commission to agent/manager
+  // Transfer commission to agent/manager or between accounts
   transferCommission: async (
     data: TransferCommissionRequest
   ): Promise<TransferCommissionResponse> => {
@@ -255,10 +251,10 @@ export const commissionsApi = {
       method: "POST",
       body: JSON.stringify({
         dealId: data.dealId,
-        recipientId: data.recipientId,
-        recipientType: data.recipientType,
+        fromAccount: data.fromAccount,
+        toAccount: data.toAccount,
+        toUserId: data.toUserId,
         amount: data.amount,
-        notes: data.notes,
       }),
     });
   },

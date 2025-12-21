@@ -115,20 +115,7 @@ Returns all deals data, which is then filtered and aggregated client-side.
 
 ## Charts and Visualizations
 
-### 1. Revenue Trend Chart (Line Chart)
-
-**Source:** Calculated from deals
-
-- **Data:** Monthly revenue breakdown for the last 6 months
-- **Calculation:**
-  - Creates 6 month buckets based on current date
-  - Groups deals by `closeDate` month/year
-  - Sums `commission.total` for each month
-  - Counts number of deals per month
-- **Display:** Line chart showing revenue trend over 6 months
-- **Empty State:** Shows if no revenue data exists for the period
-
-### 2. Top Agents by Commission (Bar Chart)
+### 1. Top Agents by Commission (Bar Chart)
 
 **Source:** API data (transformed)
 
@@ -139,7 +126,7 @@ Returns all deals data, which is then filtered and aggregated client-side.
 - **Display:** Horizontal bar chart showing commission amounts
 - **Empty State:** Shows if no agent performance data exists
 
-### 3. Developer Performance (Bar Chart)
+### 2. Developer Performance (Bar Chart)
 
 **Source:** API data (transformed)
 
@@ -233,7 +220,6 @@ All deals-based calculations respect the date range filter:
 │ • agentPerformance (transforms API top_agents)              │
 │ • developerPerformance (transforms API top_developers)      │
 │ • managerPerformance (transforms API top_managers)          │
-│ • monthlyRevenue (groups deals by closeDate month)          │
 └─────────────────────────────────────────────────────────────┘
                          │
                          ▼
@@ -242,7 +228,6 @@ All deals-based calculations respect the date range filter:
 ├─────────────────────────────────────────────────────────────┤
 │ • CEOHeader - Displays executive overview period/trend      │
 │ • CEOMetricsCards - 6 metric cards                          │
-│ • CEORevenueTrendChart - Line chart                         │
 │ • CEOTopAgentsChart - Bar chart                             │
 │ • CEOTopDevelopersChart - Bar chart                         │
 │ • CEOAgentLeaderboard - Ranked list                         │
@@ -258,7 +243,7 @@ All deals-based calculations respect the date range filter:
 1. **Hybrid Approach:** The dashboard uses both API-provided metrics and client-side calculations
 2. **Fallback Logic:** `totalPipeline` and `closedDeals` prefer API data but fall back to calculations if API data is unavailable
 3. **Performance Data:** All top performer data (agents, developers, managers) comes directly from the API
-4. **Aggregations:** Revenue trends and averages are calculated client-side from deals
+4. **Aggregations:** Averages and counts are calculated client-side from deals
 5. **Date Filtering:** Only affects client-side calculations; API metrics are not filtered by date range
 6. **Empty States:** All charts and tables handle empty data gracefully with appropriate messages
 
@@ -273,7 +258,6 @@ components/
 │   ├── useCEODashboardMetrics.ts # Custom hook for all calculations
 │   ├── CEOHeader.tsx             # Header section
 │   ├── CEOMetricsCards.tsx       # 6 metric cards
-│   ├── CEORevenueTrendChart.tsx  # Revenue line chart
 │   ├── CEOTopAgentsChart.tsx     # Agents bar chart
 │   ├── CEOTopDevelopersChart.tsx # Developers bar chart
 │   ├── CEOAgentLeaderboard.tsx   # Agent leaderboard table

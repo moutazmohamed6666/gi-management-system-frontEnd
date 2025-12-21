@@ -10,7 +10,6 @@ import type { CEOMetricsResponse, TopPerformanceResponse } from "@/lib/finance";
 import { Loader2, AlertCircle } from "lucide-react";
 import { CEOHeader } from "./ceo/CEOHeader";
 import { CEOMetricsCards } from "./ceo/CEOMetricsCards";
-import { CEORevenueTrendChart } from "./ceo/CEORevenueTrendChart";
 import { CEOTopAgentsChart } from "./ceo/CEOTopAgentsChart";
 import { CEOTopDevelopersChart } from "./ceo/CEOTopDevelopersChart";
 import { CEOAgentLeaderboard } from "./ceo/CEOAgentLeaderboard";
@@ -97,7 +96,6 @@ export function DashboardCEO() {
     agentPerformance,
     developerPerformance,
     managerPerformance,
-    monthlyRevenue,
   } = useCEODashboardMetrics({
     ceoMetrics,
     topPerformance,
@@ -154,12 +152,7 @@ export function DashboardCEO() {
         activeDevelopers={activeDevelopers}
       />
 
-      {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <CEORevenueTrendChart monthlyRevenue={monthlyRevenue} />
-      </div>
-
-      {/* Charts Row 2 */}
+      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <CEOTopAgentsChart agentPerformance={agentPerformance} />
         <CEOTopDevelopersChart developerPerformance={developerPerformance} />

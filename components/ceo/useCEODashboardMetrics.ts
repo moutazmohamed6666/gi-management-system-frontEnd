@@ -29,12 +29,6 @@ interface ManagerPerformanceData {
   revenue: number;
 }
 
-interface MonthlyRevenueData {
-  month: string;
-  revenue: number;
-  deals: number;
-}
-
 export function useCEODashboardMetrics({
   ceoMetrics,
   topPerformance,
@@ -126,51 +120,6 @@ export function useCEODashboardMetrics({
     }));
   }, [topPerformance]);
 
-  // Calculate monthly revenue trend from deals
-  const monthlyRevenue: MonthlyRevenueData[] = useMemo(() => {
-    const monthsToShow = 6;
-    const now = new Date();
-    const buckets = Array.from({ length: monthsToShow }, (_, idx) => {
-      const d = new Date(
-        now.getFullYear(),
-        now.getMonth() - (monthsToShow - 1 - idx),
-        1
-      );
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-        2,
-        "0"
-      )}`;
-      return {
-        key,
-        monthLabel: d.toLocaleString("en-US", { month: "short" }),
-        revenue: 0,
-        deals: 0,
-      };
-    });
-
-    const bucketByKey = new Map(buckets.map((b) => [b.key, b]));
-
-    for (const deal of filteredDeals) {
-      if (!deal.closeDate) continue;
-      const d = new Date(deal.closeDate);
-      if (Number.isNaN(d.getTime())) continue;
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-        2,
-        "0"
-      )}`;
-      const bucket = bucketByKey.get(key);
-      if (!bucket) continue;
-      bucket.deals += 1;
-      bucket.revenue += deal.commission?.total || 0;
-    }
-
-    return buckets.map((b) => ({
-      month: b.monthLabel,
-      revenue: b.revenue,
-      deals: b.deals,
-    }));
-  }, [filteredDeals]);
-
   return {
     totalPipeline,
     closedDeals,
@@ -181,7 +130,6 @@ export function useCEODashboardMetrics({
     agentPerformance,
     developerPerformance,
     managerPerformance,
-    monthlyRevenue,
   };
 }
 

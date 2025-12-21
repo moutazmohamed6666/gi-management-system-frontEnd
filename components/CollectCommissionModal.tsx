@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -14,11 +14,8 @@ import {
 } from "./ui/select";
 import { X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  commissionsApi,
-  type PaymentMethodType,
-  type CollectionResponse,
-} from "@/lib/commissions";
+import { commissionsApi, type CollectionResponse } from "@/lib/commissions";
+import { filtersApi, type FilterOption } from "@/lib/filters";
 import type { Deal } from "@/lib/deals";
 
 interface CollectCommissionModalProps {
@@ -34,27 +31,79 @@ export function CollectCommissionModal({
   onClose,
   onSuccess,
 }: CollectCommissionModalProps) {
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodType | "">("");
+  const [collectionTypeId, setCollectionTypeId] = useState<string>("");
   const [amount, setAmount] = useState<string>("");
-  const [sourceType, setSourceType] = useState<"buyer" | "seller" | "developer">(
-    "developer"
-  );
-  const [reference, setReference] = useState<string>("");
+  const [sourceId, setSourceId] = useState<string>("");
+  const [collectionDate, setCollectionDate] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [amountError, setAmountError] = useState<string>("");
+  const [collectionTypes, setCollectionTypes] = useState<FilterOption[]>([]);
+  const [collectionSources, setCollectionSources] = useState<FilterOption[]>(
+    []
+  );
+  const [isLoadingCollectionTypes, setIsLoadingCollectionTypes] =
+    useState(false);
+  const [isLoadingCollectionSources, setIsLoadingCollectionSources] =
+    useState(false);
+
+  // Fetch collection types and sources on mount
+  useEffect(() => {
+    if (isOpen) {
+      setIsLoadingCollectionTypes(true);
+      setIsLoadingCollectionSources(true);
+
+      Promise.all([
+        filtersApi.getCollectionTypes(),
+        filtersApi.getCollectionSources(),
+      ])
+        .then(([types, sources]) => {
+          setCollectionTypes(types);
+          setCollectionSources(sources);
+        })
+        .catch((error) => {
+          console.error("Failed to fetch collection data:", error);
+          toast.error("Failed to load collection data");
+        })
+        .finally(() => {
+          setIsLoadingCollectionTypes(false);
+          setIsLoadingCollectionSources(false);
+        });
+    }
+  }, [isOpen]);
+
+  // Set default collection date to now when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const now = new Date();
+      // Format as ISO string for datetime-local input (YYYY-MM-DDTHH:mm)
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      const hours = String(now.getHours()).padStart(2, "0");
+      const minutes = String(now.getMinutes()).padStart(2, "0");
+      const defaultDate = `${year}-${month}-${day}T${hours}:${minutes}`;
+      if (!collectionDate) {
+        setCollectionDate(defaultDate);
+      }
+    } else {
+      // Reset when modal closes
+      setCollectionDate("");
+    }
+  }, [isOpen, collectionDate]);
 
   if (!isOpen) return null;
 
   const buyer = deal.buyerSellerDetails?.find((d) => d.isBuyer === true);
-  const seller = deal.buyerSellerDetails?.find((d) => d.isBuyer === false);
 
   // Calculate total commission and remaining
   const totalCommission =
     deal.commissions?.reduce(
       (sum, c) => sum + parseFloat(c.expectedAmount || "0"),
       0
-    ) || parseFloat(deal.totalCommissionValue || "0") || 0;
+    ) ||
+    parseFloat(deal.totalCommissionValue || "0") ||
+    0;
 
   const paidAmount =
     deal.commissions?.reduce(
@@ -75,40 +124,43 @@ export function CollectCommissionModal({
 
   const handleConfirm = async () => {
     // Validate inputs
-    if (!paymentMethod) {
-      toast.error("Please select a payment method");
+    if (!collectionTypeId) {
+      toast.error("Please select a collection type");
+      return;
+    }
+    if (!sourceId) {
+      toast.error("Please select a collection source");
       return;
     }
     if (!amount || parseFloat(amount) <= 0) {
       setAmountError("Please enter a valid amount");
       return;
     }
+    if (!collectionDate) {
+      toast.error("Please select a collection date");
+      return;
+    }
+
+    // Convert datetime-local format to ISO string
+    const dateObj = new Date(collectionDate);
+    const collectionDateISO = dateObj.toISOString();
 
     setIsSubmitting(true);
 
     try {
-      // Get source ID based on source type
-      let sourceId: string | undefined;
-      if (sourceType === "buyer" && buyer) {
-        sourceId = buyer.id;
-      } else if (sourceType === "seller" && seller) {
-        sourceId = seller.id;
-      } else if (sourceType === "developer" && deal.developerId) {
-        sourceId = deal.developerId;
-      }
-
       const response = await commissionsApi.recordCollection({
         dealId: deal.id,
-        amount: parseFloat(amount),
-        paymentMethod: paymentMethod as PaymentMethodType,
-        sourceType,
         sourceId,
-        reference: reference || undefined,
+        amount: parseFloat(amount),
+        collectionDate: collectionDateISO,
+        collectionTypeId,
         notes: notes || undefined,
       });
 
       toast.success("Commission Collected", {
-        description: `AED ${parseFloat(amount).toLocaleString()} collected successfully.`,
+        description: `AED ${parseFloat(
+          amount
+        ).toLocaleString()} collected successfully.`,
       });
 
       onSuccess(response);
@@ -125,10 +177,10 @@ export function CollectCommissionModal({
   };
 
   const handleReset = () => {
-    setPaymentMethod("");
+    setCollectionTypeId("");
     setAmount("");
-    setSourceType("developer");
-    setReference("");
+    setSourceId("");
+    setCollectionDate("");
     setNotes("");
     setAmountError("");
   };
@@ -233,62 +285,68 @@ export function CollectCommissionModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label
-                htmlFor="sourceType"
+                htmlFor="sourceId"
                 className="text-gray-900 dark:text-white"
               >
-                Received From
+                Collection Source
               </Label>
               <Select
-                value={sourceType}
-                onValueChange={(value) =>
-                  setSourceType(value as "buyer" | "seller" | "developer")
-                }
+                value={sourceId}
+                onValueChange={setSourceId}
+                disabled={isLoadingCollectionSources}
               >
                 <SelectTrigger
-                  id="sourceType"
+                  id="sourceId"
                   className="mt-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 >
-                  <SelectValue placeholder="Select source" />
+                  <SelectValue
+                    placeholder={
+                      isLoadingCollectionSources
+                        ? "Loading..."
+                        : "Select collection source"
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="developer">
-                    Developer ({deal.developer?.name || "N/A"})
-                  </SelectItem>
-                  <SelectItem value="buyer">
-                    Buyer ({buyer?.name || "N/A"})
-                  </SelectItem>
-                  <SelectItem value="seller">
-                    Seller ({seller?.name || "N/A"})
-                  </SelectItem>
+                  {collectionSources.map((source) => (
+                    <SelectItem key={source.id} value={source.id}>
+                      {source.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div>
               <Label
-                htmlFor="paymentMethod"
+                htmlFor="collectionTypeId"
                 className="text-gray-900 dark:text-white"
               >
-                Payment Method
+                Collection Type
               </Label>
               <Select
-                value={paymentMethod}
-                onValueChange={(value) =>
-                  setPaymentMethod(value as PaymentMethodType)
-                }
+                value={collectionTypeId}
+                onValueChange={setCollectionTypeId}
+                disabled={isLoadingCollectionTypes}
               >
                 <SelectTrigger
-                  id="paymentMethod"
+                  id="collectionTypeId"
                   className="mt-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 >
-                  <SelectValue placeholder="Select payment method" />
+                  <SelectValue
+                    placeholder={
+                      isLoadingCollectionTypes
+                        ? "Loading..."
+                        : "Select collection type"
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="bank-transfer">Bank Transfer</SelectItem>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="check">Check</SelectItem>
-                  <SelectItem value="credit-card">Credit Card</SelectItem>
-                  <SelectItem value="online-payment">Online Payment</SelectItem>
+                  {collectionTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.id}>
+                      {type.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -318,17 +376,16 @@ export function CollectCommissionModal({
 
             <div>
               <Label
-                htmlFor="reference"
+                htmlFor="collectionDate"
                 className="text-gray-900 dark:text-white"
               >
-                Reference Number (Optional)
+                Collection Date & Time
               </Label>
               <Input
-                id="reference"
-                type="text"
-                value={reference}
-                onChange={(e) => setReference(e.target.value)}
-                placeholder="Payment reference"
+                id="collectionDate"
+                type="datetime-local"
+                value={collectionDate}
+                onChange={(e) => setCollectionDate(e.target.value)}
                 className="mt-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               />
             </div>
@@ -361,7 +418,13 @@ export function CollectCommissionModal({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={!paymentMethod || !amount || isSubmitting}
+            disabled={
+              !collectionTypeId ||
+              !sourceId ||
+              !amount ||
+              !collectionDate ||
+              isSubmitting
+            }
             className="gi-bg-dark-green dark:bg-green-600 dark:hover:bg-green-700"
           >
             {isSubmitting ? (

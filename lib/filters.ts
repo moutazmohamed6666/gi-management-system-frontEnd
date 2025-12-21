@@ -176,6 +176,18 @@ export const filtersApi = {
     }).filter(Boolean) as FilterOption[];
     return roles;
   },
+
+  // Get all collection types
+  getCollectionTypes: async (): Promise<FilterOption[]> => {
+    const data = await apiClient<unknown>("/api/filters/collection-types");
+    return normalizeGenericOptions(data);
+  },
+
+  // Get all collection sources
+  getCollectionSources: async (): Promise<FilterOption[]> => {
+    const data = await apiClient<unknown>("/api/filters/collection-sources");
+    return normalizeGenericOptions(data);
+  },
 };
 
 // Hook-like utility to fetch all filters at once (optional)

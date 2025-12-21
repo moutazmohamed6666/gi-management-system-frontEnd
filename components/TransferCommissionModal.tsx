@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
 import {
   Select,
   SelectContent,
@@ -33,12 +32,14 @@ export function TransferCommissionModal({
   onClose,
   onSuccess,
 }: TransferCommissionModalProps) {
+  const [transferType, setTransferType] = useState<"user" | "account" | "">("");
+  const [fromAccount, setFromAccount] = useState<string>("");
+  const [toAccount, setToAccount] = useState<string>("");
+  const [toUserId, setToUserId] = useState<string>("");
   const [recipientType, setRecipientType] = useState<"agent" | "manager" | "">(
     ""
   );
-  const [recipientId, setRecipientId] = useState<string>("");
   const [amount, setAmount] = useState<string>("");
-  const [notes, setNotes] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingAgents, setIsLoadingAgents] = useState(false);
   const [agents, setAgents] = useState<DealAgent[]>([]);
@@ -114,20 +115,43 @@ export function TransferCommissionModal({
     }
   };
 
+  const handleTransferTypeChange = (value: "user" | "account") => {
+    setTransferType(value);
+    // Reset related fields when transfer type changes
+    setToUserId("");
+    setToAccount("");
+    setRecipientType("");
+  };
+
   const handleRecipientTypeChange = (value: "agent" | "manager") => {
     setRecipientType(value);
-    setRecipientId(""); // Reset recipient when type changes
+    setToUserId(""); // Reset recipient when type changes
   };
 
   const handleConfirm = async () => {
     // Validate inputs
-    if (!recipientType) {
-      toast.error("Please select a recipient type");
+    if (!transferType) {
+      toast.error("Please select a transfer type");
       return;
     }
-    if (!recipientId) {
-      toast.error("Please select a recipient");
+    if (!fromAccount) {
+      toast.error("Please enter source account name");
       return;
+    }
+    if (transferType === "user") {
+      if (!recipientType) {
+        toast.error("Please select a recipient type");
+        return;
+      }
+      if (!toUserId) {
+        toast.error("Please select a recipient");
+        return;
+      }
+    } else if (transferType === "account") {
+      if (!toAccount) {
+        toast.error("Please enter destination account name");
+        return;
+      }
     }
     if (!amount || parseFloat(amount) <= 0) {
       setAmountError("Please enter a valid amount");
@@ -139,13 +163,16 @@ export function TransferCommissionModal({
     try {
       const response = await commissionsApi.transferCommission({
         dealId: deal.id,
-        recipientId,
-        recipientType,
+        fromAccount,
+        toAccount: transferType === "account" ? toAccount : undefined,
+        toUserId: transferType === "user" ? toUserId : undefined,
         amount: parseFloat(amount),
-        notes: notes || undefined,
       });
 
-      const recipientName = getRecipientName(recipientId);
+      const recipientName =
+        transferType === "user"
+          ? getRecipientName(toUserId)
+          : toAccount;
       toast.success("Commission Transferred", {
         description: `AED ${parseFloat(amount).toLocaleString()} transferred to ${recipientName}.`,
       });
@@ -164,10 +191,12 @@ export function TransferCommissionModal({
   };
 
   const handleReset = () => {
+    setTransferType("");
+    setFromAccount("");
+    setToAccount("");
+    setToUserId("");
     setRecipientType("");
-    setRecipientId("");
     setAmount("");
-    setNotes("");
     setAmountError("");
   };
 
@@ -186,6 +215,15 @@ export function TransferCommissionModal({
     const allRecipients = [...agents, ...managers];
     return allRecipients.find((r) => r.id === id)?.name || "Unknown";
   };
+
+  // Set default fromAccount when modal opens (could be based on deal context)
+  useEffect(() => {
+    if (isOpen && !fromAccount) {
+      // Default to a common account name, or you could fetch from API
+      // For now, using a placeholder that should be replaced with actual account logic
+      setFromAccount("");
+    }
+  }, [isOpen, fromAccount]);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -279,74 +317,136 @@ export function TransferCommissionModal({
 
         {/* Transfer Form */}
         <div className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label
-                htmlFor="recipientType"
-                className="text-gray-900 dark:text-white"
+          <div>
+            <Label
+              htmlFor="transferType"
+              className="text-gray-900 dark:text-white"
+            >
+              Transfer Type
+            </Label>
+            <Select
+              value={transferType}
+              onValueChange={handleTransferTypeChange}
+            >
+              <SelectTrigger
+                id="transferType"
+                className="mt-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
-                Transfer To
-              </Label>
-              <Select
-                value={recipientType}
-                onValueChange={handleRecipientTypeChange}
-              >
-                <SelectTrigger
-                  id="recipientType"
-                  className="mt-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                >
-                  <SelectValue placeholder="Select recipient type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="agent">Agent</SelectItem>
-                  <SelectItem value="manager">Manager</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                <SelectValue placeholder="Select transfer type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="user">Transfer to User (Agent/Manager)</SelectItem>
+                <SelectItem value="account">Transfer Between Accounts</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-            {recipientType && (
+          <div>
+            <Label
+              htmlFor="fromAccount"
+              className="text-gray-900 dark:text-white"
+            >
+              Source Account <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="fromAccount"
+              type="text"
+              value={fromAccount}
+              onChange={(e) => setFromAccount(e.target.value)}
+              placeholder="Enter source account name"
+              className="mt-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
+          </div>
+
+          {transferType === "user" && (
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label
-                  htmlFor="recipientId"
+                  htmlFor="recipientType"
                   className="text-gray-900 dark:text-white"
                 >
-                  {recipientType === "agent" ? "Select Agent" : "Select Manager"}
+                  Recipient Type
                 </Label>
-                <Select value={recipientId} onValueChange={setRecipientId}>
+                <Select
+                  value={recipientType}
+                  onValueChange={handleRecipientTypeChange}
+                >
                   <SelectTrigger
-                    id="recipientId"
+                    id="recipientType"
                     className="mt-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    disabled={isLoadingAgents}
                   >
-                    <SelectValue
-                      placeholder={
-                        isLoadingAgents
-                          ? "Loading..."
-                          : `Select ${recipientType}`
-                      }
-                    />
+                    <SelectValue placeholder="Select recipient type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {getRecipientOptions().map((recipient) => (
-                      <SelectItem key={recipient.id} value={recipient.id}>
-                        {recipient.name}
-                        {recipient.email && (
-                          <span className="text-gray-500 ml-2">
-                            ({recipient.email})
-                          </span>
-                        )}
-                      </SelectItem>
-                    ))}
-                    {getRecipientOptions().length === 0 && !isLoadingAgents && (
-                      <div className="px-2 py-1 text-gray-500 text-sm">
-                        No {recipientType}s found
-                      </div>
-                    )}
+                    <SelectItem value="agent">Agent</SelectItem>
+                    <SelectItem value="manager">Manager</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            )}
-          </div>
+
+              {recipientType && (
+                <div>
+                  <Label
+                    htmlFor="toUserId"
+                    className="text-gray-900 dark:text-white"
+                  >
+                    {recipientType === "agent" ? "Select Agent" : "Select Manager"}
+                  </Label>
+                  <Select value={toUserId} onValueChange={setToUserId}>
+                    <SelectTrigger
+                      id="toUserId"
+                      className="mt-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      disabled={isLoadingAgents}
+                    >
+                      <SelectValue
+                        placeholder={
+                          isLoadingAgents
+                            ? "Loading..."
+                            : `Select ${recipientType}`
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getRecipientOptions().map((recipient) => (
+                        <SelectItem key={recipient.id} value={recipient.id}>
+                          {recipient.name}
+                          {recipient.email && (
+                            <span className="text-gray-500 ml-2">
+                              ({recipient.email})
+                            </span>
+                          )}
+                        </SelectItem>
+                      ))}
+                      {getRecipientOptions().length === 0 && !isLoadingAgents && (
+                        <div className="px-2 py-1 text-gray-500 text-sm">
+                          No {recipientType}s found
+                        </div>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          )}
+
+          {transferType === "account" && (
+            <div>
+              <Label
+                htmlFor="toAccount"
+                className="text-gray-900 dark:text-white"
+              >
+                Destination Account
+              </Label>
+              <Input
+                id="toAccount"
+                type="text"
+                value={toAccount}
+                onChange={(e) => setToAccount(e.target.value)}
+                placeholder="Enter destination account name"
+                className="mt-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+            </div>
+          )}
 
           <div>
             <Label htmlFor="amount" className="text-gray-900 dark:text-white">
@@ -369,19 +469,6 @@ export function TransferCommissionModal({
             )}
           </div>
 
-          <div>
-            <Label htmlFor="notes" className="text-gray-900 dark:text-white">
-              Notes (Optional)
-            </Label>
-            <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add any additional notes..."
-              rows={3}
-              className="mt-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-          </div>
         </div>
 
         {/* Footer Actions */}
@@ -396,7 +483,14 @@ export function TransferCommissionModal({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={!recipientType || !recipientId || !amount || isSubmitting}
+            disabled={
+              !transferType ||
+              !fromAccount ||
+              (transferType === "user" && (!recipientType || !toUserId)) ||
+              (transferType === "account" && !toAccount) ||
+              !amount ||
+              isSubmitting
+            }
             className="gi-bg-dark-green dark:bg-green-600 dark:hover:bg-green-700"
           >
             {isSubmitting ? (
