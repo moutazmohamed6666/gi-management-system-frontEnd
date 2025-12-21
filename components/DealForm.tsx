@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
@@ -217,6 +217,13 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     if (!effectiveStatusId) return "";
     return statuses.find((s) => s.id === effectiveStatusId)?.name || "";
   }, [effectiveStatusId, statuses]);
+
+  // Set default statusId for agents when creating a deal (field is hidden)
+  useEffect(() => {
+    if (currentRole === "agent" && !isEditMode && defaultStatusId) {
+      setValue("statusId", defaultStatusId, { shouldValidate: false });
+    }
+  }, [currentRole, isEditMode, defaultStatusId, setValue]);
 
   // Finance can always edit deals (same as agent create form)
   // Agents can only create, not edit
@@ -763,56 +770,50 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                       </p>
                     )}
                   </div>
-                  <div>
-                    <Label htmlFor="statusId">
-                      Status <span className="text-red-500">*</span>
-                      {currentRole === "agent" && !isEditMode && (
-                        <span className="text-gray-500 text-xs ml-2">
-                          (Auto-set to Submitted)
-                        </span>
+                  {!(currentRole === "agent" && !isEditMode) && (
+                    <div>
+                      <Label htmlFor="statusId">
+                        Status <span className="text-red-500">*</span>
+                      </Label>
+                      <Controller
+                        name="statusId"
+                        control={control}
+                        rules={{
+                          required: "Status is required",
+                          validate: (value) => {
+                            const finalValue = value || defaultStatusId;
+                            if (!finalValue) return "Status is required";
+                            if (!isValidUuid(finalValue))
+                              return "Status must be a valid UUID";
+                            return true;
+                          },
+                        }}
+                        render={({ field }) => (
+                          <Select
+                            value={field.value || defaultStatusId}
+                            onValueChange={field.onChange}
+                            disabled={filtersLoading}
+                          >
+                            <SelectTrigger className="w-full mt-1">
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {statuses.map((status) => (
+                                <SelectItem key={status.id} value={status.id}>
+                                  {status.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      {errors.statusId && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.statusId.message}
+                        </p>
                       )}
-                    </Label>
-                    <Controller
-                      name="statusId"
-                      control={control}
-                      rules={{
-                        required: "Status is required",
-                        validate: (value) => {
-                          const finalValue = value || defaultStatusId;
-                          if (!finalValue) return "Status is required";
-                          if (!isValidUuid(finalValue))
-                            return "Status must be a valid UUID";
-                          return true;
-                        },
-                      }}
-                      render={({ field }) => (
-                        <Select
-                          value={field.value || defaultStatusId}
-                          onValueChange={field.onChange}
-                          disabled={
-                            filtersLoading ||
-                            (currentRole === "agent" && !isEditMode)
-                          }
-                        >
-                          <SelectTrigger className="w-full mt-1">
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {statuses.map((status) => (
-                              <SelectItem key={status.id} value={status.id}>
-                                {status.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                    {errors.statusId && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.statusId.message}
-                      </p>
-                    )}
-                  </div>
+                    </div>
+                  )}
                   {currentRole !== "agent" && (
                     <div>
                       <Label htmlFor="purchaseStatusId">Purchase Status</Label>
