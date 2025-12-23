@@ -294,12 +294,14 @@ export interface AdditionalAgent {
 export interface BuyerSellerInput {
   name: string;
   phone: string;
+  email?: string; // Optional email field
   nationalityId: string;
   sourceId: string;
 }
 
 export interface CreateDealRequest {
   dealValue: number;
+  purchaseValue?: number; // New: Purchase Value field
   developerId: string;
   projectId: string;
   agentId: string;
@@ -312,6 +314,7 @@ export interface CreateDealRequest {
   propertyTypeId: string;
   unitNumber: string;
   unitTypeId: string;
+  bedroomsId?: string; // New: Bedrooms dropdown
   size: number;
   buyer: BuyerSellerInput;
   seller: BuyerSellerInput;
@@ -321,7 +324,7 @@ export interface CreateDealRequest {
   agentCommissionValue?: number;
   totalCommissionTypeId?: string;
   totalCommissionValue?: number;
-  additionalAgents?: AdditionalAgent[];
+  additionalAgents?: AdditionalAgent[]; // Now supports multiple external agents
   stageId?: string;
   statusId?: string;
   purchaseStatusId?: string;

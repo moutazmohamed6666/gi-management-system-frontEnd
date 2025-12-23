@@ -188,6 +188,12 @@ export const filtersApi = {
     const data = await apiClient<unknown>("/api/filters/collection-sources");
     return normalizeGenericOptions(data);
   },
+
+  // Get all bedrooms options
+  getBedrooms: async (): Promise<FilterOption[]> => {
+    const data = await apiClient<unknown>("/api/filters/bedrooms");
+    return normalizeGenericOptions(data);
+  },
 };
 
 // Hook-like utility to fetch all filters at once (optional)
@@ -206,6 +212,7 @@ export const fetchAllFilters = async () => {
       nationalities,
       purchaseStatuses,
       roles,
+      bedrooms,
     ] = await Promise.all([
       filtersApi.getDevelopers(),
       filtersApi.getAgents(),
@@ -219,6 +226,7 @@ export const fetchAllFilters = async () => {
       filtersApi.getNationalities(),
       filtersApi.getPurchaseStatuses(),
       filtersApi.getRoles(),
+      filtersApi.getBedrooms(),
     ]);
 
     return {
@@ -234,6 +242,7 @@ export const fetchAllFilters = async () => {
       nationalities,
       purchaseStatuses,
       roles,
+      bedrooms,
     };
   } catch (error) {
     console.error("Error fetching filters:", error);

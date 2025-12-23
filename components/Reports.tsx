@@ -71,10 +71,11 @@ export function Reports() {
   }, []);
 
   // Filters
-  const { developers, agents } = useFilters();
-  const [reportType, setReportType] = useState<ReportType>("monthly_revenue");
+  const { developers, agents, purchaseStatuses } = useFilters();
+  const [reportType] = useState<ReportType>("monthly_revenue");
   const [selectedDeveloper, setSelectedDeveloper] = useState("all");
   const [selectedAgent, setSelectedAgent] = useState("all");
+  const [selectedPurchaseStatus, setSelectedPurchaseStatus] = useState("all");
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType | "custom">(
     "month"
   );
@@ -105,15 +106,15 @@ export function Reports() {
 
     try {
       let response: AnalyticsResponse;
-      
+
       // Use comprehensive endpoint for finance role (no filters supported)
       if (userRole === "finance") {
         const compData = await financeApi.getComprehensiveData();
-        
+
         // Transform the comprehensive response to AnalyticsResponse format
         response = {
           report_type: "monthly_revenue",
-          data: compData.monthlyRevenueDetails.map(detail => ({
+          data: compData.monthlyRevenueDetails.map((detail) => ({
             month: detail.month,
             revenue: detail.revenue,
             deals: detail.numberOfDeals,
@@ -138,6 +139,10 @@ export function Reports() {
           developer_id:
             selectedDeveloper !== "all" ? selectedDeveloper : undefined,
           agent_id: selectedAgent !== "all" ? selectedAgent : undefined,
+          purchase_status_id:
+            selectedPurchaseStatus !== "all"
+              ? selectedPurchaseStatus
+              : undefined,
         });
       }
 
@@ -152,7 +157,15 @@ export function Reports() {
     } finally {
       setIsLoading(false);
     }
-  }, [reportType, startDate, endDate, selectedDeveloper, selectedAgent, userRole]);
+  }, [
+    reportType,
+    startDate,
+    endDate,
+    selectedDeveloper,
+    selectedAgent,
+    selectedPurchaseStatus,
+    userRole,
+  ]);
 
   // Fetch data when filters change
   useEffect(() => {
@@ -328,7 +341,7 @@ export function Reports() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {/* <div>
               <Label htmlFor="reportType">Report Type</Label>
               <Select
@@ -385,6 +398,25 @@ export function Reports() {
                   {agents.map((agent) => (
                     <SelectItem key={agent.id} value={agent.id}>
                       {agent.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="purchaseStatus">Purchase Status</Label>
+              <Select
+                value={selectedPurchaseStatus}
+                onValueChange={(value) => setSelectedPurchaseStatus(value)}
+              >
+                <SelectTrigger className="w-full mt-1">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {purchaseStatuses.map((status) => (
+                    <SelectItem key={status.id} value={status.id}>
+                      {status.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

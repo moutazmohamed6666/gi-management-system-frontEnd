@@ -33,6 +33,7 @@ export interface ReportsAnalyticsParams {
   developer_id?: string;
   agent_id?: string;
   project_id?: string;
+  purchase_status_id?: string; // New: Purchase Status filter
   period?: PeriodType;
 }
 
@@ -201,6 +202,9 @@ export const reportsApi = {
     }
     if (params.project_id) {
       queryParams.append("project_id", params.project_id);
+    }
+    if (params.purchase_status_id) {
+      queryParams.append("purchase_status_id", params.purchase_status_id);
     }
     if (params.period) {
       queryParams.append("period", params.period);

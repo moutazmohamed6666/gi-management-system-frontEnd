@@ -20,6 +20,7 @@ import { useFilters } from "@/lib/useFilters";
 import { dealsApi, type CreateDealRequest, type Deal } from "@/lib/deals";
 import { ArrowLeft, Save, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { DealPreviewModal } from "./DealPreviewModal";
 
 interface DealFormProps {
   dealId: string | null;
@@ -57,17 +58,20 @@ type DealFormData = {
   unitNumber: string;
   unitTypeId: string;
   size: string;
-  bedrooms: string;
+  bedroomsId: string; // Changed from bedrooms to bedroomsId for API consistency
+  purchaseValue: string; // New: Purchase Value field
 
   // Seller Information
   sellerName: string;
   sellerPhone: string;
+  sellerEmail: string; // New: Optional seller email
   sellerNationalityId: string;
   sellerSourceId: string;
 
   // Buyer Information
   buyerName: string;
   buyerPhone: string;
+  buyerEmail: string; // New: Optional buyer email
   buyerNationalityId: string;
   buyerSourceId: string;
 
@@ -101,6 +105,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     commissionTypes,
     purchaseStatuses,
     agents: allAgents,
+    bedrooms,
     isLoading: filtersLoading,
     error: filtersError,
   } = useFilters();
@@ -133,17 +138,20 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
       unitNumber: "",
       unitTypeId: "",
       size: "",
-      bedrooms: "",
+      bedroomsId: "",
+      purchaseValue: "",
 
       // Seller Information
       sellerName: "",
       sellerPhone: "",
+      sellerEmail: "",
       sellerNationalityId: "",
       sellerSourceId: "",
 
       // Buyer Information
       buyerName: "",
       buyerPhone: "",
+      buyerEmail: "",
       buyerNationalityId: "",
       buyerSourceId: "",
 
@@ -180,6 +188,11 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
   const [originalCommissionValue, setOriginalCommissionValue] = useState<
     string | null
   >(null);
+  // Preview modal state
+  const [showPreview, setShowPreview] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState<DealFormData | null>(
+    null
+  );
 
   const isEditMode = Boolean(dealId);
 
@@ -469,17 +482,20 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
           unitNumber: unitNumber, // Use extracted unitNumber (from unit.number or unitNumber field)
           unitTypeId: unitTypeId, // Use extracted unitTypeId (from unit.type object or unitTypeId field)
           size: size, // Use extracted size (from unit.size or size field)
-          bedrooms: "", // Keep for now
+          bedroomsId: "", // TODO: Extract from deal if backend provides it
+          purchaseValue: "", // TODO: Extract from deal if backend provides it
 
           // Seller - handle both old structure (BuyerSellerDetail) and new structure (BuyerSeller)
           sellerName: seller?.name || "",
           sellerPhone: seller?.phone || "",
+          sellerEmail: (seller as { email?: string })?.email || "",
           sellerNationalityId: sellerNationalityId, // Use extracted from nested nationality object or nationalityId field
           sellerSourceId: sellerSourceId, // Use extracted from nested source object or sourceId field
 
           // Buyer - handle both old structure (BuyerSellerDetail) and new structure (BuyerSeller)
           buyerName: buyer?.name || "",
           buyerPhone: buyer?.phone || "",
+          buyerEmail: (buyer as { email?: string })?.email || "",
           buyerNationalityId: buyerNationalityId, // Use extracted from nested nationality object or nationalityId field
           buyerSourceId: buyerSourceId, // Use extracted from nested source object or sourceId field
 
@@ -552,6 +568,13 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     return phoneRegex.test(phone);
   };
 
+  // Email validation function
+  const validateEmail = (email: string): boolean => {
+    if (!email) return true; // Email is optional
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   // UUID validation function
   const isValidUuid = (value: string) => {
     // UUID v1-v5
@@ -560,7 +583,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     );
   };
 
-  // Form submission handler
+  // Form submission handler - shows preview for new deals
   const onSubmit = async (data: DealFormData) => {
     if (isReadOnly) {
       toast.error("Permission denied", {
@@ -572,6 +595,19 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
       return;
     }
 
+    // For new deals (not editing), show preview modal first
+    if (!dealId) {
+      setPendingFormData(data);
+      setShowPreview(true);
+      return;
+    }
+
+    // For editing, proceed directly
+    await submitDeal(data);
+  };
+
+  // Actual submission logic
+  const submitDeal = async (data: DealFormData) => {
     // Get agent ID from session
     const agentId = sessionStorage.getItem("userId");
     if (!agentId) {
@@ -590,6 +626,9 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     // Prepare base payload
     const basePayload = {
       dealValue: parseFloat(data.salesValue) || 0,
+      purchaseValue: data.purchaseValue
+        ? parseFloat(data.purchaseValue)
+        : undefined,
       developerId: data.developerId,
       projectId: data.projectId,
       agentId: agentId,
@@ -604,16 +643,19 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
       propertyTypeId: data.propertyTypeId,
       unitNumber: data.unitNumber,
       unitTypeId: data.unitTypeId,
+      bedroomsId: data.bedroomsId || undefined,
       size: parseFloat(data.size) || 0,
       buyer: {
         name: data.buyerName,
         phone: data.buyerPhone,
+        email: data.buyerEmail || undefined,
         nationalityId: data.buyerNationalityId,
         sourceId: data.buyerSourceId,
       },
       seller: {
         name: data.sellerName,
         phone: data.sellerPhone,
+        email: data.sellerEmail || undefined,
         nationalityId: data.sellerNationalityId,
         sourceId: data.sellerSourceId,
       },
@@ -678,6 +720,9 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
         return data.purchaseStatusId || undefined;
       })(),
       // Additional agents if enabled
+      // Note: Backend supports multiple external agents (array).
+      // Current UI supports one additional agent for simplicity.
+      // Future enhancement: Add UI for managing multiple external agents.
       additionalAgents: data.hasAdditionalAgent
         ? [
             data.additionalAgentType === "internal"
@@ -754,6 +799,152 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
         description: errorMessage,
       });
     }
+  };
+
+  // Handle preview modal confirm
+  const handlePreviewConfirm = async () => {
+    if (!pendingFormData) return;
+    setShowPreview(false);
+    await submitDeal(pendingFormData);
+    setPendingFormData(null);
+  };
+
+  // Handle preview modal close
+  const handlePreviewClose = () => {
+    setShowPreview(false);
+    setPendingFormData(null);
+  };
+
+  // Prepare preview data from form data
+  const getPreviewData = () => {
+    if (!pendingFormData) return null;
+
+    const getDeveloperName = () => {
+      const dev = developers.find((d) => d.id === pendingFormData.developerId);
+      return dev?.name || "N/A";
+    };
+
+    const getProjectName = () => {
+      const proj = filteredProjects.find(
+        (p) => p.id === pendingFormData.projectId
+      );
+      return proj?.name || "N/A";
+    };
+
+    const getDealTypeName = () => {
+      const type = dealTypes.find((t) => t.id === pendingFormData.dealTypeId);
+      return type?.name || "N/A";
+    };
+
+    const getStatusName = () => {
+      const status = statuses.find(
+        (s) => s.id === (pendingFormData.statusId || defaultStatusId)
+      );
+      return status?.name || "N/A";
+    };
+
+    const getPurchaseStatusName = () => {
+      const status = purchaseStatuses.find(
+        (s) => s.id === pendingFormData.purchaseStatusId
+      );
+      return status?.name || "N/A";
+    };
+
+    const getPropertyTypeName = () => {
+      const type = propertyTypes.find(
+        (t) => t.id === pendingFormData.propertyTypeId
+      );
+      return type?.name || "N/A";
+    };
+
+    const getUnitTypeName = () => {
+      const type = unitTypes.find((t) => t.id === pendingFormData.unitTypeId);
+      return type?.name || "N/A";
+    };
+
+    const getBedroomsName = () => {
+      const bedroom = bedrooms.find((b) => b.id === pendingFormData.bedroomsId);
+      return bedroom?.name || "N/A";
+    };
+
+    const getDealCommissionTypeName = () => {
+      const type = commissionTypes.find(
+        (t) => t.id === pendingFormData.totalCommissionTypeId
+      );
+      return type?.name || "N/A";
+    };
+
+    const getAgentCommissionTypeName = () => {
+      const type = commissionTypes.find(
+        (t) => t.id === pendingFormData.agentCommissionTypeId
+      );
+      return type?.name || "N/A";
+    };
+
+    const getAdditionalAgentCommissionTypeName = () => {
+      const type = commissionTypes.find(
+        (t) => t.id === pendingFormData.agencyCommissionTypeId
+      );
+      return type?.name || "N/A";
+    };
+
+    const getAdditionalAgentName = () => {
+      if (pendingFormData.additionalAgentType === "internal") {
+        const agent = allAgents.find(
+          (a) => a.id === pendingFormData.additionalAgentId
+        );
+        return agent?.name || "N/A";
+      }
+      return pendingFormData.agencyName || "N/A";
+    };
+
+    const getMainAgentName = () => {
+      return sessionStorage.getItem("username") || "Current Agent";
+    };
+
+    return {
+      bookingDate: pendingFormData.bookingDate,
+      cfExpiry: pendingFormData.cfExpiry,
+      closeDate: pendingFormData.closeDate,
+      dealType: getDealTypeName(),
+      status: getStatusName(),
+      purchaseStatus: getPurchaseStatusName(),
+      developer: getDeveloperName(),
+      project: getProjectName(),
+      propertyName: pendingFormData.propertyName,
+      propertyType: getPropertyTypeName(),
+      unitNumber: pendingFormData.unitNumber,
+      unitType: getUnitTypeName(),
+      size: pendingFormData.size,
+      bedrooms: getBedroomsName(),
+      buyerName: pendingFormData.buyerName,
+      buyerPhone: pendingFormData.buyerPhone,
+      buyerEmail: pendingFormData.buyerEmail,
+      sellerName: pendingFormData.sellerName,
+      sellerPhone: pendingFormData.sellerPhone,
+      sellerEmail: pendingFormData.sellerEmail,
+      salesValue: pendingFormData.salesValue,
+      purchaseValue: pendingFormData.purchaseValue,
+
+      // Deal Commission
+      dealCommissionRate: pendingFormData.totalCommissionValue || "N/A",
+      dealCommissionType: getDealCommissionTypeName(),
+      totalDealCommission: pendingFormData.totalCommissionValue,
+
+      // Main Agent Commission
+      mainAgentName: getMainAgentName(),
+      mainAgentCommissionRate: pendingFormData.commRate,
+      mainAgentCommissionType: getAgentCommissionTypeName(),
+      mainAgentCommissionValue: pendingFormData.commRate, // This will be calculated by backend
+
+      // Additional Agent
+      hasAdditionalAgent: pendingFormData.hasAdditionalAgent,
+      additionalAgentType: pendingFormData.additionalAgentType,
+      additionalAgentName: getAdditionalAgentName(),
+      additionalAgentCommissionRate: pendingFormData.agencyComm,
+      additionalAgentCommissionType: getAdditionalAgentCommissionTypeName(),
+      additionalAgentCommissionValue: pendingFormData.agencyComm,
+    };
   };
 
   const shouldShowDealLoading =
@@ -1018,7 +1209,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                       )}
                     </div>
                   )}
-                  {currentRole !== "agent" && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="purchaseStatusId">Purchase Status</Label>
                       <Controller
@@ -1044,7 +1235,29 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                         )}
                       />
                     </div>
-                  )}
+                    <div>
+                      <Label htmlFor="purchaseValue">
+                        Purchase Value (AED)
+                      </Label>
+                      <Input
+                        id="purchaseValue"
+                        type="text"
+                        {...register("purchaseValue", {
+                          onChange: (e) => {
+                            const numericValue = e.target.value.replace(
+                              /[^0-9]/g,
+                              ""
+                            );
+                            setValue("purchaseValue", numericValue, {
+                              shouldValidate: true,
+                            });
+                          },
+                        })}
+                        placeholder="Enter purchase value"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1185,13 +1398,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
               <CardTitle>Unit Details</CardTitle>
             </CardHeader>
             <CardContent>
-              <div
-                className={`grid grid-cols-1 gap-4 ${
-                  currentRole !== "agent" && currentRole !== "finance"
-                    ? "md:grid-cols-4"
-                    : "md:grid-cols-3"
-                }`}
-              >
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
                 <div>
                   <Label htmlFor="unitNumber">Unit #</Label>
                   <Input
@@ -1263,34 +1470,31 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                     className="mt-1"
                   />
                 </div>
-                {currentRole !== "agent" && currentRole !== "finance" && (
-                  <div>
-                    <Label htmlFor="bedrooms">BR (Bedrooms)</Label>
-                    <Controller
-                      name="bedrooms"
-                      control={control}
-                      render={({ field }) => (
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
-                          <SelectTrigger className="w-full mt-1">
-                            <SelectValue placeholder="Select bedrooms" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Studio">Studio</SelectItem>
-                            <SelectItem value="1">1</SelectItem>
-                            <SelectItem value="2">2</SelectItem>
-                            <SelectItem value="3">3</SelectItem>
-                            <SelectItem value="4">4</SelectItem>
-                            <SelectItem value="5">5</SelectItem>
-                            <SelectItem value="6+">6+</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </div>
-                )}
+                <div>
+                  <Label htmlFor="bedroomsId">Bedrooms</Label>
+                  <Controller
+                    name="bedroomsId"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={filtersLoading}
+                      >
+                        <SelectTrigger className="w-full mt-1">
+                          <SelectValue placeholder="Select bedrooms" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {bedrooms.map((bedroom) => (
+                            <SelectItem key={bedroom.id} value={bedroom.id}>
+                              {bedroom.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -1342,6 +1546,26 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                     {errors.sellerPhone && (
                       <p className="text-red-500 text-sm mt-1">
                         {errors.sellerPhone.message}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="sellerEmail">Email (Optional)</Label>
+                    <Input
+                      id="sellerEmail"
+                      type="email"
+                      {...register("sellerEmail", {
+                        validate: (value) =>
+                          validateEmail(value) || "Invalid email format",
+                      })}
+                      placeholder="seller@example.com"
+                      className={`mt-1 ${
+                        errors.sellerEmail ? "border-red-500" : ""
+                      }`}
+                    />
+                    {errors.sellerEmail && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.sellerEmail.message}
                       </p>
                     )}
                   </div>
@@ -1451,6 +1675,26 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                     )}
                   </div>
                   <div>
+                    <Label htmlFor="buyerEmail">Email (Optional)</Label>
+                    <Input
+                      id="buyerEmail"
+                      type="email"
+                      {...register("buyerEmail", {
+                        validate: (value) =>
+                          validateEmail(value) || "Invalid email format",
+                      })}
+                      placeholder="buyer@example.com"
+                      className={`mt-1 ${
+                        errors.buyerEmail ? "border-red-500" : ""
+                      }`}
+                    />
+                    {errors.buyerEmail && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.buyerEmail.message}
+                      </p>
+                    )}
+                  </div>
+                  <div>
                     <Label htmlFor="buyerNationalityId">Nationality</Label>
                     <Controller
                       name="buyerNationalityId"
@@ -1517,7 +1761,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {/* Basic Commission Fields */}
+                  {/* Sales Value */}
                   <div>
                     <Label htmlFor="salesValue">
                       Sales Value (AED) <span className="text-red-500">*</span>
@@ -1548,181 +1792,201 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                       </p>
                     )}
                   </div>
-                  <div>
-                    <Label htmlFor="agentCommissionTypeId">
-                      Commission Type
-                    </Label>
-                    <Controller
-                      name="agentCommissionTypeId"
-                      control={control}
-                      render={({ field }) => {
-                        // For agents, use commission type from login unless it was programmatically changed
-                        console.log("commissionTypes", commissionTypes);
-                        console.log(
-                          "agentCommissionTypeId field.value:",
-                          field.value
-                        );
 
-                        const loginCommissionType =
-                          sessionStorage.getItem("userCommissionType");
-                        // For agents: prioritize field.value if it exists (programmatically set override),
-                        // otherwise use login commission type
-                        const effectiveValue =
-                          currentRole === "agent"
-                            ? field.value || loginCommissionType || ""
-                            : field.value;
-
-                        console.log(
-                          "effectiveValue for Select:",
-                          effectiveValue
-                        );
-
-                        return (
-                          <Select
-                            value={effectiveValue}
-                            onValueChange={(value) => {
-                              // Only allow changes for non-agents
-                              if (currentRole !== "agent") {
-                                field.onChange(value);
-                              }
-                            }}
-                            disabled={filtersLoading || currentRole === "agent"}
-                          >
-                            <SelectTrigger className="w-full mt-1">
-                              <SelectValue placeholder="Select commission type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {commissionTypes.map((type) => (
-                                <SelectItem key={type.id} value={type.id}>
-                                  {type.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        );
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="commRate">
-                      Agent Commission Rate/Value
-                    </Label>
-                    <Input
-                      id="commRate"
-                      type="text"
-                      {...register("commRate", {
-                        onChange: (e) => {
-                          // Allow digits and decimal point
-                          let numericValue = e.target.value.replace(
-                            /[^0-9.]/g,
-                            ""
-                          );
-                          // Ensure only one decimal point
-                          const parts = numericValue.split(".");
-                          if (parts.length > 2) {
-                            numericValue =
-                              parts[0] + "." + parts.slice(1).join("");
-                          }
-                          setValue("commRate", numericValue, {
-                            shouldValidate: true,
-                          });
-
-                          // When agent commission rate/value changes, automatically select override option
-                          // Only set override if there's a value and commission types are loaded
-                          if (
-                            numericValue &&
-                            numericValue.trim() !== "" &&
-                            commissionTypes.length > 0
-                          ) {
-                            // Find the override commission type (case-insensitive search)
-                            const overrideType = commissionTypes.find((type) =>
-                              type.name.toLowerCase().includes("override")
-                            );
-
-                            if (overrideType) {
-                              // Set the override commission type ID
-                              console.log(
-                                "Setting override commission type:",
-                                overrideType.id,
-                                overrideType.name
-                              );
-                              setValue(
-                                "agentCommissionTypeId",
-                                overrideType.id,
-                                {
-                                  shouldValidate: true,
-                                  shouldDirty: true,
-                                }
-                              );
-                            } else {
-                              console.log(
-                                "Override type not found in commissionTypes:",
-                                commissionTypes.map((t) => ({
-                                  id: t.id,
-                                  name: t.name,
-                                }))
-                              );
-                            }
-                          }
-                        },
-                      })}
-                      placeholder="Enter agent commission rate (%) or fixed amount"
-                      className="mt-1"
-                    />
-                  </div>
-
-                  {/* Total Commission Fields */}
+                  {/* Total Deal Commission Section */}
                   <div
                     className="pt-4 border-t"
                     style={{ borderColor: "var(--gi-green-40)" }}
                   >
-                    <div className="grid grid-cols-2 gap-4">
+                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                      Total Deal Commission
+                    </h4>
+                    <div className="space-y-4 bg-green-50 dark:bg-green-900/10 p-4 rounded-lg">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="totalCommissionTypeId">
+                            Commission Type
+                          </Label>
+                          <Controller
+                            name="totalCommissionTypeId"
+                            control={control}
+                            render={({ field }) => (
+                              <Select
+                                value={field.value}
+                                onValueChange={field.onChange}
+                                disabled={filtersLoading}
+                              >
+                                <SelectTrigger className="w-full mt-1">
+                                  <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {commissionTypes.map((type) => (
+                                    <SelectItem key={type.id} value={type.id}>
+                                      {type.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="totalCommissionValue">
+                            Commission Value
+                          </Label>
+                          <Input
+                            id="totalCommissionValue"
+                            type="text"
+                            {...register("totalCommissionValue", {
+                              onChange: (e) => {
+                                const numericValue = e.target.value.replace(
+                                  /[^0-9]/g,
+                                  ""
+                                );
+                                setValue("totalCommissionValue", numericValue, {
+                                  shouldValidate: true,
+                                });
+                              },
+                            })}
+                            placeholder="Enter total commission value"
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Agent Commission Section */}
+                  <div
+                    className="pt-4 border-t"
+                    style={{ borderColor: "var(--gi-green-40)" }}
+                  >
+                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                      Agent Commission
+                    </h4>
+                    <div className="space-y-4 bg-blue-50 dark:bg-blue-900/10 p-4 rounded-lg">
                       <div>
-                        <Label htmlFor="totalCommissionTypeId">
-                          Total Commission Type
+                        <Label htmlFor="agentCommissionTypeId">
+                          Commission Type
                         </Label>
                         <Controller
-                          name="totalCommissionTypeId"
+                          name="agentCommissionTypeId"
                           control={control}
-                          render={({ field }) => (
-                            <Select
-                              value={field.value}
-                              onValueChange={field.onChange}
-                              disabled={filtersLoading}
-                            >
-                              <SelectTrigger className="w-full mt-1">
-                                <SelectValue placeholder="Select type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {commissionTypes.map((type) => (
-                                  <SelectItem key={type.id} value={type.id}>
-                                    {type.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
+                          render={({ field }) => {
+                            // For agents, use commission type from login unless it was programmatically changed
+                            console.log("commissionTypes", commissionTypes);
+                            console.log(
+                              "agentCommissionTypeId field.value:",
+                              field.value
+                            );
+
+                            const loginCommissionType =
+                              sessionStorage.getItem("userCommissionType");
+                            // For agents: prioritize field.value if it exists (programmatically set override),
+                            // otherwise use login commission type
+                            const effectiveValue =
+                              currentRole === "agent"
+                                ? field.value || loginCommissionType || ""
+                                : field.value;
+
+                            console.log(
+                              "effectiveValue for Select:",
+                              effectiveValue
+                            );
+
+                            return (
+                              <Select
+                                value={effectiveValue}
+                                onValueChange={(value) => {
+                                  // Only allow changes for non-agents
+                                  if (currentRole !== "agent") {
+                                    field.onChange(value);
+                                  }
+                                }}
+                                disabled={
+                                  filtersLoading || currentRole === "agent"
+                                }
+                              >
+                                <SelectTrigger className="w-full mt-1">
+                                  <SelectValue placeholder="Select commission type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {commissionTypes.map((type) => (
+                                    <SelectItem key={type.id} value={type.id}>
+                                      {type.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            );
+                          }}
                         />
                       </div>
                       <div>
-                        <Label htmlFor="totalCommissionValue">
-                          Total Commission Value
+                        <Label htmlFor="commRate">
+                          Agent Commission Rate/Value
                         </Label>
                         <Input
-                          id="totalCommissionValue"
+                          id="commRate"
                           type="text"
-                          {...register("totalCommissionValue", {
+                          {...register("commRate", {
                             onChange: (e) => {
-                              const numericValue = e.target.value.replace(
-                                /[^0-9]/g,
+                              // Allow digits and decimal point
+                              let numericValue = e.target.value.replace(
+                                /[^0-9.]/g,
                                 ""
                               );
-                              setValue("totalCommissionValue", numericValue, {
+                              // Ensure only one decimal point
+                              const parts = numericValue.split(".");
+                              if (parts.length > 2) {
+                                numericValue =
+                                  parts[0] + "." + parts.slice(1).join("");
+                              }
+                              setValue("commRate", numericValue, {
                                 shouldValidate: true,
                               });
+
+                              // When agent commission rate/value changes, automatically select override option
+                              // Only set override if there's a value and commission types are loaded
+                              if (
+                                numericValue &&
+                                numericValue.trim() !== "" &&
+                                commissionTypes.length > 0
+                              ) {
+                                // Find the override commission type (case-insensitive search)
+                                const overrideType = commissionTypes.find(
+                                  (type) =>
+                                    type.name.toLowerCase().includes("override")
+                                );
+
+                                if (overrideType) {
+                                  // Set the override commission type ID
+                                  console.log(
+                                    "Setting override commission type:",
+                                    overrideType.id,
+                                    overrideType.name
+                                  );
+                                  setValue(
+                                    "agentCommissionTypeId",
+                                    overrideType.id,
+                                    {
+                                      shouldValidate: true,
+                                      shouldDirty: true,
+                                    }
+                                  );
+                                } else {
+                                  console.log(
+                                    "Override type not found in commissionTypes:",
+                                    commissionTypes.map((t) => ({
+                                      id: t.id,
+                                      name: t.name,
+                                    }))
+                                  );
+                                }
+                              }
                             },
                           })}
-                          placeholder="Enter value"
+                          placeholder="Enter agent commission rate (%) or fixed amount"
                           className="mt-1"
                         />
                       </div>
@@ -1930,6 +2194,17 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
       </form>
 
       {/* Documents & Attachments (hidden for now - backend has no attachment APIs yet) */}
+
+      {/* Preview Modal */}
+      {showPreview && pendingFormData && (
+        <DealPreviewModal
+          isOpen={showPreview}
+          onClose={handlePreviewClose}
+          onConfirm={handlePreviewConfirm}
+          data={getPreviewData()!}
+          isSubmitting={isSubmitting}
+        />
+      )}
     </div>
   );
 }
