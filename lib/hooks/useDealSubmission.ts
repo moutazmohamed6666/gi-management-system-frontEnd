@@ -73,9 +73,6 @@ export function useDealSubmission({
       // Prepare base payload
       const basePayload = {
         dealValue: parseFloat(data.salesValue) || 0,
-        purchaseValue: data.purchaseValue
-          ? parseFloat(data.purchaseValue)
-          : undefined,
         developerId: data.developerId,
         projectId: data.projectId,
         agentId: agentId,
@@ -85,13 +82,13 @@ export function useDealSubmission({
           : new Date().toISOString(),
         dealTypeId: data.dealTypeId,
         statusId: finalStatusId,
-        numberOfDeal: 1,
         propertyName: data.propertyName || "",
         propertyTypeId: data.propertyTypeId,
         unitNumber: data.unitNumber,
         unitTypeId: data.unitTypeId,
-        bedroomsId: data.bedroomsId || undefined,
+        bedroomId: data.bedroomId || undefined,
         size: parseFloat(data.size) || 0,
+        downpayment: data.downpayment ? parseFloat(data.downpayment) : undefined,
         buyer: {
           name: data.buyerName,
           phone: data.buyerPhone,
@@ -117,27 +114,6 @@ export function useDealSubmission({
         agentCommissionValue: data.commRate
           ? parseFloat(data.commRate)
           : undefined,
-        agentCommissionTypeOverride: (() => {
-          if (currentRole === "agent") {
-            const originalValue =
-              originalCommissionValue ||
-              sessionStorage.getItem("userCommissionValue");
-            const currentValue = data.commRate;
-
-            if (originalValue && currentValue) {
-              const originalNum = parseFloat(originalValue);
-              const currentNum = parseFloat(currentValue);
-              if (
-                !isNaN(originalNum) &&
-                !isNaN(currentNum) &&
-                originalNum !== currentNum
-              ) {
-                return true;
-              }
-            }
-          }
-          return false;
-        })(),
         totalCommissionTypeId: data.totalCommissionTypeId || undefined,
         totalCommissionValue: data.totalCommissionValue
           ? parseFloat(data.totalCommissionValue)
@@ -156,32 +132,26 @@ export function useDealSubmission({
           }
           return data.purchaseStatusId || undefined;
         })(),
-        additionalAgents: data.hasAdditionalAgent
-          ? [
-              data.additionalAgentType === "internal"
+        additionalAgents: data.additionalAgents && data.additionalAgents.length > 0
+          ? data.additionalAgents.map(agent => 
+              agent.type === "internal"
                 ? {
-                    agentId: data.additionalAgentId,
-                    commissionTypeId:
-                      data.agencyCommissionTypeId ||
-                      data.agentCommissionTypeId ||
-                      "",
-                    commissionValue: data.agencyComm
-                      ? parseFloat(data.agencyComm)
+                    agentId: agent.agentId || "",
+                    commissionTypeId: agent.commissionTypeId || "",
+                    commissionValue: agent.commissionValue
+                      ? parseFloat(agent.commissionValue)
                       : 0,
                     isInternal: true,
                   }
                 : {
-                    externalAgentName: data.agencyName,
-                    commissionTypeId:
-                      data.agencyCommissionTypeId ||
-                      data.agentCommissionTypeId ||
-                      "",
-                    commissionValue: data.agencyComm
-                      ? parseFloat(data.agencyComm)
+                    externalAgentName: agent.agencyName || "",
+                    commissionTypeId: agent.commissionTypeId || "",
+                    commissionValue: agent.commissionValue
+                      ? parseFloat(agent.commissionValue)
                       : 0,
                     isInternal: false,
-                  },
-            ]
+                  }
+            )
           : undefined,
       };
 

@@ -255,22 +255,15 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
 
           {/* Row 2: Unit Details */}
           <div className="grid grid-cols-1 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Unit Details</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <UnitDetailsSection
-                  control={control}
-                  register={register}
-                  errors={errors}
-                  setValue={setValue}
-                  unitTypes={unitTypes}
-                  bedrooms={bedrooms}
-                  filtersLoading={filtersLoading}
-                />
-              </CardContent>
-            </Card>
+            <UnitDetailsSection
+              control={control}
+              register={register}
+              errors={errors}
+              setValue={setValue}
+              unitTypes={unitTypes}
+              bedrooms={bedrooms}
+              filtersLoading={filtersLoading}
+            />
           </div>
 
           {/* Row 3: Seller & Buyer */}
@@ -294,10 +287,8 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
               setValue={setValue}
               commissionTypes={commissionTypes}
               allAgents={allAgents}
-              watchedHasAdditionalAgent={watchedFields.hasAdditionalAgent}
-              watchedAdditionalAgentType={watchedFields.additionalAgentType}
+              watchedAdditionalAgents={watchedFields.additionalAgents || []}
               watchedSalesValue={watchedFields.salesValue}
-              watchedAgencyComm={watchedFields.agencyComm}
               currentRole={currentRole}
               filtersLoading={filtersLoading}
             />

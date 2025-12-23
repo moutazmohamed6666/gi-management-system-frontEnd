@@ -80,7 +80,7 @@ export function useDealPreview({
     };
 
     const getBedroomsName = () => {
-      const bedroom = bedrooms.find((b) => b.id === pendingFormData.bedroomsId);
+      const bedroom = bedrooms.find((b) => b.id === pendingFormData.bedroomId);
       return bedroom?.name || "N/A";
     };
 
@@ -126,6 +126,7 @@ export function useDealPreview({
       dealType: getDealTypeName(),
       status: getStatusName(),
       purchaseStatus: getPurchaseStatusName(),
+      downpayment: pendingFormData.downpayment,
       developer: getDeveloperName(),
       project: getProjectName(),
       propertyName: pendingFormData.propertyName,
@@ -141,7 +142,6 @@ export function useDealPreview({
       sellerPhone: pendingFormData.sellerPhone,
       sellerEmail: pendingFormData.sellerEmail,
       salesValue: pendingFormData.salesValue,
-      purchaseValue: pendingFormData.purchaseValue,
 
       // Deal Commission
       dealCommissionRate: pendingFormData.totalCommissionValue || "N/A",

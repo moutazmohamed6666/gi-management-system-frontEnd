@@ -4,6 +4,15 @@ import { useForm, useWatch, Control } from "react-hook-form";
 
 export type UserRole = "agent" | "finance" | "ceo" | "admin";
 
+// Additional agent type
+export type AdditionalAgent = {
+  type: "internal" | "external";
+  agentId?: string; // For internal agents
+  agencyName?: string; // For external agents
+  commissionValue: string;
+  commissionTypeId: string;
+};
+
 // Form data type for react-hook-form
 export type DealFormData = {
   // Deal Information
@@ -13,6 +22,7 @@ export type DealFormData = {
   dealTypeId: string;
   statusId: string;
   purchaseStatusId: string;
+  downpayment: string; // New field in API
 
   // Property Details
   developerId: string;
@@ -22,8 +32,7 @@ export type DealFormData = {
   unitNumber: string;
   unitTypeId: string;
   size: string;
-  bedroomsId: string;
-  purchaseValue: string;
+  bedroomId: string; // Changed from bedroomsId to bedroomId (singular)
 
   // Seller Information
   sellerName: string;
@@ -45,12 +54,7 @@ export type DealFormData = {
   agentCommissionTypeId: string;
   totalCommissionTypeId: string;
   totalCommissionValue: string;
-  hasAdditionalAgent: boolean;
-  additionalAgentType: "internal" | "external";
-  additionalAgentId: string;
-  agencyName: string;
-  agencyComm: string;
-  agencyCommissionTypeId: string;
+  additionalAgents: AdditionalAgent[];
 
   notes: string;
 };
@@ -63,6 +67,7 @@ const defaultFormValues: DealFormData = {
   dealTypeId: "",
   statusId: "",
   purchaseStatusId: "",
+  downpayment: "",
 
   // Property Details
   developerId: "",
@@ -72,8 +77,7 @@ const defaultFormValues: DealFormData = {
   unitNumber: "",
   unitTypeId: "",
   size: "",
-  bedroomsId: "",
-  purchaseValue: "",
+  bedroomId: "",
 
   // Seller Information
   sellerName: "",
@@ -95,12 +99,7 @@ const defaultFormValues: DealFormData = {
   agentCommissionTypeId: "",
   totalCommissionTypeId: "",
   totalCommissionValue: "",
-  hasAdditionalAgent: false,
-  additionalAgentType: "external",
-  additionalAgentId: "",
-  agencyName: "",
-  agencyComm: "",
-  agencyCommissionTypeId: "",
+  additionalAgents: [],
 
   notes: "",
 };
@@ -114,17 +113,9 @@ export function useDealFormData() {
   // Watch fields for conditional rendering and filtering
   const watchedFields = {
     developerId: useWatch({ control: form.control, name: "developerId" }),
-    hasAdditionalAgent: useWatch({
-      control: form.control,
-      name: "hasAdditionalAgent",
-    }),
-    additionalAgentType: useWatch({
-      control: form.control,
-      name: "additionalAgentType",
-    }),
+    additionalAgents: useWatch({ control: form.control, name: "additionalAgents" }),
     salesValue: useWatch({ control: form.control, name: "salesValue" }),
     bookingDate: useWatch({ control: form.control, name: "bookingDate" }),
-    agencyComm: useWatch({ control: form.control, name: "agencyComm" }),
   };
 
   return {

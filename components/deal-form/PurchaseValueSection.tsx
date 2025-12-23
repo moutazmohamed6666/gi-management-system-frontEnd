@@ -11,6 +11,7 @@ type DealFormData = {
   dealTypeId: string;
   statusId: string;
   purchaseStatusId: string;
+  downpayment: string;
   developerId: string;
   projectId: string;
   propertyName: string;
@@ -18,8 +19,7 @@ type DealFormData = {
   unitNumber: string;
   unitTypeId: string;
   size: string;
-  bedroomsId: string;
-  purchaseValue: string;
+  bedroomId: string;
   sellerName: string;
   sellerPhone: string;
   sellerEmail: string;
@@ -44,30 +44,30 @@ type DealFormData = {
   notes: string;
 };
 
-interface PurchaseValueSectionProps {
+interface DownpaymentSectionProps {
   register: UseFormRegister<DealFormData>;
   setValue: UseFormSetValue<DealFormData>;
 }
 
-export function PurchaseValueSection({
+export function DownpaymentSection({
   register,
   setValue,
-}: PurchaseValueSectionProps) {
+}: DownpaymentSectionProps) {
   return (
     <div>
-      <Label htmlFor="purchaseValue">Purchase Value (AED)</Label>
+      <Label htmlFor="downpayment">Downpayment (AED)</Label>
       <Input
-        id="purchaseValue"
+        id="downpayment"
         type="text"
-        {...register("purchaseValue", {
+        {...register("downpayment", {
           onChange: (e) => {
             const numericValue = e.target.value.replace(/[^0-9]/g, "");
-            setValue("purchaseValue", numericValue, {
+            setValue("downpayment", numericValue, {
               shouldValidate: true,
             });
           },
         })}
-        placeholder="Enter purchase value"
+        placeholder="Enter downpayment amount"
         className="mt-1"
       />
     </div>

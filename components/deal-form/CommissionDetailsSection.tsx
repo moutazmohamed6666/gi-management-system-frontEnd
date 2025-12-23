@@ -4,8 +4,10 @@ import { Control, Controller, FieldErrors, UseFormRegister, UseFormSetValue } fr
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
-import { Switch } from "../ui/switch";
+import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Plus, X } from "lucide-react";
+import { AdditionalAgent } from "@/lib/hooks/useDealFormData";
 
 type DealFormData = {
   bookingDate: string;
@@ -14,6 +16,7 @@ type DealFormData = {
   dealTypeId: string;
   statusId: string;
   purchaseStatusId: string;
+  downpayment: string;
   developerId: string;
   projectId: string;
   propertyName: string;
@@ -21,8 +24,7 @@ type DealFormData = {
   unitNumber: string;
   unitTypeId: string;
   size: string;
-  bedroomsId: string;
-  purchaseValue: string;
+  bedroomId: string;
   sellerName: string;
   sellerPhone: string;
   sellerEmail: string;
@@ -38,12 +40,7 @@ type DealFormData = {
   agentCommissionTypeId: string;
   totalCommissionTypeId: string;
   totalCommissionValue: string;
-  hasAdditionalAgent: boolean;
-  additionalAgentType: "internal" | "external";
-  additionalAgentId: string;
-  agencyName: string;
-  agencyComm: string;
-  agencyCommissionTypeId: string;
+  additionalAgents: AdditionalAgent[];
   notes: string;
 };
 
@@ -54,10 +51,8 @@ interface CommissionDetailsSectionProps {
   setValue: UseFormSetValue<DealFormData>;
   commissionTypes: Array<{ id: string; name: string }>;
   allAgents: Array<{ id: string; name: string }>;
-  watchedHasAdditionalAgent: boolean;
-  watchedAdditionalAgentType: "internal" | "external";
+  watchedAdditionalAgents: AdditionalAgent[];
   watchedSalesValue: string;
-  watchedAgencyComm: string;
   currentRole: "agent" | "finance" | "ceo" | "admin";
   filtersLoading: boolean;
 }
@@ -69,13 +64,43 @@ export function CommissionDetailsSection({
   setValue,
   commissionTypes,
   allAgents,
-  watchedHasAdditionalAgent,
-  watchedAdditionalAgentType,
+  watchedAdditionalAgents,
   watchedSalesValue,
-  watchedAgencyComm,
   currentRole,
   filtersLoading,
 }: CommissionDetailsSectionProps) {
+  
+  const addAdditionalAgent = () => {
+    const newAgent: AdditionalAgent = {
+      type: "external",
+      agentId: "",
+      agencyName: "",
+      commissionValue: "",
+      commissionTypeId: "",
+    };
+    setValue("additionalAgents", [...watchedAdditionalAgents, newAgent], {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+  };
+
+  const removeAdditionalAgent = (index: number) => {
+    const updated = watchedAdditionalAgents.filter((_, i) => i !== index);
+    setValue("additionalAgents", updated, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+  };
+
+  const updateAdditionalAgent = (index: number, field: keyof AdditionalAgent, value: string) => {
+    const updated = [...watchedAdditionalAgents];
+    updated[index] = { ...updated[index], [field]: value };
+    setValue("additionalAgents", updated, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -181,29 +206,17 @@ export function CommissionDetailsSection({
                   name="agentCommissionTypeId"
                   control={control}
                   render={({ field }) => {
-                    // For agents, use commission type from login unless it was programmatically changed
-                    console.log("commissionTypes", commissionTypes);
-                    console.log(
-                      "agentCommissionTypeId field.value:",
-                      field.value
-                    );
-
                     const loginCommissionType =
                       sessionStorage.getItem("userCommissionType");
-                    // For agents: prioritize field.value if it exists (programmatically set override),
-                    // otherwise use login commission type
                     const effectiveValue =
                       currentRole === "agent"
                         ? field.value || loginCommissionType || ""
                         : field.value;
 
-                    console.log("effectiveValue for Select:", effectiveValue);
-
                     return (
                       <Select
                         value={effectiveValue}
                         onValueChange={(value) => {
-                          // Only allow changes for non-agents
                           if (currentRole !== "agent") {
                             field.onChange(value);
                           }
@@ -232,9 +245,7 @@ export function CommissionDetailsSection({
                   type="text"
                   {...register("commRate", {
                     onChange: (e) => {
-                      // Allow digits and decimal point
                       let numericValue = e.target.value.replace(/[^0-9.]/g, "");
-                      // Ensure only one decimal point
                       const parts = numericValue.split(".");
                       if (parts.length > 2) {
                         numericValue = parts[0] + "." + parts.slice(1).join("");
@@ -243,37 +254,20 @@ export function CommissionDetailsSection({
                         shouldValidate: true,
                       });
 
-                      // When agent commission rate/value changes, automatically select override option
-                      // Only set override if there's a value and commission types are loaded
                       if (
                         numericValue &&
                         numericValue.trim() !== "" &&
                         commissionTypes.length > 0
                       ) {
-                        // Find the override commission type (case-insensitive search)
                         const overrideType = commissionTypes.find((type) =>
                           type.name.toLowerCase().includes("override")
                         );
 
                         if (overrideType) {
-                          // Set the override commission type ID
-                          console.log(
-                            "Setting override commission type:",
-                            overrideType.id,
-                            overrideType.name
-                          );
                           setValue("agentCommissionTypeId", overrideType.id, {
                             shouldValidate: true,
                             shouldDirty: true,
                           });
-                        } else {
-                          console.log(
-                            "Override type not found in commissionTypes:",
-                            commissionTypes.map((t) => ({
-                              id: t.id,
-                              name: t.name,
-                            }))
-                          );
                         }
                       }
                     },
@@ -285,169 +279,192 @@ export function CommissionDetailsSection({
             </div>
           </div>
 
-          {/* Additional Agent Toggle */}
+          {/* Additional Agents Section */}
           <div
-            className="flex items-center justify-between pt-4 border-t"
+            className="pt-4 border-t"
             style={{ borderColor: "var(--gi-green-40)" }}
           >
-            <Label htmlFor="hasAdditionalAgent" className="text-gray-900">
-              Additional Agent
-            </Label>
-            <Controller
-              name="hasAdditionalAgent"
-              control={control}
-              render={({ field }) => (
-                <Switch
-                  id="hasAdditionalAgent"
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              )}
-            />
-          </div>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                Additional Agents
+              </h4>
+              <Button
+                type="button"
+                onClick={addAdditionalAgent}
+                size="sm"
+                variant="outline"
+                className="flex items-center gap-1"
+              >
+                <Plus className="h-4 w-4" />
+                Add Agent
+              </Button>
+            </div>
 
-          {/* Additional Agent Fields - Shown when toggle is enabled */}
-          {watchedHasAdditionalAgent && (
-            <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-              {/* Agent Type Selection */}
-              <div>
-                <Label className="mb-2 block">Agent Type</Label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="additionalAgentType"
-                      value="internal"
-                      checked={watchedAdditionalAgentType === "internal"}
-                      onChange={(e) =>
-                        setValue(
-                          "additionalAgentType",
-                          e.target.value as "internal" | "external"
-                        )
-                      }
-                      className="w-4 h-4"
-                    />
-                    <span className="text-sm">Internal Agent</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="additionalAgentType"
-                      value="external"
-                      checked={watchedAdditionalAgentType === "external"}
-                      onChange={(e) =>
-                        setValue(
-                          "additionalAgentType",
-                          e.target.value as "internal" | "external"
-                        )
-                      }
-                      className="w-4 h-4"
-                    />
-                    <span className="text-sm">External Agent</span>
-                  </label>
-                </div>
+            {watchedAdditionalAgents.length === 0 ? (
+              <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+                No additional agents added. Click "Add Agent" to include another agent.
               </div>
+            ) : (
+              <div className="space-y-4">
+                {watchedAdditionalAgents.map((agent, index) => (
+                  <div
+                    key={index}
+                    className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                  >
+                    {/* Header with Remove Button */}
+                    <div className="flex items-center justify-between">
+                      <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Agent #{index + 1}
+                      </h5>
+                      <Button
+                        type="button"
+                        onClick={() => removeAdditionalAgent(index)}
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
 
-              {/* Internal Agent Selection */}
-              {watchedAdditionalAgentType === "internal" && (
-                <div>
-                  <Label htmlFor="additionalAgentId">Select Agent</Label>
-                  <Controller
-                    name="additionalAgentId"
-                    control={control}
-                    render={({ field }) => (
+                    {/* Agent Type Selection */}
+                    <div>
+                      <Label className="mb-2 block">Agent Type</Label>
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name={`additionalAgentType-${index}`}
+                            value="internal"
+                            checked={agent.type === "internal"}
+                            onChange={() =>
+                              updateAdditionalAgent(index, "type", "internal")
+                            }
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm">Internal Agent</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name={`additionalAgentType-${index}`}
+                            value="external"
+                            checked={agent.type === "external"}
+                            onChange={() =>
+                              updateAdditionalAgent(index, "type", "external")
+                            }
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm">External Agent</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Internal Agent Selection */}
+                    {agent.type === "internal" && (
+                      <div>
+                        <Label htmlFor={`additionalAgentId-${index}`}>
+                          Select Agent
+                        </Label>
+                        <Select
+                          value={agent.agentId}
+                          onValueChange={(value) =>
+                            updateAdditionalAgent(index, "agentId", value)
+                          }
+                          disabled={filtersLoading}
+                        >
+                          <SelectTrigger className="w-full mt-1">
+                            <SelectValue placeholder="Select internal agent" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {allAgents.map((a) => (
+                              <SelectItem key={a.id} value={a.id}>
+                                {a.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {/* External Agent Name */}
+                    {agent.type === "external" && (
+                      <div>
+                        <Label htmlFor={`agencyName-${index}`}>
+                          Agency/Agent Name
+                        </Label>
+                        <Input
+                          id={`agencyName-${index}`}
+                          value={agent.agencyName}
+                          onChange={(e) =>
+                            updateAdditionalAgent(index, "agencyName", e.target.value)
+                          }
+                          placeholder="Enter agency or agent name"
+                          className="mt-1"
+                        />
+                      </div>
+                    )}
+
+                    {/* Commission Type */}
+                    <div>
+                      <Label htmlFor={`commissionTypeId-${index}`}>
+                        Commission Type
+                      </Label>
                       <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
+                        value={agent.commissionTypeId}
+                        onValueChange={(value) =>
+                          updateAdditionalAgent(index, "commissionTypeId", value)
+                        }
                         disabled={filtersLoading}
                       >
                         <SelectTrigger className="w-full mt-1">
-                          <SelectValue placeholder="Select internal agent" />
+                          <SelectValue placeholder="Select commission type" />
                         </SelectTrigger>
                         <SelectContent>
-                          {allAgents.map((agent) => (
-                            <SelectItem key={agent.id} value={agent.id}>
-                              {agent.name}
+                          {commissionTypes.map((type) => (
+                            <SelectItem key={type.id} value={type.id}>
+                              {type.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                    )}
-                  />
-                </div>
-              )}
+                    </div>
 
-              {/* External Agent Name */}
-              {watchedAdditionalAgentType === "external" && (
-                <div>
-                  <Label htmlFor="agencyName">Agency/Agent Name</Label>
-                  <Input
-                    id="agencyName"
-                    {...register("agencyName")}
-                    placeholder="Enter agency or agent name"
-                    className="mt-1"
-                  />
-                </div>
-              )}
-
-              <div>
-                <Label htmlFor="agencyCommissionTypeId">Commission Type</Label>
-                <Controller
-                  name="agencyCommissionTypeId"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      disabled={filtersLoading}
-                    >
-                      <SelectTrigger className="w-full mt-1">
-                        <SelectValue placeholder="Select commission type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {commissionTypes.map((type) => (
-                          <SelectItem key={type.id} value={type.id}>
-                            {type.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </div>
-              <div>
-                <Label htmlFor="agencyComm">Commission Value</Label>
-                <Input
-                  id="agencyComm"
-                  type="text"
-                  {...register("agencyComm", {
-                    onChange: (e) => {
-                      const numericValue = e.target.value.replace(/[^0-9]/g, "");
-                      setValue("agencyComm", numericValue, {
-                        shouldValidate: true,
-                      });
-                    },
-                  })}
-                  placeholder="Enter commission value"
-                  className="mt-1"
-                />
-                {watchedSalesValue && watchedAgencyComm && (
-                  <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded text-sm">
-                    <p className="text-blue-900 dark:text-blue-100 font-semibold">
-                      Commission: AED{" "}
-                      {parseFloat(watchedAgencyComm).toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </p>
+                    {/* Commission Value */}
+                    <div>
+                      <Label htmlFor={`commissionValue-${index}`}>
+                        Commission Value
+                      </Label>
+                      <Input
+                        id={`commissionValue-${index}`}
+                        type="text"
+                        value={agent.commissionValue}
+                        onChange={(e) => {
+                          const numericValue = e.target.value.replace(/[^0-9]/g, "");
+                          updateAdditionalAgent(index, "commissionValue", numericValue);
+                        }}
+                        placeholder="Enter commission value"
+                        className="mt-1"
+                      />
+                      {watchedSalesValue && agent.commissionValue && (
+                        <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded text-sm">
+                          <p className="text-blue-900 dark:text-blue-100 font-semibold">
+                            Commission: AED{" "}
+                            {parseFloat(agent.commissionValue).toLocaleString("en-US", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
   );
 }
-

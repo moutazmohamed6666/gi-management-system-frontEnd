@@ -155,17 +155,26 @@ export function useDealLoader({ dealId, reset }: UseDealLoaderProps) {
             ).additionalAgents || [];
         }
 
-        const firstAdditionalAgent = additionalAgents[0];
-        const hasAdditionalAgent = additionalAgents.length > 0;
-        const additionalAgentType: "internal" | "external" =
-          firstAdditionalAgent?.isInternal === true ? "internal" : "external";
-        const additionalAgentId = firstAdditionalAgent?.agentId || "";
-        const agencyName = firstAdditionalAgent?.externalAgentName || "";
-        const agencyComm = firstAdditionalAgent?.commissionValue
-          ? String(firstAdditionalAgent.commissionValue)
-          : "";
-        const agencyCommissionTypeId =
-          firstAdditionalAgent?.commissionTypeId || "";
+        // Map to form structure
+        const mappedAdditionalAgents = additionalAgents.map((agent) => ({
+          type: (agent.isInternal ? "internal" : "external") as "internal" | "external",
+          agentId: agent.agentId || "",
+          agencyName: agent.externalAgentName || "",
+          commissionValue: agent.commissionValue ? String(agent.commissionValue) : "",
+          commissionTypeId: agent.commissionTypeId || "",
+        }));
+
+        // Extract bedroom data
+        const bedroomId = 
+          (deal as unknown as { bedroomId?: string })?.bedroomId || 
+          (deal as unknown as { bedroomsId?: string })?.bedroomsId || // backward compatibility
+          "";
+
+        // Extract downpayment data
+        const downpayment = 
+          (deal as unknown as { downpayment?: number })?.downpayment
+            ? String((deal as unknown as { downpayment: number }).downpayment)
+            : "";
 
         // Reset form with deal data
         reset({
@@ -176,6 +185,7 @@ export function useDealLoader({ dealId, reset }: UseDealLoaderProps) {
           dealTypeId: dealTypeId,
           statusId: statusId,
           purchaseStatusId: purchaseStatusId,
+          downpayment: downpayment,
 
           // Property Details
           developerId: deal.developerId || deal.developer?.id || "",
@@ -185,8 +195,7 @@ export function useDealLoader({ dealId, reset }: UseDealLoaderProps) {
           unitNumber: unitNumber,
           unitTypeId: unitTypeId,
           size: size,
-          bedroomsId: "",
-          purchaseValue: "",
+          bedroomId: bedroomId,
 
           // Seller
           sellerName: seller?.name || "",
@@ -219,13 +228,8 @@ export function useDealLoader({ dealId, reset }: UseDealLoaderProps) {
             ? String(deal.totalCommissionValue)
             : "",
 
-          // Additional Agent
-          hasAdditionalAgent: hasAdditionalAgent,
-          additionalAgentType: additionalAgentType,
-          additionalAgentId: additionalAgentId,
-          agencyName: agencyName,
-          agencyComm: agencyComm,
-          agencyCommissionTypeId: agencyCommissionTypeId,
+          // Additional Agents (array)
+          additionalAgents: mappedAdditionalAgents,
 
           notes: "",
         });

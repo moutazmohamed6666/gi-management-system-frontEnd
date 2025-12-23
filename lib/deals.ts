@@ -301,21 +301,20 @@ export interface BuyerSellerInput {
 
 export interface CreateDealRequest {
   dealValue: number;
-  purchaseValue?: number; // New: Purchase Value field
   developerId: string;
   projectId: string;
   agentId: string;
   bookingDate: string; // ISO date string
   cfExpiry: string; // ISO date string
-  closeDate: string; // ISO date string
+  closeDate?: string; // ISO date string - optional for agents
   dealTypeId: string;
-  numberOfDeal?: number;
   propertyName: string;
   propertyTypeId: string;
   unitNumber: string;
   unitTypeId: string;
-  bedroomsId?: string; // New: Bedrooms dropdown
   size: number;
+  bedroomId?: string; // Changed from bedroomsId to bedroomId (singular)
+  downpayment?: number; // New field in API
   buyer: BuyerSellerInput;
   seller: BuyerSellerInput;
   buyerId?: string; // Optional - for existing buyer
@@ -325,7 +324,6 @@ export interface CreateDealRequest {
   totalCommissionTypeId?: string;
   totalCommissionValue?: number;
   additionalAgents?: AdditionalAgent[]; // Now supports multiple external agents
-  stageId?: string;
   statusId?: string;
   purchaseStatusId?: string;
 }

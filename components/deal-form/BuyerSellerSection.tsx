@@ -5,46 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-
-type DealFormData = {
-  bookingDate: string;
-  cfExpiry: string;
-  closeDate: string;
-  dealTypeId: string;
-  statusId: string;
-  purchaseStatusId: string;
-  developerId: string;
-  projectId: string;
-  propertyName: string;
-  propertyTypeId: string;
-  unitNumber: string;
-  unitTypeId: string;
-  size: string;
-  bedroomsId: string;
-  purchaseValue: string;
-  sellerName: string;
-  sellerPhone: string;
-  sellerEmail: string;
-  sellerNationalityId: string;
-  sellerSourceId: string;
-  buyerName: string;
-  buyerPhone: string;
-  buyerEmail: string;
-  buyerNationalityId: string;
-  buyerSourceId: string;
-  salesValue: string;
-  commRate: string;
-  agentCommissionTypeId: string;
-  totalCommissionTypeId: string;
-  totalCommissionValue: string;
-  hasAdditionalAgent: boolean;
-  additionalAgentType: "internal" | "external";
-  additionalAgentId: string;
-  agencyName: string;
-  agencyComm: string;
-  agencyCommissionTypeId: string;
-  notes: string;
-};
+import { DealFormData } from "@/lib/hooks/useDealFormData";
 
 interface BuyerSellerSectionProps {
   control: Control<DealFormData>;
