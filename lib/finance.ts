@@ -193,6 +193,32 @@ export interface AdminMetricsResponse {
   };
 }
 
+// Comprehensive Finance Dashboard Response (for Reports)
+// Actual API response structure
+export interface ComprehensiveFinanceResponse {
+  totalRevenue: number;
+  dealClosed: number;
+  commissionCollected: number;
+  pendingCommission: number;
+  monthlyRevenue: Array<{
+    month: string;
+    revenue: number;
+  }>;
+  commissionOverview: {
+    collectedCommission: number;
+    pending: number;
+    transferred: number;
+    expected: number;
+    collectionProgress: number;
+  };
+  monthlyRevenueDetails: Array<{
+    month: string;
+    numberOfDeals: number;
+    numberOfUnits: number;
+    revenue: number;
+  }>;
+}
+
 // ============================================================================
 // API Functions
 // ============================================================================
@@ -286,6 +312,14 @@ export const financeApi = {
   getAdminMetrics: async (): Promise<AdminMetricsResponse> => {
     return apiClient<AdminMetricsResponse>(
       "/api/finance-dashboard/admin-metrics"
+    );
+  },
+
+  // Get comprehensive finance dashboard data (for Reports)
+  // Note: This endpoint does not accept any filter parameters
+  getComprehensiveData: async (): Promise<ComprehensiveFinanceResponse> => {
+    return apiClient<ComprehensiveFinanceResponse>(
+      "/api/finance-dashboard/comprehensive"
     );
   },
 };

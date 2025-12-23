@@ -33,6 +33,7 @@ import {
   type AnalyticsResponse,
   type ExportFormat,
 } from "@/lib/reports";
+import { financeApi } from "@/lib/finance";
 import { toast } from "sonner";
 import {
   BarChart,
@@ -62,6 +63,13 @@ const CHART_COLORS = [
 ];
 
 export function Reports() {
+  // Get user role from sessionStorage
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    setUserRole(sessionStorage.getItem("userRole"));
+  }, []);
+
   // Filters
   const { developers, agents } = useFilters();
   const [reportType, setReportType] = useState<ReportType>("monthly_revenue");
@@ -96,14 +104,42 @@ export function Reports() {
     setError(null);
 
     try {
-      const response = await reportsApi.getAnalytics({
-        report_type: reportType,
-        from_date: startDate,
-        to_date: endDate,
-        developer_id:
-          selectedDeveloper !== "all" ? selectedDeveloper : undefined,
-        agent_id: selectedAgent !== "all" ? selectedAgent : undefined,
-      });
+      let response: AnalyticsResponse;
+      
+      // Use comprehensive endpoint for finance role (no filters supported)
+      if (userRole === "finance") {
+        const compData = await financeApi.getComprehensiveData();
+        
+        // Transform the comprehensive response to AnalyticsResponse format
+        response = {
+          report_type: "monthly_revenue",
+          data: compData.monthlyRevenueDetails.map(detail => ({
+            month: detail.month,
+            revenue: detail.revenue,
+            deals: detail.numberOfDeals,
+            units: detail.numberOfUnits,
+          })),
+          summary: {
+            total_revenue: compData.totalRevenue,
+            total_deals: compData.dealClosed,
+            total_collected: compData.commissionCollected,
+            total_pending: compData.pendingCommission,
+            total_transferred: compData.commissionOverview.transferred,
+            total_expected: compData.commissionOverview.expected,
+            collection_rate: compData.commissionOverview.collectionProgress,
+          },
+        };
+      } else {
+        // Use regular reports endpoint for other roles
+        response = await reportsApi.getAnalytics({
+          report_type: reportType,
+          from_date: startDate,
+          to_date: endDate,
+          developer_id:
+            selectedDeveloper !== "all" ? selectedDeveloper : undefined,
+          agent_id: selectedAgent !== "all" ? selectedAgent : undefined,
+        });
+      }
 
       setAnalyticsData(response);
     } catch (err) {
@@ -116,7 +152,7 @@ export function Reports() {
     } finally {
       setIsLoading(false);
     }
-  }, [reportType, startDate, endDate, selectedDeveloper, selectedAgent]);
+  }, [reportType, startDate, endDate, selectedDeveloper, selectedAgent, userRole]);
 
   // Fetch data when filters change
   useEffect(() => {
