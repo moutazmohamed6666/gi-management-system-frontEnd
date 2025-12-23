@@ -1,26 +1,21 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
-import { Label } from "./ui/label";
-import { Switch } from "./ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import { StyledDatePicker } from "./StyledDatePicker";
 import { useFilters } from "@/lib/useFilters";
 import { dealsApi, type CreateDealRequest, type Deal } from "@/lib/deals";
 import { ArrowLeft, Save, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { DealPreviewModal } from "./DealPreviewModal";
+import { DealInformationSection } from "./deal-form/DealInformationSection";
+import { PropertyDetailsSection } from "./deal-form/PropertyDetailsSection";
+import { UnitDetailsSection } from "./deal-form/UnitDetailsSection";
+import { BuyerSellerSection } from "./deal-form/BuyerSellerSection";
+import { CommissionDetailsSection } from "./deal-form/CommissionDetailsSection";
+import { PurchaseValueSection } from "./deal-form/PurchaseValueSection";
 
 interface DealFormProps {
   dealId: string | null;
@@ -29,16 +24,6 @@ interface DealFormProps {
 }
 
 type UserRole = "agent" | "finance" | "ceo" | "admin";
-
-// Define stages that should lock the deal for finance editing
-// Only lock after CEO/final approval, not during finance review stages
-const LOCKED_STAGES = [
-  "ceo approved",
-  "commission received",
-  "commission transferred",
-  "closed",
-  "completed",
-];
 
 // Form data type for react-hook-form
 type DealFormData = {
@@ -116,7 +101,6 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     control,
     handleSubmit,
     reset,
-    watch,
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<DealFormData>({
@@ -172,22 +156,24 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     },
   });
 
-  // Watch fields for conditional rendering and filtering
-  const watchedDeveloperId = watch("developerId");
-  const watchedHasAdditionalAgent = watch("hasAdditionalAgent");
-  const watchedAdditionalAgentType = watch("additionalAgentType");
-  const watchedSalesValue = watch("salesValue");
-  const watchedBookingDate = watch("bookingDate");
-  const watchedAgencyComm = watch("agencyComm");
+  // Watch fields for conditional rendering and filtering using useWatch
+  // This is compatible with React Compiler and prevents stale UI issues
+  const watchedDeveloperId = useWatch({ control, name: "developerId" });
+  const watchedHasAdditionalAgent = useWatch({
+    control,
+    name: "hasAdditionalAgent",
+  });
+  const watchedAdditionalAgentType = useWatch({
+    control,
+    name: "additionalAgentType",
+  });
+  const watchedSalesValue = useWatch({ control, name: "salesValue" });
+  const watchedBookingDate = useWatch({ control, name: "bookingDate" });
+  const watchedAgencyComm = useWatch({ control, name: "agencyComm" });
 
   const [dealError, setDealError] = useState<string | null>(null);
   const [loadedDealId, setLoadedDealId] = useState<string | null>(null);
   const [dealFetchNonce, setDealFetchNonce] = useState(0);
-  const [dealStatusName, setDealStatusName] = useState<string>("");
-  // Store original commission value from login for override detection
-  const [originalCommissionValue, setOriginalCommissionValue] = useState<
-    string | null
-  >(null);
   // Preview modal state
   const [showPreview, setShowPreview] = useState(false);
   const [pendingFormData, setPendingFormData] = useState<DealFormData | null>(
@@ -208,6 +194,14 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
       ? (sessionStorage.getItem("userRole") as UserRole)
       : "agent") || "agent";
 
+  // Get original commission value from login for override detection
+  const originalCommissionValue = useMemo(() => {
+    if (!isEditMode && currentRole === "agent") {
+      return sessionStorage.getItem("userCommissionValue");
+    }
+    return null;
+  }, [isEditMode, currentRole]);
+
   const defaultStatusId = useMemo(() => {
     if (isEditMode) return "";
     if (statuses.length === 0) return "";
@@ -227,14 +221,6 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
       statuses[0];
     return preferred?.id ?? "";
   }, [isEditMode, statuses, currentRole]);
-
-  const watchedStatusId = watch("statusId");
-  const effectiveStatusId = watchedStatusId || defaultStatusId;
-
-  const statusNameFromFilters = useMemo(() => {
-    if (!effectiveStatusId) return "";
-    return statuses.find((s) => s.id === effectiveStatusId)?.name || "";
-  }, [effectiveStatusId, statuses]);
 
   // Set default statusId for agents when creating a deal (field is hidden)
   useEffect(() => {
@@ -295,10 +281,6 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
       // Pre-fill commission value from login
       if (defaultCommValue) {
         setValue("commRate", defaultCommValue, { shouldValidate: false });
-        // Store original value for override detection
-        setOriginalCommissionValue(defaultCommValue);
-      } else {
-        setOriginalCommissionValue(null);
       }
     }
   }, [isEditMode, currentRole, setValue]);
@@ -327,9 +309,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
           (deal as unknown as { dealStatus?: unknown }).dealStatus ??
           "";
 
-        if (typeof statusLabel === "string") {
-          setDealStatusName(statusLabel);
-        } else if (
+        if (
           statusLabel &&
           typeof statusLabel === "object" &&
           "id" in (statusLabel as Record<string, unknown>)
@@ -337,9 +317,6 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
           // New structure: status is an object with id and name
           const statusObj = statusLabel as { id: string; name?: string };
           statusId = statusObj.id || statusId;
-          setDealStatusName(statusObj.name || "");
-        } else {
-          setDealStatusName("");
         }
 
         // Handle both old structure (buyerSellerDetails) and new structure (buyer/seller objects)
@@ -1060,1119 +1037,87 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
         >
           {/* Row 1: Deal Information & Property Details */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Deal Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Deal Information</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="bookingDate">Booking Date</Label>
-                    <div className="mt-1">
-                      <Controller
-                        name="bookingDate"
-                        control={control}
-                        rules={{ required: "Booking date is required" }}
-                        render={({ field }) => (
-                          <StyledDatePicker
-                            id="bookingDate"
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Select booking date"
-                          />
-                        )}
-                      />
-                    </div>
-                    {errors.bookingDate && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.bookingDate.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="cfExpiry">CF Expiry</Label>
-                    <div className="mt-1">
-                      <Controller
-                        name="cfExpiry"
-                        control={control}
-                        render={({ field }) => (
-                          <StyledDatePicker
-                            id="cfExpiry"
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Select CF expiry date"
-                          />
-                        )}
-                      />
-                    </div>
-                  </div>
-                  {!(currentRole === "agent" && !isEditMode) && (
-                    <div>
-                      <Label htmlFor="closeDate">Close Date</Label>
-                      <div className="mt-1">
-                        <Controller
-                          name="closeDate"
-                          control={control}
-                          rules={{
-                            required: "Close date is required",
-                          }}
-                          render={({ field }) => (
-                            <StyledDatePicker
-                              id="closeDate"
-                              value={field.value}
-                              onChange={field.onChange}
-                              placeholder="Select close date"
-                            />
-                          )}
-                        />
-                      </div>
-                      {errors.closeDate && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.closeDate.message}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                  <div>
-                    <Label htmlFor="dealTypeId">Deal Type</Label>
-                    <Controller
-                      name="dealTypeId"
-                      control={control}
-                      rules={{ required: "Deal type is required" }}
-                      render={({ field }) => (
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          disabled={filtersLoading}
-                        >
-                          <SelectTrigger className="w-full mt-1">
-                            <SelectValue placeholder="Select deal type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {dealTypes.map((type) => (
-                              <SelectItem key={type.id} value={type.id}>
-                                {type.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                    {errors.dealTypeId && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.dealTypeId.message}
-                      </p>
-                    )}
-                  </div>
-                  {!(currentRole === "agent" && !isEditMode) && (
-                    <div>
-                      <Label htmlFor="statusId">
-                        Status <span className="text-red-500">*</span>
-                      </Label>
-                      <Controller
-                        name="statusId"
-                        control={control}
-                        rules={{
-                          required: "Status is required",
-                          validate: (value) => {
-                            const finalValue = value || defaultStatusId;
-                            if (!finalValue) return "Status is required";
-                            if (!isValidUuid(finalValue))
-                              return "Status must be a valid UUID";
-                            return true;
-                          },
-                        }}
-                        render={({ field }) => (
-                          <Select
-                            value={field.value || defaultStatusId}
-                            onValueChange={field.onChange}
-                            disabled={filtersLoading}
-                          >
-                            <SelectTrigger className="w-full mt-1">
-                              <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {statuses.map((status) => (
-                                <SelectItem key={status.id} value={status.id}>
-                                  {status.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                      {errors.statusId && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.statusId.message}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="purchaseStatusId">Purchase Status</Label>
-                      <Controller
-                        name="purchaseStatusId"
-                        control={control}
-                        render={({ field }) => (
-                          <Select
-                            value={field.value}
-                            onValueChange={field.onChange}
-                            disabled={filtersLoading}
-                          >
-                            <SelectTrigger className="w-full mt-1">
-                              <SelectValue placeholder="Select purchase status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {purchaseStatuses.map((status) => (
-                                <SelectItem key={status.id} value={status.id}>
-                                  {status.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="purchaseValue">
-                        Purchase Value (AED)
-                      </Label>
-                      <Input
-                        id="purchaseValue"
-                        type="text"
-                        {...register("purchaseValue", {
-                          onChange: (e) => {
-                            const numericValue = e.target.value.replace(
-                              /[^0-9]/g,
-                              ""
-                            );
-                            setValue("purchaseValue", numericValue, {
-                              shouldValidate: true,
-                            });
-                          },
-                        })}
-                        placeholder="Enter purchase value"
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <DealInformationSection
+              control={control}
+              errors={errors}
+              currentRole={currentRole}
+              isEditMode={isEditMode}
+              defaultStatusId={defaultStatusId}
+              dealTypes={dealTypes}
+              statuses={statuses}
+              purchaseStatuses={purchaseStatuses}
+              filtersLoading={filtersLoading}
+              isValidUuid={isValidUuid}
+            />
 
-            {/* Property Details */}
+            <PropertyDetailsSection
+              control={control}
+              errors={errors}
+              setValue={setValue}
+              developers={developers}
+              filteredProjects={filteredProjects}
+              propertyTypes={propertyTypes}
+              watchedDeveloperId={watchedDeveloperId}
+              filtersLoading={filtersLoading}
+            />
+          </div>
+
+          {/* Row 2: Unit Details with Purchase Value */}
+          <div className="grid grid-cols-1 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Property Details</CardTitle>
+                <CardTitle>Unit Details</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="developerId">
-                      Developer <span className="text-red-500">*</span>
-                    </Label>
-                    <Controller
-                      name="developerId"
-                      control={control}
-                      rules={{ required: "Developer is required" }}
-                      render={({ field }) => (
-                        <Select
-                          value={field.value}
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            // Reset project when developer changes
-                            setValue("projectId", "");
-                          }}
-                          disabled={filtersLoading}
-                        >
-                          <SelectTrigger className="w-full mt-1">
-                            <SelectValue placeholder="Select developer" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {developers.map((dev) => (
-                              <SelectItem key={dev.id} value={dev.id}>
-                                {dev.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
+                  <UnitDetailsSection
+                    control={control}
+                    register={register}
+                    errors={errors}
+                    setValue={setValue}
+                    unitTypes={unitTypes}
+                    bedrooms={bedrooms}
+                    filtersLoading={filtersLoading}
+                  />
+                  <div className="pt-4 border-t">
+                    <PurchaseValueSection
+                      register={register}
+                      setValue={setValue}
                     />
-                    {errors.developerId && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.developerId.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="projectId">
-                      Project <span className="text-red-500">*</span>
-                    </Label>
-                    <Controller
-                      name="projectId"
-                      control={control}
-                      rules={{ required: "Project is required" }}
-                      render={({ field }) => (
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          disabled={filtersLoading || !watchedDeveloperId}
-                        >
-                          <SelectTrigger className="w-full mt-1">
-                            <SelectValue placeholder="Select project" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {filteredProjects.length === 0 ? (
-                              <SelectItem value="__no_projects__" disabled>
-                                {watchedDeveloperId
-                                  ? "No projects available"
-                                  : "Select developer first"}
-                              </SelectItem>
-                            ) : (
-                              filteredProjects.map((project) => (
-                                <SelectItem key={project.id} value={project.id}>
-                                  {project.name}
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                    {errors.projectId && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.projectId.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="propertyName">Property Name</Label>
-                    <Input
-                      id="propertyName"
-                      {...register("propertyName")}
-                      placeholder="Enter property name"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="propertyTypeId">Property Type</Label>
-                    <Controller
-                      name="propertyTypeId"
-                      control={control}
-                      rules={{ required: "Property type is required" }}
-                      render={({ field }) => (
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          disabled={filtersLoading}
-                        >
-                          <SelectTrigger className="w-full mt-1">
-                            <SelectValue placeholder="Select property type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {propertyTypes.map((type) => (
-                              <SelectItem key={type.id} value={type.id}>
-                                {type.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                    {errors.propertyTypeId && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.propertyTypeId.message}
-                      </p>
-                    )}
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
-
-          {/* Row 2: Additional Property Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Unit Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                <div>
-                  <Label htmlFor="unitNumber">Unit #</Label>
-                  <Input
-                    id="unitNumber"
-                    type="text"
-                    {...register("unitNumber", {
-                      onChange: (e) => {
-                        const numericValue = e.target.value.replace(
-                          /[^0-9]/g,
-                          ""
-                        );
-                        setValue("unitNumber", numericValue, {
-                          shouldValidate: true,
-                        });
-                      },
-                    })}
-                    placeholder="Enter unit number"
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="unitTypeId">Unit Type</Label>
-                  <Controller
-                    name="unitTypeId"
-                    control={control}
-                    rules={{ required: "Unit type is required" }}
-                    render={({ field }) => (
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        disabled={filtersLoading}
-                      >
-                        <SelectTrigger className="w-full mt-1">
-                          <SelectValue placeholder="Select unit type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {unitTypes.map((type) => (
-                            <SelectItem key={type.id} value={type.id}>
-                              {type.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {errors.unitTypeId && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.unitTypeId.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="size">Size (sq.ft)</Label>
-                  <Input
-                    id="size"
-                    type="text"
-                    {...register("size", {
-                      onChange: (e) => {
-                        const numericValue = e.target.value.replace(
-                          /[^0-9]/g,
-                          ""
-                        );
-                        setValue("size", numericValue, {
-                          shouldValidate: true,
-                        });
-                      },
-                    })}
-                    placeholder="Enter size in sq.ft"
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="bedroomsId">Bedrooms</Label>
-                  <Controller
-                    name="bedroomsId"
-                    control={control}
-                    render={({ field }) => (
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        disabled={filtersLoading}
-                      >
-                        <SelectTrigger className="w-full mt-1">
-                          <SelectValue placeholder="Select bedrooms" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {bedrooms.map((bedroom) => (
-                            <SelectItem key={bedroom.id} value={bedroom.id}>
-                              {bedroom.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Row 3: Seller & Buyer */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Seller Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Seller</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="sellerName">Name</Label>
-                    <Input
-                      id="sellerName"
-                      {...register("sellerName", {
-                        required: "Seller name is required",
-                      })}
-                      placeholder="Enter seller name"
-                      className={`mt-1 ${
-                        errors.sellerName ? "border-red-500" : ""
-                      }`}
-                    />
-                    {errors.sellerName && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.sellerName.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="sellerPhone">Phone</Label>
-                    <Input
-                      id="sellerPhone"
-                      type="tel"
-                      {...register("sellerPhone", {
-                        required: "Seller phone is required",
-                        validate: (value) =>
-                          !value ||
-                          validatePhone(value) ||
-                          "Invalid phone number format",
-                      })}
-                      placeholder="+971 50 123 4567"
-                      className={`mt-1 ${
-                        errors.sellerPhone ? "border-red-500" : ""
-                      }`}
-                    />
-                    {errors.sellerPhone && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.sellerPhone.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="sellerEmail">Email (Optional)</Label>
-                    <Input
-                      id="sellerEmail"
-                      type="email"
-                      {...register("sellerEmail", {
-                        validate: (value) =>
-                          validateEmail(value) || "Invalid email format",
-                      })}
-                      placeholder="seller@example.com"
-                      className={`mt-1 ${
-                        errors.sellerEmail ? "border-red-500" : ""
-                      }`}
-                    />
-                    {errors.sellerEmail && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.sellerEmail.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="sellerNationalityId">Nationality</Label>
-                    <Controller
-                      name="sellerNationalityId"
-                      control={control}
-                      render={({ field }) => (
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          disabled={filtersLoading}
-                        >
-                          <SelectTrigger className="w-full mt-1">
-                            <SelectValue placeholder="Select nationality" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {nationalities.map((nationality) => (
-                              <SelectItem
-                                key={nationality.id}
-                                value={nationality.id}
-                              >
-                                {nationality.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="sellerSourceId">Source</Label>
-                    <Controller
-                      name="sellerSourceId"
-                      control={control}
-                      render={({ field }) => (
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          disabled={filtersLoading}
-                        >
-                          <SelectTrigger className="w-full mt-1">
-                            <SelectValue placeholder="Select source" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {leadSources.map((source) => (
-                              <SelectItem key={source.id} value={source.id}>
-                                {source.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Buyer Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Buyer</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="buyerName">Name</Label>
-                    <Input
-                      id="buyerName"
-                      {...register("buyerName", {
-                        required: "Buyer name is required",
-                      })}
-                      placeholder="Enter buyer name"
-                      className={`mt-1 ${
-                        errors.buyerName ? "border-red-500" : ""
-                      }`}
-                    />
-                    {errors.buyerName && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.buyerName.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="buyerPhone">Phone</Label>
-                    <Input
-                      id="buyerPhone"
-                      type="tel"
-                      {...register("buyerPhone", {
-                        required: "Buyer phone is required",
-                        validate: (value) =>
-                          !value ||
-                          validatePhone(value) ||
-                          "Invalid phone number format",
-                      })}
-                      placeholder="+971 50 123 4567"
-                      className={`mt-1 ${
-                        errors.buyerPhone ? "border-red-500" : ""
-                      }`}
-                    />
-                    {errors.buyerPhone && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.buyerPhone.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="buyerEmail">Email (Optional)</Label>
-                    <Input
-                      id="buyerEmail"
-                      type="email"
-                      {...register("buyerEmail", {
-                        validate: (value) =>
-                          validateEmail(value) || "Invalid email format",
-                      })}
-                      placeholder="buyer@example.com"
-                      className={`mt-1 ${
-                        errors.buyerEmail ? "border-red-500" : ""
-                      }`}
-                    />
-                    {errors.buyerEmail && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.buyerEmail.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="buyerNationalityId">Nationality</Label>
-                    <Controller
-                      name="buyerNationalityId"
-                      control={control}
-                      render={({ field }) => (
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          disabled={filtersLoading}
-                        >
-                          <SelectTrigger className="w-full mt-1">
-                            <SelectValue placeholder="Select nationality" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {nationalities.map((nationality) => (
-                              <SelectItem
-                                key={nationality.id}
-                                value={nationality.id}
-                              >
-                                {nationality.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="buyerSourceId">Source</Label>
-                    <Controller
-                      name="buyerSourceId"
-                      control={control}
-                      render={({ field }) => (
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          disabled={filtersLoading}
-                        >
-                          <SelectTrigger className="w-full mt-1">
-                            <SelectValue placeholder="Select source" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {leadSources.map((source) => (
-                              <SelectItem key={source.id} value={source.id}>
-                                {source.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <BuyerSellerSection
+            control={control}
+            register={register}
+            errors={errors}
+            nationalities={nationalities}
+            leadSources={leadSources}
+            filtersLoading={filtersLoading}
+            validatePhone={validatePhone}
+            validateEmail={validateEmail}
+          />
 
           {/* Row 4: Commission Details & Additional Notes */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Commission Details */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Commission Details</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Sales Value */}
-                  <div>
-                    <Label htmlFor="salesValue">
-                      Sales Value (AED) <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="salesValue"
-                      type="text"
-                      {...register("salesValue", {
-                        required: "Sales value is required",
-                        onChange: (e) => {
-                          const numericValue = e.target.value.replace(
-                            /[^0-9]/g,
-                            ""
-                          );
-                          setValue("salesValue", numericValue, {
-                            shouldValidate: true,
-                          });
-                        },
-                      })}
-                      placeholder="Enter sales value"
-                      className={`mt-1 ${
-                        errors.salesValue ? "border-red-500" : ""
-                      }`}
-                    />
-                    {errors.salesValue && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.salesValue.message}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Total Deal Commission Section */}
-                  <div
-                    className="pt-4 border-t"
-                    style={{ borderColor: "var(--gi-green-40)" }}
-                  >
-                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                      Total Deal Commission
-                    </h4>
-                    <div className="space-y-4 bg-green-50 dark:bg-green-900/10 p-4 rounded-lg">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="totalCommissionTypeId">
-                            Commission Type
-                          </Label>
-                          <Controller
-                            name="totalCommissionTypeId"
-                            control={control}
-                            render={({ field }) => (
-                              <Select
-                                value={field.value}
-                                onValueChange={field.onChange}
-                                disabled={filtersLoading}
-                              >
-                                <SelectTrigger className="w-full mt-1">
-                                  <SelectValue placeholder="Select type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {commissionTypes.map((type) => (
-                                    <SelectItem key={type.id} value={type.id}>
-                                      {type.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="totalCommissionValue">
-                            Commission Value
-                          </Label>
-                          <Input
-                            id="totalCommissionValue"
-                            type="text"
-                            {...register("totalCommissionValue", {
-                              onChange: (e) => {
-                                const numericValue = e.target.value.replace(
-                                  /[^0-9]/g,
-                                  ""
-                                );
-                                setValue("totalCommissionValue", numericValue, {
-                                  shouldValidate: true,
-                                });
-                              },
-                            })}
-                            placeholder="Enter total commission value"
-                            className="mt-1"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Agent Commission Section */}
-                  <div
-                    className="pt-4 border-t"
-                    style={{ borderColor: "var(--gi-green-40)" }}
-                  >
-                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                      Agent Commission
-                    </h4>
-                    <div className="space-y-4 bg-blue-50 dark:bg-blue-900/10 p-4 rounded-lg">
-                      <div>
-                        <Label htmlFor="agentCommissionTypeId">
-                          Commission Type
-                        </Label>
-                        <Controller
-                          name="agentCommissionTypeId"
-                          control={control}
-                          render={({ field }) => {
-                            // For agents, use commission type from login unless it was programmatically changed
-                            console.log("commissionTypes", commissionTypes);
-                            console.log(
-                              "agentCommissionTypeId field.value:",
-                              field.value
-                            );
-
-                            const loginCommissionType =
-                              sessionStorage.getItem("userCommissionType");
-                            // For agents: prioritize field.value if it exists (programmatically set override),
-                            // otherwise use login commission type
-                            const effectiveValue =
-                              currentRole === "agent"
-                                ? field.value || loginCommissionType || ""
-                                : field.value;
-
-                            console.log(
-                              "effectiveValue for Select:",
-                              effectiveValue
-                            );
-
-                            return (
-                              <Select
-                                value={effectiveValue}
-                                onValueChange={(value) => {
-                                  // Only allow changes for non-agents
-                                  if (currentRole !== "agent") {
-                                    field.onChange(value);
-                                  }
-                                }}
-                                disabled={
-                                  filtersLoading || currentRole === "agent"
-                                }
-                              >
-                                <SelectTrigger className="w-full mt-1">
-                                  <SelectValue placeholder="Select commission type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {commissionTypes.map((type) => (
-                                    <SelectItem key={type.id} value={type.id}>
-                                      {type.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            );
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="commRate">
-                          Agent Commission Rate/Value
-                        </Label>
-                        <Input
-                          id="commRate"
-                          type="text"
-                          {...register("commRate", {
-                            onChange: (e) => {
-                              // Allow digits and decimal point
-                              let numericValue = e.target.value.replace(
-                                /[^0-9.]/g,
-                                ""
-                              );
-                              // Ensure only one decimal point
-                              const parts = numericValue.split(".");
-                              if (parts.length > 2) {
-                                numericValue =
-                                  parts[0] + "." + parts.slice(1).join("");
-                              }
-                              setValue("commRate", numericValue, {
-                                shouldValidate: true,
-                              });
-
-                              // When agent commission rate/value changes, automatically select override option
-                              // Only set override if there's a value and commission types are loaded
-                              if (
-                                numericValue &&
-                                numericValue.trim() !== "" &&
-                                commissionTypes.length > 0
-                              ) {
-                                // Find the override commission type (case-insensitive search)
-                                const overrideType = commissionTypes.find(
-                                  (type) =>
-                                    type.name.toLowerCase().includes("override")
-                                );
-
-                                if (overrideType) {
-                                  // Set the override commission type ID
-                                  console.log(
-                                    "Setting override commission type:",
-                                    overrideType.id,
-                                    overrideType.name
-                                  );
-                                  setValue(
-                                    "agentCommissionTypeId",
-                                    overrideType.id,
-                                    {
-                                      shouldValidate: true,
-                                      shouldDirty: true,
-                                    }
-                                  );
-                                } else {
-                                  console.log(
-                                    "Override type not found in commissionTypes:",
-                                    commissionTypes.map((t) => ({
-                                      id: t.id,
-                                      name: t.name,
-                                    }))
-                                  );
-                                }
-                              }
-                            },
-                          })}
-                          placeholder="Enter agent commission rate (%) or fixed amount"
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Additional Agent Toggle */}
-                  <div
-                    className="flex items-center justify-between pt-4 border-t"
-                    style={{ borderColor: "var(--gi-green-40)" }}
-                  >
-                    <Label
-                      htmlFor="hasAdditionalAgent"
-                      className="text-gray-900"
-                    >
-                      Additional Agent
-                    </Label>
-                    <Controller
-                      name="hasAdditionalAgent"
-                      control={control}
-                      render={({ field }) => (
-                        <Switch
-                          id="hasAdditionalAgent"
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      )}
-                    />
-                  </div>
-
-                  {/* Additional Agent Fields - Shown when toggle is enabled */}
-                  {watchedHasAdditionalAgent && (
-                    <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                      {/* Agent Type Selection */}
-                      <div>
-                        <Label className="mb-2 block">Agent Type</Label>
-                        <div className="flex gap-4">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="additionalAgentType"
-                              value="internal"
-                              checked={
-                                watchedAdditionalAgentType === "internal"
-                              }
-                              onChange={(e) =>
-                                setValue(
-                                  "additionalAgentType",
-                                  e.target.value as "internal" | "external"
-                                )
-                              }
-                              className="w-4 h-4"
-                            />
-                            <span className="text-sm">Internal Agent</span>
-                          </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="additionalAgentType"
-                              value="external"
-                              checked={
-                                watchedAdditionalAgentType === "external"
-                              }
-                              onChange={(e) =>
-                                setValue(
-                                  "additionalAgentType",
-                                  e.target.value as "internal" | "external"
-                                )
-                              }
-                              className="w-4 h-4"
-                            />
-                            <span className="text-sm">External Agent</span>
-                          </label>
-                        </div>
-                      </div>
-
-                      {/* Internal Agent Selection */}
-                      {watchedAdditionalAgentType === "internal" && (
-                        <div>
-                          <Label htmlFor="additionalAgentId">
-                            Select Agent
-                          </Label>
-                          <Controller
-                            name="additionalAgentId"
-                            control={control}
-                            render={({ field }) => (
-                              <Select
-                                value={field.value}
-                                onValueChange={field.onChange}
-                                disabled={filtersLoading}
-                              >
-                                <SelectTrigger className="w-full mt-1">
-                                  <SelectValue placeholder="Select internal agent" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {allAgents.map((agent) => (
-                                    <SelectItem key={agent.id} value={agent.id}>
-                                      {agent.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          />
-                        </div>
-                      )}
-
-                      {/* External Agent Name */}
-                      {watchedAdditionalAgentType === "external" && (
-                        <div>
-                          <Label htmlFor="agencyName">Agency/Agent Name</Label>
-                          <Input
-                            id="agencyName"
-                            {...register("agencyName")}
-                            placeholder="Enter agency or agent name"
-                            className="mt-1"
-                          />
-                        </div>
-                      )}
-
-                      <div>
-                        <Label htmlFor="agencyCommissionTypeId">
-                          Commission Type
-                        </Label>
-                        <Controller
-                          name="agencyCommissionTypeId"
-                          control={control}
-                          render={({ field }) => (
-                            <Select
-                              value={field.value}
-                              onValueChange={field.onChange}
-                              disabled={filtersLoading}
-                            >
-                              <SelectTrigger className="w-full mt-1">
-                                <SelectValue placeholder="Select commission type" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {commissionTypes.map((type) => (
-                                  <SelectItem key={type.id} value={type.id}>
-                                    {type.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="agencyComm">Commission Value</Label>
-                        <Input
-                          id="agencyComm"
-                          type="text"
-                          {...register("agencyComm", {
-                            onChange: (e) => {
-                              const numericValue = e.target.value.replace(
-                                /[^0-9]/g,
-                                ""
-                              );
-                              setValue("agencyComm", numericValue, {
-                                shouldValidate: true,
-                              });
-                            },
-                          })}
-                          placeholder="Enter commission value"
-                          className="mt-1"
-                        />
-                        {watchedSalesValue && watchedAgencyComm && (
-                          <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded text-sm">
-                            <p className="text-blue-900 dark:text-blue-100 font-semibold">
-                              Commission: AED{" "}
-                              {parseFloat(watchedAgencyComm).toLocaleString(
-                                "en-US",
-                                {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                }
-                              )}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <CommissionDetailsSection
+              control={control}
+              register={register}
+              errors={errors}
+              setValue={setValue}
+              commissionTypes={commissionTypes}
+              allAgents={allAgents}
+              watchedHasAdditionalAgent={watchedHasAdditionalAgent}
+              watchedAdditionalAgentType={watchedAdditionalAgentType}
+              watchedSalesValue={watchedSalesValue}
+              watchedAgencyComm={watchedAgencyComm}
+              currentRole={currentRole}
+              filtersLoading={filtersLoading}
+            />
 
             {/* Additional Notes */}
             <Card>
