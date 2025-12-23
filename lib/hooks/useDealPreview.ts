@@ -98,25 +98,36 @@ export function useDealPreview({
       return type?.name || "N/A";
     };
 
-    const getAdditionalAgentCommissionTypeName = () => {
-      const type = commissionTypes.find(
-        (t) => t.id === pendingFormData.agencyCommissionTypeId
-      );
-      return type?.name || "N/A";
-    };
-
-    const getAdditionalAgentName = () => {
-      if (pendingFormData.additionalAgentType === "internal") {
-        const agent = allAgents.find(
-          (a) => a.id === pendingFormData.additionalAgentId
-        );
-        return agent?.name || "N/A";
-      }
-      return pendingFormData.agencyName || "N/A";
-    };
-
     const getMainAgentName = () => {
       return sessionStorage.getItem("username") || "Current Agent";
+    };
+
+    const getAdditionalAgentsPreview = () => {
+      if (!pendingFormData.additionalAgents || pendingFormData.additionalAgents.length === 0) {
+        return [];
+      }
+
+      return pendingFormData.additionalAgents.map((agent) => {
+        let agentName = "N/A";
+        
+        if (agent.type === "internal") {
+          const foundAgent = allAgents.find((a) => a.id === agent.agentId);
+          agentName = foundAgent?.name || "N/A";
+        } else {
+          agentName = agent.agencyName || "N/A";
+        }
+
+        const commissionType = commissionTypes.find(
+          (t) => t.id === agent.commissionTypeId
+        );
+
+        return {
+          type: agent.type,
+          name: agentName,
+          commissionType: commissionType?.name || "N/A",
+          commissionValue: agent.commissionValue || "0",
+        };
+      });
     };
 
     return {
@@ -154,13 +165,8 @@ export function useDealPreview({
       mainAgentCommissionType: getAgentCommissionTypeName(),
       mainAgentCommissionValue: pendingFormData.commRate,
 
-      // Additional Agent
-      hasAdditionalAgent: pendingFormData.hasAdditionalAgent,
-      additionalAgentType: pendingFormData.additionalAgentType,
-      additionalAgentName: getAdditionalAgentName(),
-      additionalAgentCommissionRate: pendingFormData.agencyComm,
-      additionalAgentCommissionType: getAdditionalAgentCommissionTypeName(),
-      additionalAgentCommissionValue: pendingFormData.agencyComm,
+      // Additional Agents
+      additionalAgents: getAdditionalAgentsPreview(),
     };
   }, [
     pendingFormData,

@@ -5,6 +5,13 @@ import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
 import { CheckCircle2, ArrowLeft } from "lucide-react";
 
+interface AdditionalAgentPreview {
+  type: "internal" | "external";
+  name: string;
+  commissionType: string;
+  commissionValue: string;
+}
+
 interface DealPreviewData {
   // Deal Information
   bookingDate: string;
@@ -47,13 +54,8 @@ interface DealPreviewData {
   mainAgentCommissionType?: string;
   mainAgentCommissionValue?: string;
   
-  // Additional Agent
-  hasAdditionalAgent: boolean;
-  additionalAgentType?: "internal" | "external";
-  additionalAgentName?: string;
-  additionalAgentCommissionRate?: string;
-  additionalAgentCommissionType?: string;
-  additionalAgentCommissionValue?: string;
+  // Additional Agents
+  additionalAgents: AdditionalAgentPreview[];
 }
 
 interface DealPreviewModalProps {
@@ -319,48 +321,74 @@ export function DealPreviewModal({
               </div>
             )}
 
-            {/* Additional Agent */}
-            {data.hasAdditionalAgent && (
-              <div>
-                <h4 className="text-md font-medium mb-2 text-gray-700 dark:text-gray-300">
-                  Additional Agent
+            {/* Additional Agents */}
+            {data.additionalAgents && data.additionalAgents.length > 0 && (
+              <div className="space-y-4">
+                <h4 className="text-md font-medium text-gray-700 dark:text-gray-300">
+                  Additional Agents ({data.additionalAgents.length})
                 </h4>
-                <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg space-y-2">
-                  <div className="flex justify-between items-center">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Type</p>
-                    <p className="font-medium text-gray-900 dark:text-white capitalize">
-                      {data.additionalAgentType || "N/A"}
-                    </p>
+                
+                {/* Internal Agents */}
+                {data.additionalAgents.filter(agent => agent.type === "internal").length > 0 && (
+                  <div>
+                    <h5 className="text-sm font-medium mb-2 text-gray-600 dark:text-gray-400">
+                      Internal Agents
+                    </h5>
+                    <div className="space-y-3">
+                      {data.additionalAgents
+                        .filter(agent => agent.type === "internal")
+                        .map((agent, index) => (
+                          <div key={`internal-${index}`} className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg space-y-2 border-l-4 border-purple-500">
+                            <div className="flex justify-between items-center">
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Agent Name</p>
+                              <p className="font-medium text-gray-900 dark:text-white">{agent.name}</p>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Commission Type</p>
+                              <p className="font-medium text-gray-900 dark:text-white">{agent.commissionType}</p>
+                            </div>
+                            <div className="flex justify-between items-center pt-2 border-t border-purple-200 dark:border-purple-800">
+                              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Commission Value</p>
+                              <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                                {formatCurrency(agent.commissionValue)}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
                   </div>
-                  {data.additionalAgentName && (
-                    <div className="flex justify-between items-center">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Agent Name</p>
-                      <p className="font-medium text-gray-900 dark:text-white">{data.additionalAgentName}</p>
+                )}
+
+                {/* External Agents */}
+                {data.additionalAgents.filter(agent => agent.type === "external").length > 0 && (
+                  <div>
+                    <h5 className="text-sm font-medium mb-2 text-gray-600 dark:text-gray-400">
+                      External Agents
+                    </h5>
+                    <div className="space-y-3">
+                      {data.additionalAgents
+                        .filter(agent => agent.type === "external")
+                        .map((agent, index) => (
+                          <div key={`external-${index}`} className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg space-y-2 border-l-4 border-amber-500">
+                            <div className="flex justify-between items-center">
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Agency/Agent Name</p>
+                              <p className="font-medium text-gray-900 dark:text-white">{agent.name}</p>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Commission Type</p>
+                              <p className="font-medium text-gray-900 dark:text-white">{agent.commissionType}</p>
+                            </div>
+                            <div className="flex justify-between items-center pt-2 border-t border-amber-200 dark:border-amber-800">
+                              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Commission Value</p>
+                              <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
+                                {formatCurrency(agent.commissionValue)}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
                     </div>
-                  )}
-                  {data.additionalAgentCommissionType && (
-                    <div className="flex justify-between items-center">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Commission Type</p>
-                      <p className="font-medium text-gray-900 dark:text-white">{data.additionalAgentCommissionType}</p>
-                    </div>
-                  )}
-                  {data.additionalAgentCommissionRate && (
-                    <div className="flex justify-between items-center">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Commission Rate/Value</p>
-                      <p className="text-lg font-semibold text-purple-600 dark:text-purple-400">
-                        {data.additionalAgentCommissionRate}
-                      </p>
-                    </div>
-                  )}
-                  {data.additionalAgentCommissionValue && (
-                    <div className="flex justify-between items-center pt-2 border-t border-purple-200 dark:border-purple-800">
-                      <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Expected Commission</p>
-                      <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
-                        {formatCurrency(data.additionalAgentCommissionValue)}
-                      </p>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

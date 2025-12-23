@@ -224,90 +224,92 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
           disabled={isReadOnly || isSubmitting}
           className={isReadOnly ? "opacity-80" : ""}
         >
-          {/* Row 1: Deal Information & Property Details */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <DealInformationSection
-              control={control}
-              errors={errors}
-              register={register}
-              setValue={setValue}
-              currentRole={currentRole}
-              isEditMode={isEditMode}
-              defaultStatusId={defaultStatusId}
-              dealTypes={dealTypes}
-              statuses={statuses}
-              purchaseStatuses={purchaseStatuses}
-              filtersLoading={filtersLoading}
-              isValidUuid={isValidUuid}
-            />
+          <div className="space-y-6">
+            {/* Row 1: Deal Information & Property Details */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <DealInformationSection
+                control={control}
+                errors={errors}
+                register={register}
+                setValue={setValue}
+                currentRole={currentRole}
+                isEditMode={isEditMode}
+                defaultStatusId={defaultStatusId}
+                dealTypes={dealTypes}
+                statuses={statuses}
+                purchaseStatuses={purchaseStatuses}
+                filtersLoading={filtersLoading}
+                isValidUuid={isValidUuid}
+              />
 
-            <PropertyDetailsSection
-              control={control}
-              errors={errors}
-              setValue={setValue}
-              developers={developers}
-              filteredProjects={filteredProjects}
-              propertyTypes={propertyTypes}
-              watchedDeveloperId={watchedFields.developerId}
-              filtersLoading={filtersLoading}
-            />
-          </div>
+              <PropertyDetailsSection
+                control={control}
+                errors={errors}
+                setValue={setValue}
+                developers={developers}
+                filteredProjects={filteredProjects}
+                propertyTypes={propertyTypes}
+                watchedDeveloperId={watchedFields.developerId}
+                filtersLoading={filtersLoading}
+              />
+            </div>
 
-          {/* Row 2: Unit Details */}
-          <div className="grid grid-cols-1 gap-6">
-            <UnitDetailsSection
-              control={control}
-              register={register}
-              errors={errors}
-              setValue={setValue}
-              unitTypes={unitTypes}
-              bedrooms={bedrooms}
-              filtersLoading={filtersLoading}
-            />
-          </div>
+            {/* Row 2: Unit Details */}
+            <div className="grid grid-cols-1 gap-6">
+              <UnitDetailsSection
+                control={control}
+                register={register}
+                errors={errors}
+                setValue={setValue}
+                unitTypes={unitTypes}
+                bedrooms={bedrooms}
+                filtersLoading={filtersLoading}
+              />
+            </div>
 
-          {/* Row 3: Seller & Buyer */}
-          <BuyerSellerSection
-            control={control}
-            register={register}
-            errors={errors}
-            nationalities={nationalities}
-            leadSources={leadSources}
-            filtersLoading={filtersLoading}
-            validatePhone={validatePhone}
-            validateEmail={validateEmail}
-          />
-
-          {/* Row 4: Commission Details & Additional Notes */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <CommissionDetailsSection
+            {/* Row 3: Seller & Buyer */}
+            <BuyerSellerSection
               control={control}
               register={register}
               errors={errors}
-              setValue={setValue}
-              commissionTypes={commissionTypes}
-              allAgents={allAgents}
-              watchedAdditionalAgents={watchedFields.additionalAgents || []}
-              watchedSalesValue={watchedFields.salesValue}
-              currentRole={currentRole}
+              nationalities={nationalities}
+              leadSources={leadSources}
               filtersLoading={filtersLoading}
+              validatePhone={validatePhone}
+              validateEmail={validateEmail}
             />
 
-            {/* Additional Notes */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Additional Notes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  id="notes"
-                  {...register("notes")}
-                  placeholder="Enter any additional notes or comments..."
-                  rows={10}
-                  className="resize-none"
-                />
-              </CardContent>
-            </Card>
+            {/* Row 4: Commission Details & Additional Notes */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <CommissionDetailsSection
+                control={control}
+                register={register}
+                errors={errors}
+                setValue={setValue}
+                commissionTypes={commissionTypes}
+                allAgents={allAgents}
+                watchedAdditionalAgents={watchedFields.additionalAgents || []}
+                watchedSalesValue={watchedFields.salesValue}
+                currentRole={currentRole}
+                filtersLoading={filtersLoading}
+              />
+
+              {/* Additional Notes */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Additional Notes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Textarea
+                    id="notes"
+                    {...register("notes")}
+                    placeholder="Enter any additional notes or comments..."
+                    rows={10}
+                    className="resize-none"
+                  />
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </fieldset>
       </form>

@@ -1,10 +1,22 @@
 "use client";
 
-import { Control, Controller, FieldErrors, UseFormRegister, UseFormSetValue } from "react-hook-form";
+import {
+  Control,
+  Controller,
+  FieldErrors,
+  UseFormRegister,
+  UseFormSetValue,
+} from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { DealFormData } from "@/lib/hooks/useDealFormData";
 
 interface UnitDetailsSectionProps {
@@ -40,8 +52,7 @@ export function UnitDetailsSection({
               type="text"
               {...register("unitNumber", {
                 onChange: (e) => {
-                  const numericValue = e.target.value.replace(/[^0-9]/g, "");
-                  setValue("unitNumber", numericValue, {
+                  setValue("unitNumber", e.target.value, {
                     shouldValidate: true,
                   });
                 },
@@ -131,4 +142,3 @@ export function UnitDetailsSection({
     </Card>
   );
 }
-
