@@ -1,8 +1,9 @@
 "use client";
 
-import { Control, Controller, FieldErrors } from "react-hook-form";
+import { Control, Controller, FieldErrors, UseFormRegister, UseFormSetValue } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Label } from "../ui/label";
+import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { StyledDatePicker } from "../StyledDatePicker";
 
@@ -49,6 +50,8 @@ type DealFormData = {
 interface DealInformationSectionProps {
   control: Control<DealFormData>;
   errors: FieldErrors<DealFormData>;
+  register: UseFormRegister<DealFormData>;
+  setValue: UseFormSetValue<DealFormData>;
   currentRole: "agent" | "finance" | "ceo" | "admin";
   isEditMode: boolean;
   defaultStatusId: string;
@@ -62,6 +65,8 @@ interface DealInformationSectionProps {
 export function DealInformationSection({
   control,
   errors,
+  register,
+  setValue,
   currentRole,
   isEditMode,
   defaultStatusId,
@@ -249,6 +254,24 @@ export function DealInformationSection({
                     </SelectContent>
                   </Select>
                 )}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="purchaseValue">Purchase Value (AED)</Label>
+              <Input
+                id="purchaseValue"
+                type="text"
+                {...register("purchaseValue", {
+                  onChange: (e) => {
+                    const numericValue = e.target.value.replace(/[^0-9]/g, "");
+                    setValue("purchaseValue", numericValue, {
+                      shouldValidate: true,
+                    });
+                  },
+                })}
+                placeholder="Enter purchase value"
+                className="mt-1"
               />
             </div>
           </div>

@@ -1,0 +1,257 @@
+"use client";
+
+import { useState } from "react";
+import { toast } from "sonner";
+import { dealsApi, type CreateDealRequest } from "../deals";
+import { DealFormData, UserRole } from "./useDealFormData";
+import { FilterOption } from "../filters";
+
+interface UseDealSubmissionProps {
+  dealId: string | null;
+  currentRole: UserRole;
+  defaultStatusId: string;
+  originalCommissionValue: string | null;
+  purchaseStatuses: FilterOption[];
+  onSave: () => void;
+}
+
+export function useDealSubmission({
+  dealId,
+  currentRole,
+  defaultStatusId,
+  originalCommissionValue,
+  purchaseStatuses,
+  onSave,
+}: UseDealSubmissionProps) {
+  const [showPreview, setShowPreview] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState<DealFormData | null>(
+    null
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isEditMode = Boolean(dealId);
+  const isReadOnly = isEditMode && currentRole === "agent";
+
+  // Form submission handler - shows preview for new deals
+  const handleFormSubmit = async (data: DealFormData) => {
+    if (isReadOnly) {
+      toast.error("Permission denied", {
+        description:
+          currentRole === "agent"
+            ? "Agents can create deals, but cannot edit an existing deal."
+            : "This deal is approved and cannot be edited.",
+      });
+      return;
+    }
+
+    // For new deals, show preview modal first
+    if (!dealId) {
+      setPendingFormData(data);
+      setShowPreview(true);
+      return;
+    }
+
+    // For editing, proceed directly
+    await submitDeal(data);
+  };
+
+  // Actual submission logic
+  const submitDeal = async (data: DealFormData) => {
+    setIsSubmitting(true);
+    try {
+      const agentId = sessionStorage.getItem("userId");
+      if (!agentId) {
+        toast.error("Authentication Error", {
+          description: "Agent ID not found. Please log in again.",
+        });
+        return;
+      }
+
+      const finalStatusId = data.statusId || defaultStatusId;
+      const isAgentCreating = currentRole === "agent" && !dealId;
+
+      // Prepare base payload
+      const basePayload = {
+        dealValue: parseFloat(data.salesValue) || 0,
+        purchaseValue: data.purchaseValue
+          ? parseFloat(data.purchaseValue)
+          : undefined,
+        developerId: data.developerId,
+        projectId: data.projectId,
+        agentId: agentId,
+        bookingDate: new Date(data.bookingDate).toISOString(),
+        cfExpiry: data.cfExpiry
+          ? new Date(data.cfExpiry).toISOString()
+          : new Date().toISOString(),
+        dealTypeId: data.dealTypeId,
+        statusId: finalStatusId,
+        numberOfDeal: 1,
+        propertyName: data.propertyName || "",
+        propertyTypeId: data.propertyTypeId,
+        unitNumber: data.unitNumber,
+        unitTypeId: data.unitTypeId,
+        bedroomsId: data.bedroomsId || undefined,
+        size: parseFloat(data.size) || 0,
+        buyer: {
+          name: data.buyerName,
+          phone: data.buyerPhone,
+          email: data.buyerEmail || undefined,
+          nationalityId: data.buyerNationalityId,
+          sourceId: data.buyerSourceId,
+        },
+        seller: {
+          name: data.sellerName,
+          phone: data.sellerPhone,
+          email: data.sellerEmail || undefined,
+          nationalityId: data.sellerNationalityId,
+          sourceId: data.sellerSourceId,
+        },
+        agentCommissionTypeId: (() => {
+          if (currentRole === "agent") {
+            const loginCommissionType =
+              sessionStorage.getItem("userCommissionType");
+            return loginCommissionType || data.agentCommissionTypeId || undefined;
+          }
+          return data.agentCommissionTypeId || undefined;
+        })(),
+        agentCommissionValue: data.commRate
+          ? parseFloat(data.commRate)
+          : undefined,
+        agentCommissionTypeOverride: (() => {
+          if (currentRole === "agent") {
+            const originalValue =
+              originalCommissionValue ||
+              sessionStorage.getItem("userCommissionValue");
+            const currentValue = data.commRate;
+
+            if (originalValue && currentValue) {
+              const originalNum = parseFloat(originalValue);
+              const currentNum = parseFloat(currentValue);
+              if (
+                !isNaN(originalNum) &&
+                !isNaN(currentNum) &&
+                originalNum !== currentNum
+              ) {
+                return true;
+              }
+            }
+          }
+          return false;
+        })(),
+        totalCommissionTypeId: data.totalCommissionTypeId || undefined,
+        totalCommissionValue: data.totalCommissionValue
+          ? parseFloat(data.totalCommissionValue)
+          : undefined,
+        purchaseStatusId: (() => {
+          if (
+            currentRole === "agent" &&
+            !dealId &&
+            data.bookingDate &&
+            !data.purchaseStatusId
+          ) {
+            const bookingStatus = purchaseStatuses.find((status) =>
+              status.name.toLowerCase().includes("booking")
+            );
+            return bookingStatus?.id || undefined;
+          }
+          return data.purchaseStatusId || undefined;
+        })(),
+        additionalAgents: data.hasAdditionalAgent
+          ? [
+              data.additionalAgentType === "internal"
+                ? {
+                    agentId: data.additionalAgentId,
+                    commissionTypeId:
+                      data.agencyCommissionTypeId ||
+                      data.agentCommissionTypeId ||
+                      "",
+                    commissionValue: data.agencyComm
+                      ? parseFloat(data.agencyComm)
+                      : 0,
+                    isInternal: true,
+                  }
+                : {
+                    externalAgentName: data.agencyName,
+                    commissionTypeId:
+                      data.agencyCommissionTypeId ||
+                      data.agentCommissionTypeId ||
+                      "",
+                    commissionValue: data.agencyComm
+                      ? parseFloat(data.agencyComm)
+                      : 0,
+                    isInternal: false,
+                  },
+            ]
+          : undefined,
+      };
+
+      const payload: CreateDealRequest = isAgentCreating
+        ? ({
+            ...basePayload,
+            closeDate: new Date().toISOString(),
+          } as CreateDealRequest)
+        : {
+            ...basePayload,
+            closeDate: data.closeDate
+              ? new Date(data.closeDate).toISOString()
+              : new Date().toISOString(),
+          };
+
+      if (dealId) {
+        await dealsApi.updateDeal(dealId, payload);
+        toast.success("Deal Updated", {
+          description: "Deal has been updated successfully!",
+        });
+      } else {
+        let payloadToSend: CreateDealRequest;
+        if (isAgentCreating) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { closeDate, ...rest } = payload;
+          payloadToSend = rest as CreateDealRequest;
+        } else {
+          payloadToSend = payload;
+        }
+        await dealsApi.createDeal(payloadToSend);
+        toast.success("Deal Created", {
+          description: "Deal has been created successfully!",
+        });
+      }
+      onSave();
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : dealId
+          ? "Failed to update deal"
+          : "Failed to create deal";
+      toast.error(dealId ? "Error Updating Deal" : "Error Creating Deal", {
+        description: errorMessage,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handlePreviewConfirm = async () => {
+    if (!pendingFormData) return;
+    setShowPreview(false);
+    await submitDeal(pendingFormData);
+    setPendingFormData(null);
+  };
+
+  const handlePreviewClose = () => {
+    setShowPreview(false);
+    setPendingFormData(null);
+  };
+
+  return {
+    showPreview,
+    pendingFormData,
+    isSubmitting,
+    isReadOnly,
+    handleFormSubmit,
+    handlePreviewConfirm,
+    handlePreviewClose,
+  };
+}
+
