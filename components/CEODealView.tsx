@@ -365,10 +365,10 @@ export function CEODealView({ dealId, onBack }: CEODealViewProps) {
           </Card>
         )}
 
-        {/* Agent Information */}
+        {/* Main Agent Information */}
         <Card>
           <CardHeader>
-            <CardTitle>Agent Information</CardTitle>
+            <CardTitle>Main Agent</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -412,6 +412,75 @@ export function CEODealView({ dealId, onBack }: CEODealViewProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Additional Agents Section */}
+      {deal.agentCommissions?.additionalAgents &&
+        deal.agentCommissions.additionalAgents.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Additional Agents</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {deal.agentCommissions.additionalAgents.map(
+                  (additionalAgent, index) => (
+                    <div
+                      key={additionalAgent.id || index}
+                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gradient-to-br from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-800"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                          {additionalAgent.agent?.name || "External Agent"}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {additionalAgent.isInternal ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                              Internal
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                              External
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        {additionalAgent.agent?.email && (
+                          <div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400">
+                              Email
+                            </div>
+                            <div className="text-gray-900 dark:text-white">
+                              {additionalAgent.agent.email}
+                            </div>
+                          </div>
+                        )}
+                        <div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">
+                            Commission Type
+                          </div>
+                          <div className="text-gray-900 dark:text-white">
+                            {additionalAgent.commissionType?.name || "-"}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">
+                            Commission Value
+                          </div>
+                          <div className="text-base font-semibold text-green-600 dark:text-green-400">
+                            AED{" "}
+                            {additionalAgent.commissionValue?.toLocaleString() ||
+                              "0"}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
       {/* Media Files Section */}
       {deal.media && deal.media.length > 0 && (

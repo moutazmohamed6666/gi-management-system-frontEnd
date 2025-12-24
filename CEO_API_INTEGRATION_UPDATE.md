@@ -12,6 +12,14 @@ Updated the CEO dashboard components to integrate with the new API data structur
   - Email addresses
   - Nationality (nested object)
   - Source (nested object)
+- Changed "Agent Information" card title to "Main Agent" for clarity
+- Added new **Additional Agents Section** to display:
+  - Agent name (or "External Agent" for external agents)
+  - Agent email (for internal agents)
+  - Commission type (e.g., "Override", "Percentage", "Fixed")
+  - Commission value in AED
+  - Internal/External badge indicator
+  - Grid layout showing all additional agents as cards
 - Added new **Media Files Section** to display attached documents with:
   - Media type name
   - Filename
@@ -133,7 +141,20 @@ Updated the CEO dashboard components to integrate with the new API data structur
       dueDate: string | null
       paidDate: string | null
     }
-    additionalAgents: []
+    additionalAgents: [
+      {
+        id: string
+        agent: {
+          id: string
+          name: string
+          email: string
+          isInternal: boolean
+        }
+        commissionType: { id: string, name: string }
+        commissionValue: number
+        isInternal: boolean
+      }
+    ]
     totalExpected: number
     totalPaid: number
   }
@@ -177,8 +198,10 @@ All components maintain backward compatibility with the old API structure:
 2. Test with deals from the old API structure (if any still exist)
 3. Verify all nested fields display correctly
 4. Verify media files section displays when present
-5. Test approve/reject functionality with new structure
-6. Verify commission calculations work with new structure
+5. **Verify additional agents section displays with correct commission details**
+6. **Test internal vs external agent badge indicators**
+7. Test approve/reject functionality with new structure
+8. Verify commission calculations work with new structure
 
 ## Files Modified
 - `components/CEODealView.tsx`
