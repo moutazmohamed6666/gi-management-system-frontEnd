@@ -4,7 +4,17 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { Download, FileIcon, Loader2, AlertCircle, Eye, ExternalLink } from "lucide-react";
+import { Download, FileIcon, Loader2, AlertCircle, Eye, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
 import { dealsApi, type DealMediaFile } from "@/lib/deals";
 import { toast } from "sonner";
 
@@ -17,6 +27,8 @@ export function DealMediaSection({ dealId }: DealMediaSectionProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedMediaType, setSelectedMediaType] = useState<string>("");
+  const [fileToDelete, setFileToDelete] = useState<DealMediaFile | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchMediaFiles();
@@ -89,6 +101,38 @@ export function DealMediaSection({ dealId }: DealMediaSectionProps) {
       // For other file types, download instead
       handleDownload(file);
     }
+  };
+
+  const handleDeleteClick = (file: DealMediaFile) => {
+    setFileToDelete(file);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!fileToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await dealsApi.deleteMedia(fileToDelete.id);
+      
+      toast.success("File deleted", {
+        description: `${fileToDelete.originalFilename} has been deleted successfully`,
+      });
+
+      // Remove the file from the local state
+      setMediaFiles((prev) => prev.filter((f) => f.id !== fileToDelete.id));
+      setFileToDelete(null);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to delete file";
+      toast.error("Delete failed", {
+        description: errorMessage,
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setFileToDelete(null);
   };
 
   const formatFileSize = (bytes: number) => {
@@ -258,6 +302,15 @@ export function DealMediaSection({ dealId }: DealMediaSectionProps) {
                       <Download className="h-4 w-4 mr-1" />
                       Download
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDeleteClick(file)}
+                      title="Delete file"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -265,6 +318,36 @@ export function DealMediaSection({ dealId }: DealMediaSectionProps) {
           ))}
         </Tabs>
       </CardContent>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!fileToDelete} onOpenChange={(open) => !open && handleDeleteCancel()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Media File</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{fileToDelete?.originalFilename}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

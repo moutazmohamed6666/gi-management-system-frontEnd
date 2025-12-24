@@ -4,10 +4,20 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import { ArrowLeft, Upload, Loader2, FileIcon, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, Upload, Loader2, FileIcon, CheckCircle2, XCircle, Trash2, Eye, Download } from "lucide-react";
 import { useFilters } from "@/lib/useFilters";
-import { dealsApi } from "@/lib/deals";
+import { dealsApi, type DealMediaFile } from "@/lib/deals";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog";
 
 interface DealMediaUploadProps {
   dealId: string;
@@ -25,6 +35,10 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
   const [selectedMediaType, setSelectedMediaType] = useState<string>("");
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, UploadedFile[]>>({});
   const [isDragging, setIsDragging] = useState(false);
+  const [existingFiles, setExistingFiles] = useState<DealMediaFile[]>([]);
+  const [isLoadingExisting, setIsLoadingExisting] = useState(true);
+  const [fileToDelete, setFileToDelete] = useState<DealMediaFile | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Set the first media type as default when loaded
   useEffect(() => {
@@ -32,6 +46,23 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
       setSelectedMediaType(mediaTypes[0].id);
     }
   }, [mediaTypes, selectedMediaType]);
+
+  // Fetch existing files
+  useEffect(() => {
+    fetchExistingFiles();
+  }, [dealId]);
+
+  const fetchExistingFiles = async () => {
+    setIsLoadingExisting(true);
+    try {
+      const files = await dealsApi.getDealMedia(dealId);
+      setExistingFiles(files);
+    } catch (err) {
+      console.error("Error fetching existing files:", err);
+    } finally {
+      setIsLoadingExisting(false);
+    }
+  };
 
   const handleFileSelect = useCallback(
     (files: FileList | null, mediaTypeId: string) => {
@@ -90,6 +121,9 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
       toast.success("File uploaded", {
         description: `${file.name} uploaded successfully`,
       });
+
+      // Refresh existing files list
+      fetchExistingFiles();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Upload failed";
 
@@ -150,6 +184,105 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
     const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
+  };
+
+  const handleDeleteClick = (file: DealMediaFile) => {
+    setFileToDelete(file);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!fileToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await dealsApi.deleteMedia(fileToDelete.id);
+      
+      toast.success("File deleted", {
+        description: `${fileToDelete.originalFilename} has been deleted successfully`,
+      });
+
+      // Remove from local state
+      setExistingFiles((prev) => prev.filter((f) => f.id !== fileToDelete.id));
+      setFileToDelete(null);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to delete file";
+      toast.error("Delete failed", {
+        description: errorMessage,
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setFileToDelete(null);
+  };
+
+  const handleDownload = async (file: DealMediaFile) => {
+    try {
+      const token = sessionStorage.getItem("authToken");
+
+      const response = await fetch(file.fileUrl, {
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to download file");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.originalFilename || file.filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success("Download started", {
+        description: `Downloading ${file.originalFilename}`,
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Download failed";
+      toast.error("Download failed", {
+        description: errorMessage,
+      });
+    }
+  };
+
+  const handleView = (file: DealMediaFile) => {
+    if (file.mimeType.startsWith("image/") || file.mimeType === "application/pdf") {
+      window.open(file.fileUrl, "_blank");
+    } else {
+      handleDownload(file);
+    }
+  };
+
+  const getFileIcon = (mimeType: string) => {
+    if (mimeType.startsWith("image/")) {
+      return "🖼️";
+    } else if (mimeType === "application/pdf") {
+      return "📄";
+    } else if (mimeType.includes("word") || mimeType.includes("document")) {
+      return "📝";
+    } else if (mimeType.includes("sheet") || mimeType.includes("excel")) {
+      return "📊";
+    } else {
+      return "📎";
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   if (filtersLoading) {
@@ -254,11 +387,76 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
                   </Button>
                 </div>
 
+                {/* Existing Files Section */}
+                {existingFiles.filter((f) => f.mediaType.id === type.id).length > 0 && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">
+                      Uploaded Files ({existingFiles.filter((f) => f.mediaType.id === type.id).length})
+                    </h3>
+                    <div className="space-y-2">
+                      {existingFiles
+                        .filter((f) => f.mediaType.id === type.id)
+                        .map((file) => (
+                          <div
+                            key={file.id}
+                            className="flex items-center justify-between p-4 border rounded-lg dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+                          >
+                            <div className="flex items-center space-x-4 flex-1 min-w-0">
+                              <div className="text-2xl">{getFileIcon(file.mimeType)}</div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{file.originalFilename}</p>
+                                <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                                  <span>{formatFileSize(file.fileSize)}</span>
+                                  <span>•</span>
+                                  <span>Uploaded by {file.uploadedBy.name}</span>
+                                  <span>•</span>
+                                  <span>{formatDate(file.createdAt)}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              {(file.mimeType.startsWith("image/") || file.mimeType === "application/pdf") && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleView(file)}
+                                  title="View file"
+                                >
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  View
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDownload(file)}
+                                title="Download file"
+                              >
+                                <Download className="h-4 w-4 mr-1" />
+                                Download
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteClick(file)}
+                                title="Delete file"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* New Files to Upload Section */}
                 {uploadedFiles[type.id] && uploadedFiles[type.id].length > 0 && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold">
-                        Files ({uploadedFiles[type.id].length})
+                        New Files to Upload ({uploadedFiles[type.id].length})
                       </h3>
                       <Button
                         onClick={() => handleUploadAll(type.id)}
@@ -329,6 +527,36 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!fileToDelete} onOpenChange={(open) => !open && handleDeleteCancel()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Media File</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{fileToDelete?.originalFilename}</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

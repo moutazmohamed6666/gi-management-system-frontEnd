@@ -654,4 +654,11 @@ export const dealsApi = {
   getDealMedia: async (dealId: string): Promise<DealMediaFile[]> => {
     return apiClient<DealMediaFile[]>(`/api/media/deal/${dealId}`);
   },
+
+  // Delete a media file
+  deleteMedia: async (mediaId: string): Promise<{ message: string }> => {
+    return apiClient<{ message: string }>(`/api/media/${mediaId}`, {
+      method: "DELETE",
+    });
+  },
 };
