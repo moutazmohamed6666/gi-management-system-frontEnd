@@ -332,7 +332,11 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
                       </td>
                       <td className="py-3 px-4">
                         <div className="text-gray-900 dark:text-gray-100">
-                          {deal.buyer?.name || "N/A"}
+                          {deal.buyer?.name ||
+                            deal.buyerSellerDetails?.find(
+                              (d) => d.isBuyer === true
+                            )?.name ||
+                            "N/A"}
                         </div>
                       </td>
                       <td className="py-3 px-4">

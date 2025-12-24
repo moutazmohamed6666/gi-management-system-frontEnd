@@ -48,6 +48,26 @@ export function CEOBuyerSellerInfo({
                   </div>
                 </div>
               )}
+              {buyer.nationality && (
+                <div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    Nationality
+                  </div>
+                  <div className="text-base text-gray-900 dark:text-white font-medium">
+                    {buyer.nationality.name}
+                  </div>
+                </div>
+              )}
+              {buyer.source && (
+                <div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    Source
+                  </div>
+                  <div className="text-base text-gray-900 dark:text-white font-medium">
+                    {buyer.source.name}
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -84,6 +104,26 @@ export function CEOBuyerSellerInfo({
                   </div>
                   <div className="text-base text-gray-900 dark:text-white font-medium">
                     {seller.email}
+                  </div>
+                </div>
+              )}
+              {seller.nationality && (
+                <div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    Nationality
+                  </div>
+                  <div className="text-base text-gray-900 dark:text-white font-medium">
+                    {seller.nationality.name}
+                  </div>
+                </div>
+              )}
+              {seller.source && (
+                <div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    Source
+                  </div>
+                  <div className="text-base text-gray-900 dark:text-white font-medium">
+                    {seller.source.name}
                   </div>
                 </div>
               )}

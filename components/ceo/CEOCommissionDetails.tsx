@@ -14,40 +14,44 @@ export function CEOCommissionDetails({
   deal,
   commissions,
 }: CEOCommissionDetailsProps) {
-  const formatCurrency = (value: string | number | undefined) => {
-    if (!value) return "-";
+  const formatCurrency = (value: string | number | undefined | null) => {
+    if (!value && value !== 0) return "-";
     const numValue = typeof value === "string" ? parseFloat(value) : value;
     if (isNaN(numValue)) return "-";
     return `AED ${numValue.toLocaleString()}`;
   };
 
-  const formatDate = (dateString: string | undefined | null) => {
-    if (!dateString) return "-";
-    try {
-      return new Date(dateString).toLocaleDateString();
-    } catch {
-      return dateString;
-    }
-  };
-
   // Calculate deal commission (total commission value)
-  const dealCommission = parseFloat(deal.totalCommissionValue || "0") || 0;
+  // Support both old and new API structure
+  const dealCommission =
+    deal.totalCommission?.commissionValue ||
+    deal.totalCommission?.value ||
+    parseFloat(deal.totalCommissionValue || "0") ||
+    0;
 
-  // Calculate agent commission from commissions array
-  // Assuming agent commissions have a specific roleId (you may need to adjust this based on your role IDs)
-  // For now, we'll sum all commissions as agent commissions, but you can filter by roleId if needed
-  const agentCommission = commissions.reduce(
-    (sum, c) => sum + parseFloat(c.expectedAmount || "0"),
-    0
-  );
+  // Calculate agent commission from new agentCommissions structure or old commissions array
+  let agentCommission = 0;
+  let agentCommissionPaid = 0;
 
-  // Calculate paid amounts
+  if (deal.agentCommissions) {
+    // New API structure
+    agentCommission = deal.agentCommissions.totalExpected || 0;
+    agentCommissionPaid = deal.agentCommissions.totalPaid || 0;
+  } else if (commissions && commissions.length > 0) {
+    // Old API structure - sum all commissions
+    agentCommission = commissions.reduce(
+      (sum, c) => sum + parseFloat(c.expectedAmount || "0"),
+      0
+    );
+    agentCommissionPaid = commissions.reduce(
+      (sum, c) => sum + parseFloat(c.paidAmount || "0"),
+      0
+    );
+  }
+
+  // Calculate paid amounts for deal commission
   // Use collected_commissions from API response for deal commission
   const dealCommissionPaid = parseFloat(deal.collected_commissions || "0") || 0;
-  const agentCommissionPaid = commissions.reduce(
-    (sum, c) => sum + parseFloat(c.paidAmount || "0"),
-    0
-  );
 
   // Calculate remaining amounts
   const dealCommissionRemaining = dealCommission - dealCommissionPaid;

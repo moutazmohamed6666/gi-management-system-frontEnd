@@ -18,12 +18,24 @@ export function CEODealInfo({ deal }: CEODealInfoProps) {
     }
   };
 
-  const formatCurrency = (value: string | number | undefined) => {
+  const formatCurrency = (value: string | number | undefined | null) => {
     if (!value) return "-";
     const numValue = typeof value === "string" ? parseFloat(value) : value;
     if (isNaN(numValue)) return "-";
     return `AED ${numValue.toLocaleString()}`;
   };
+
+  // Get deal value from either dealValue or deal.dealValue
+  const dealValue = deal.dealValue;
+  
+  // Get status name from nested status object or fallback to statusId
+  const statusName = deal.status?.name || deal.statusId || "-";
+  
+  // Get purchase status name
+  const purchaseStatusName = deal.purchaseStatus?.name || "-";
+  
+  // Get deal type name
+  const dealTypeName = deal.dealType?.name || "-";
 
   return (
     <Card>
@@ -45,7 +57,7 @@ export function CEODealInfo({ deal }: CEODealInfoProps) {
               Deal Value
             </div>
             <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 px-4 py-3 rounded-lg border-2 border-blue-200 dark:border-blue-800">
-              {formatCurrency(deal.dealValue)}
+              {formatCurrency(dealValue)}
             </div>
           </div>
           <div className="md:col-span-1 lg:col-span-1">
@@ -62,6 +74,38 @@ export function CEODealInfo({ deal }: CEODealInfoProps) {
               <span className="text-xs text-gray-500 dark:text-gray-400">
                 {deal.numberOfDeal === 1 ? "deal" : "deals"}
               </span>
+            </div>
+          </div>
+          <div>
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+              Status
+            </div>
+            <div className="text-base text-gray-900 dark:text-white font-medium">
+              <Badge variant="outline">{statusName}</Badge>
+            </div>
+          </div>
+          <div>
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+              Purchase Status
+            </div>
+            <div className="text-base text-gray-900 dark:text-white font-medium">
+              <Badge variant="secondary">{purchaseStatusName}</Badge>
+            </div>
+          </div>
+          <div>
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+              Deal Type
+            </div>
+            <div className="text-base text-gray-900 dark:text-white font-medium">
+              {dealTypeName}
+            </div>
+          </div>
+          <div>
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+              Downpayment
+            </div>
+            <div className="text-base text-gray-900 dark:text-white font-medium">
+              {formatCurrency(deal.downpayment)}
             </div>
           </div>
           <div>

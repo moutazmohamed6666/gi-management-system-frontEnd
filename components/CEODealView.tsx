@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
-import { dealsApi, type Deal } from "@/lib/deals";
+import { dealsApi, type Deal, type BuyerSeller } from "@/lib/deals";
 import { filtersApi } from "@/lib/filters";
 import { Loader2, AlertCircle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -189,9 +189,15 @@ export function CEODealView({ dealId, onBack }: CEODealViewProps) {
     );
   }
 
-  // Extract buyer and seller from buyerSellerDetails
-  const buyer = deal.buyerSellerDetails?.find((d) => d.isBuyer === true);
-  const seller = deal.buyerSellerDetails?.find((d) => d.isBuyer === false);
+  // Extract buyer and seller - support both old and new API structure
+  const buyer = (deal.buyer ||
+    deal.buyerSellerDetails?.find((d) => d.isBuyer === true)) as
+    | BuyerSeller
+    | undefined;
+  const seller = (deal.seller ||
+    deal.buyerSellerDetails?.find((d) => d.isBuyer === false)) as
+    | BuyerSeller
+    | undefined;
 
   // Check if deal is already CEO Approved or CEO Rejected
   // Deal API response may have status as object or statusId as string
@@ -265,6 +271,36 @@ export function CEODealView({ dealId, onBack }: CEODealViewProps) {
                     {buyer.phone || "-"}
                   </div>
                 </div>
+                {(buyer as BuyerSeller).email && (
+                  <div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      Buyer Email
+                    </div>
+                    <div className="text-base text-gray-900 dark:text-white font-medium">
+                      {(buyer as BuyerSeller).email}
+                    </div>
+                  </div>
+                )}
+                {(buyer as BuyerSeller).nationality && (
+                  <div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      Nationality
+                    </div>
+                    <div className="text-base text-gray-900 dark:text-white font-medium">
+                      {(buyer as BuyerSeller).nationality?.name}
+                    </div>
+                  </div>
+                )}
+                {(buyer as BuyerSeller).source && (
+                  <div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      Source
+                    </div>
+                    <div className="text-base text-gray-900 dark:text-white font-medium">
+                      {(buyer as BuyerSeller).source?.name}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -294,6 +330,36 @@ export function CEODealView({ dealId, onBack }: CEODealViewProps) {
                     {seller.phone || "-"}
                   </div>
                 </div>
+                {(seller as BuyerSeller).email && (
+                  <div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      Seller Email
+                    </div>
+                    <div className="text-base text-gray-900 dark:text-white font-medium">
+                      {(seller as BuyerSeller).email}
+                    </div>
+                  </div>
+                )}
+                {(seller as BuyerSeller).nationality && (
+                  <div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      Nationality
+                    </div>
+                    <div className="text-base text-gray-900 dark:text-white font-medium">
+                      {(seller as BuyerSeller).nationality?.name}
+                    </div>
+                  </div>
+                )}
+                {(seller as BuyerSeller).source && (
+                  <div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      Source
+                    </div>
+                    <div className="text-base text-gray-900 dark:text-white font-medium">
+                      {(seller as BuyerSeller).source?.name}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -346,6 +412,39 @@ export function CEODealView({ dealId, onBack }: CEODealViewProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Media Files Section */}
+      {deal.media && deal.media.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Attached Documents</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {deal.media.map((mediaItem) => (
+                <div
+                  key={mediaItem.id}
+                  className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                      {mediaItem.mediaType.name}
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                    <div>File: {mediaItem.filename}</div>
+                    <div>Size: {(mediaItem.fileSize / 1024).toFixed(2)} KB</div>
+                    <div>Uploaded by: {mediaItem.uploadedBy.name}</div>
+                    <div>
+                      Date: {new Date(mediaItem.createdAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
