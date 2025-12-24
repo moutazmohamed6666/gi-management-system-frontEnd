@@ -588,4 +588,41 @@ export const dealsApi = {
       }
     );
   },
+
+  // Upload media file for a deal
+  uploadMedia: async (
+    dealId: string,
+    file: File,
+    mediaTypeId: string
+  ): Promise<{ message: string }> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("mediaTypeId", mediaTypeId);
+
+    const token =
+      typeof window !== "undefined"
+        ? sessionStorage.getItem("authToken")
+        : null;
+    const API_BASE_URL =
+      process.env.NEXT_PUBLIC_API_BASE_URL || "https://dev.shaheen-env.work";
+
+    const response = await fetch(`${API_BASE_URL}/api/media/deal/${dealId}`, {
+      method: "POST",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ message: "Upload failed" }));
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`
+      );
+    }
+
+    return await response.json();
+  },
 };

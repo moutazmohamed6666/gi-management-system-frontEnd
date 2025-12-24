@@ -12,7 +12,7 @@ interface UseDealSubmissionProps {
   defaultStatusId: string;
   originalCommissionValue: string | null;
   purchaseStatuses: FilterOption[];
-  onSave: () => void;
+  onSave: (createdDealId?: string) => void;
 }
 
 export function useDealSubmission({
@@ -172,6 +172,7 @@ export function useDealSubmission({
         toast.success("Deal Updated", {
           description: "Deal has been updated successfully!",
         });
+        onSave();
       } else {
         let payloadToSend: CreateDealRequest;
         if (isAgentCreating) {
@@ -181,12 +182,13 @@ export function useDealSubmission({
         } else {
           payloadToSend = payload;
         }
-        await dealsApi.createDeal(payloadToSend);
+        const response = await dealsApi.createDeal(payloadToSend);
         toast.success("Deal Created", {
           description: "Deal has been created successfully!",
         });
+        // Return the created deal ID for navigation
+        onSave(response.id);
       }
-      onSave();
     } catch (err) {
       const errorMessage =
         err instanceof Error

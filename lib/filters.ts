@@ -194,6 +194,12 @@ export const filtersApi = {
     const data = await apiClient<unknown>("/api/filters/bedrooms");
     return normalizeGenericOptions(data);
   },
+
+  // Get all media types
+  getMediaTypes: async (): Promise<FilterOption[]> => {
+    const data = await apiClient<unknown>("/api/filters/media-types");
+    return normalizeGenericOptions(data);
+  },
 };
 
 // Hook-like utility to fetch all filters at once (optional)

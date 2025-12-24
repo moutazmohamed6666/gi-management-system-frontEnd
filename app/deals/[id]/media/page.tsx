@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { AppLayout } from "@/components/AppLayout";
-import { DealForm } from "@/components/DealForm";
+import { DealMediaUpload } from "@/components/DealMediaUpload";
 
-export default function NewDealPage() {
+export default function DealMediaUploadPage() {
   const router = useRouter();
+  const params = useParams();
   const [isLoading, setIsLoading] = useState(true);
+
+  const dealId = params.id as string;
 
   useEffect(() => {
     const auth = sessionStorage.getItem("isAuthenticated");
@@ -22,16 +25,6 @@ export default function NewDealPage() {
     router.push("/deals");
   };
 
-  const handleSave = (createdDealId?: string) => {
-    if (createdDealId) {
-      // Navigate to media upload page for the newly created deal
-      router.push(`/deals/${createdDealId}/media`);
-    } else {
-      // Fallback to deals list if no ID provided (shouldn't happen for new deals)
-      router.push("/deals");
-    }
-  };
-
   if (isLoading) {
     return (
       <AppLayout>
@@ -42,9 +35,19 @@ export default function NewDealPage() {
     );
   }
 
+  if (!dealId) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-red-600">Invalid deal ID</div>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
-      <DealForm dealId={null} onBack={handleBack} onSave={handleSave} />
+      <DealMediaUpload dealId={dealId} onBack={handleBack} />
     </AppLayout>
   );
 }

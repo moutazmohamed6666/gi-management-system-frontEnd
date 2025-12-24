@@ -18,6 +18,7 @@ interface UseFiltersReturn {
   purchaseStatuses: FilterOption[];
   roles: FilterOption[];
   bedrooms: FilterOption[];
+  mediaTypes: FilterOption[];
   isLoading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -40,6 +41,7 @@ export function useFilters(): UseFiltersReturn {
     purchaseStatuses: [],
     roles: [],
     bedrooms: [],
+    mediaTypes: [],
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +65,7 @@ export function useFilters(): UseFiltersReturn {
         purchaseStatuses,
         roles,
         bedrooms,
+        mediaTypes,
       ] = await Promise.all([
         filtersApi.getDevelopers(),
         filtersApi.getAgents(),
@@ -77,6 +80,7 @@ export function useFilters(): UseFiltersReturn {
         filtersApi.getPurchaseStatuses(),
         filtersApi.getRoles(),
         filtersApi.getBedrooms(),
+        filtersApi.getMediaTypes(),
       ]);
 
       setFilters({
@@ -93,6 +97,7 @@ export function useFilters(): UseFiltersReturn {
         purchaseStatuses,
         roles,
         bedrooms,
+        mediaTypes,
       });
     } catch (err: unknown) {
       const message =

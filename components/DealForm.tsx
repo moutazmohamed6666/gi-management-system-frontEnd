@@ -22,7 +22,7 @@ import {
 interface DealFormProps {
   dealId: string | null;
   onBack: () => void;
-  onSave: () => void;
+  onSave: (createdDealId?: string) => void;
 }
 
 export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
