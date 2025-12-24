@@ -18,6 +18,7 @@ import { ApprovalStatusBadge } from "./finance/ApprovalStatusBadge";
 import { CommissionSummaryCards } from "./finance/CommissionSummaryCards";
 import { CommissionActionsCard } from "./finance/CommissionActionsCard";
 import { DealOverviewSection } from "./finance/DealOverviewSection";
+import { DealMediaSection } from "./finance/DealMediaSection";
 import type { DealOverview } from "./finance/DealOverviewForm";
 
 interface FinanceReviewProps {
@@ -606,6 +607,9 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
         dealOverview={dealOverview}
         onOverviewChange={handleOverviewChange}
       />
+
+      {/* Deal Media Files Section */}
+      {deal && <DealMediaSection dealId={deal.id} />}
 
       {/* {isDealApproved && (
         <>

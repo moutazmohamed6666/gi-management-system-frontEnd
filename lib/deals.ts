@@ -220,6 +220,30 @@ export interface Media {
   updatedAt: string;
 }
 
+// Deal Media File (from GET /api/media/deal/{dealId})
+export interface DealMediaFile {
+  id: string;
+  dealId: string;
+  mediaTypeId: string;
+  mediaType: {
+    id: string;
+    name: string;
+  };
+  filename: string;
+  originalFilename: string;
+  fileSize: number;
+  mimeType: string;
+  fileUrl: string;
+  uploadedById: string;
+  uploadedBy: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Deal type matching the actual API response
 // Supports both old structure (buyerSellerDetails, commissions array) and new structure (buyer/seller objects, agentCommissions)
 export interface Deal {
@@ -624,5 +648,10 @@ export const dealsApi = {
     }
 
     return await response.json();
+  },
+
+  // Get all media files for a deal
+  getDealMedia: async (dealId: string): Promise<DealMediaFile[]> => {
+    return apiClient<DealMediaFile[]>(`/api/media/deal/${dealId}`);
   },
 };
