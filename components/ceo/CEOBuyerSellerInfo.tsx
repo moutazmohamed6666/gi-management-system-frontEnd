@@ -1,11 +1,11 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import type { BuyerSellerDetail } from "@/lib/deals";
+import type { BuyerSeller } from "@/lib/deals";
 
 interface CEOBuyerSellerInfoProps {
-  buyer: BuyerSellerDetail | undefined;
-  seller: BuyerSellerDetail | undefined;
+  buyer: BuyerSeller | undefined;
+  seller: BuyerSeller | undefined;
 }
 
 export function CEOBuyerSellerInfo({
@@ -38,6 +38,16 @@ export function CEOBuyerSellerInfo({
                   {buyer.phone || "-"}
                 </div>
               </div>
+              {buyer.email && (
+                <div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    Buyer Email
+                  </div>
+                  <div className="text-base text-gray-900 dark:text-white font-medium">
+                    {buyer.email}
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -67,6 +77,16 @@ export function CEOBuyerSellerInfo({
                   {seller.phone || "-"}
                 </div>
               </div>
+              {seller.email && (
+                <div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    Seller Email
+                  </div>
+                  <div className="text-base text-gray-900 dark:text-white font-medium">
+                    {seller.email}
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

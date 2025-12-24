@@ -79,7 +79,7 @@ export function useDealLoader({ dealId, reset }: UseDealLoaderProps) {
           ? String(deal.size)
           : "";
 
-        // Extract buyer/seller nationality and source
+        // Extract buyer/seller nationality, source, and email
         const buyerNationalityId =
           (buyer as { nationality?: { id: string } })?.nationality?.id ||
           (buyer as { nationalityId?: string })?.nationalityId ||
@@ -88,6 +88,9 @@ export function useDealLoader({ dealId, reset }: UseDealLoaderProps) {
           (buyer as { source?: { id: string } })?.source?.id ||
           (buyer as { sourceId?: string })?.sourceId ||
           "";
+        const buyerEmail =
+          (buyer as { email?: string })?.email || "";
+        
         const sellerNationalityId =
           (seller as { nationality?: { id: string } })?.nationality?.id ||
           (seller as { nationalityId?: string })?.nationalityId ||
@@ -96,6 +99,8 @@ export function useDealLoader({ dealId, reset }: UseDealLoaderProps) {
           (seller as { source?: { id: string } })?.source?.id ||
           (seller as { sourceId?: string })?.sourceId ||
           "";
+        const sellerEmail =
+          (seller as { email?: string })?.email || "";
 
         // Extract agent commission
         let agentCommissionTypeId = "";
@@ -164,8 +169,9 @@ export function useDealLoader({ dealId, reset }: UseDealLoaderProps) {
           commissionTypeId: agent.commissionTypeId || "",
         }));
 
-        // Extract bedroom data
+        // Extract bedroom data - now nested in unit object
         const bedroomId = 
+          deal.unit?.bedroom?.id ||
           (deal as unknown as { bedroomId?: string })?.bedroomId || 
           (deal as unknown as { bedroomsId?: string })?.bedroomsId || // backward compatibility
           "";
@@ -200,14 +206,14 @@ export function useDealLoader({ dealId, reset }: UseDealLoaderProps) {
           // Seller
           sellerName: seller?.name || "",
           sellerPhone: seller?.phone || "",
-          sellerEmail: (seller as { email?: string })?.email || "",
+          sellerEmail: sellerEmail,
           sellerNationalityId: sellerNationalityId,
           sellerSourceId: sellerSourceId,
 
           // Buyer
           buyerName: buyer?.name || "",
           buyerPhone: buyer?.phone || "",
-          buyerEmail: (buyer as { email?: string })?.email || "",
+          buyerEmail: buyerEmail,
           buyerNationalityId: buyerNationalityId,
           buyerSourceId: buyerSourceId,
 

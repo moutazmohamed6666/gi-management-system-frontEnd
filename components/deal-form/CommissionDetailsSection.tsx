@@ -4,6 +4,7 @@ import { Control, Controller, FieldErrors, UseFormRegister, UseFormSetValue } fr
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Plus, X } from "lucide-react";
@@ -462,6 +463,23 @@ export function CommissionDetailsSection({
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Additional Notes Section */}
+          <div
+            className="pt-4 border-t"
+            style={{ borderColor: "var(--gi-green-40)" }}
+          >
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              Additional Notes
+            </h4>
+            <Textarea
+              id="notes"
+              {...register("notes")}
+              placeholder="Enter any additional notes or comments..."
+              rows={4}
+              className="resize-none"
+            />
           </div>
         </div>
       </CardContent>

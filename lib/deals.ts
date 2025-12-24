@@ -143,6 +143,7 @@ export interface BuyerSeller {
   id: string;
   name: string;
   phone: string;
+  email?: string; // Email field added in new API
   source?: Source;
   nationality?: Nationality;
   // Old structure fields (for backward compatibility)
@@ -180,11 +181,43 @@ export interface UnitType {
   name: string;
 }
 
+// Bedroom object for new API structure
+export interface Bedroom {
+  id: string;
+  name: string;
+}
+
 // Unit object for new API structure
 export interface Unit {
   number: string;
   type: UnitType;
   size: number;
+  bedroom?: Bedroom; // Bedroom nested in unit object
+}
+
+// Media Type object for new API structure
+export interface MediaType {
+  id: string;
+  name: string;
+}
+
+// User object for uploaded by field
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
+// Media object for new API structure
+export interface Media {
+  id: string;
+  mediaType: MediaType;
+  filename: string;
+  fileSize: number;
+  mimeType: string;
+  uploadedBy: User;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Deal type matching the actual API response
@@ -203,7 +236,7 @@ export interface Deal {
   bookingDate?: string;
   cfExpiry?: string;
   dealTypeId?: string;
-  numberOfDeal?: number;
+  numberOfDeal?: number | null;
   propertyName?: string;
   propertyTypeId?: string;
   unitNumber?: string;
@@ -235,6 +268,8 @@ export interface Deal {
   unit?: Unit;
   totalCommission?: TotalCommission;
   agentCommissions?: AgentCommissions;
+  downpayment?: number; // Downpayment field added in new API
+  media?: Media[]; // Media attachments array added in new API
   // Helper getters (computed from arrays)
   // buyer?: BuyerSellerDetail | null;
   // seller?: BuyerSellerDetail | null;

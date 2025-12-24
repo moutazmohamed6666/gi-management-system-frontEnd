@@ -1,8 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
-import { Textarea } from "./ui/textarea";
 import { useFilters } from "@/lib/useFilters";
 import { ArrowLeft, Save, Loader2, AlertCircle } from "lucide-react";
 import { DealPreviewModal } from "./DealPreviewModal";
@@ -279,37 +277,19 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
               validateEmail={validateEmail}
             />
 
-            {/* Row 4: Commission Details & Additional Notes */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <CommissionDetailsSection
-                control={control}
-                register={register}
-                errors={errors}
-                setValue={setValue}
-                commissionTypes={commissionTypes}
-                allAgents={allAgents}
-                watchedAdditionalAgents={watchedFields.additionalAgents || []}
-                watchedSalesValue={watchedFields.salesValue}
-                currentRole={currentRole}
-                filtersLoading={filtersLoading}
-              />
-
-              {/* Additional Notes */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Additional Notes</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Textarea
-                    id="notes"
-                    {...register("notes")}
-                    placeholder="Enter any additional notes or comments..."
-                    rows={10}
-                    className="resize-none"
-                  />
-                </CardContent>
-              </Card>
-            </div>
+            {/* Row 4: Commission Details */}
+            <CommissionDetailsSection
+              control={control}
+              register={register}
+              errors={errors}
+              setValue={setValue}
+              commissionTypes={commissionTypes}
+              allAgents={allAgents}
+              watchedAdditionalAgents={watchedFields.additionalAgents || []}
+              watchedSalesValue={watchedFields.salesValue}
+              currentRole={currentRole}
+              filtersLoading={filtersLoading}
+            />
           </div>
         </fieldset>
       </form>
