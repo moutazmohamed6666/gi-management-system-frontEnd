@@ -47,11 +47,42 @@ type DealApiResponse = Deal & {
   };
   agentCommissions?: {
     mainAgent?: {
+      id: string;
+      agent?: {
+        id: string;
+        name: string;
+        email: string;
+      };
+      commissionType?: {
+        id: string;
+        name: string;
+      };
+      commissionValue?: number;
+      expectedAmount?: number;
+      paidAmount?: number;
       status?: {
         id: string;
         name: string;
       };
+      currency?: string;
+      dueDate?: string | null;
+      paidDate?: string | null;
     };
+    additionalAgents?: Array<{
+      id: string;
+      agent?: {
+        id?: string;
+        name: string;
+        email?: string;
+        isInternal?: boolean;
+      };
+      commissionType?: {
+        id: string;
+        name: string;
+      };
+      commissionValue: number;
+      isInternal: boolean;
+    }>;
     totalExpected?: number;
     totalPaid?: number;
   };
@@ -626,6 +657,9 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
                       Buyer
                     </th>
                     <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
+                      Seller
+                    </th>
+                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
                       Agent
                     </th>
                     <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
@@ -633,6 +667,9 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
                     </th>
                     <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
                       Commission
+                    </th>
+                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
+                      Agent Commission
                     </th>
                     <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
                       Status
@@ -672,6 +709,11 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
                       </td>
                       <td className="py-3 px-4">
                         <div className="text-gray-900 dark:text-gray-100">
+                          {deal.seller?.name || "N/A"}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="text-gray-900 dark:text-gray-100">
                           {deal.agent?.name || "N/A"}
                         </div>
                       </td>
@@ -693,12 +735,9 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
                         <div className="text-gray-900 dark:text-gray-100">
                           {(() => {
                             const dealApi = deal as DealApiResponse;
-                            // Use agentCommissions.totalExpected if available, otherwise fallback to commission.total or totalCommission.commissionValue
+                            // Use totalCommission.commissionValue for total deal commission
                             const totalCommission =
-                              dealApi.agentCommissions?.totalExpected ??
-                              dealApi.totalCommission?.commissionValue ??
-                              deal.commission?.total ??
-                              null;
+                              dealApi.totalCommission?.commissionValue ?? null;
                             return totalCommission
                               ? `AED ${Number(
                                   totalCommission
@@ -706,45 +745,87 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
                               : "-";
                           })()}
                         </div>
+                      </td>
+                      <td className="py-3 px-4">
                         {(() => {
                           const dealApi = deal as DealApiResponse;
-                          const commissionStatus =
-                            dealApi.agentCommissions?.mainAgent?.status?.name;
-                          // Determine status based on paid vs expected
-                          let status: string | null = null;
-                          if (commissionStatus) {
-                            status = commissionStatus;
-                          } else if (
-                            dealApi.agentCommissions?.totalExpected &&
-                            dealApi.agentCommissions?.totalPaid !== undefined
-                          ) {
-                            const expected =
-                              dealApi.agentCommissions.totalExpected;
-                            const paid =
-                              dealApi.agentCommissions.totalPaid || 0;
-                            if (paid >= expected) {
-                              status = "Paid";
-                            } else if (paid > 0) {
-                              status = "Partially Paid";
-                            } else {
-                              status = "Pending";
-                            }
-                          } else if (deal.commission?.status) {
-                            status = deal.commission.status;
-                          }
-                          return status ? (
-                            <div
-                              className={`text-white inline-block px-2 py-0.5 rounded text-xs mt-1 ${
-                                status === "Paid"
-                                  ? "bg-green-600 dark:bg-green-500"
-                                  : status === "Partially Paid"
-                                  ? "bg-orange-600 dark:bg-orange-500"
-                                  : "bg-gray-600 dark:bg-gray-500"
-                              }`}
-                            >
-                              {status}
+                          const mainAgent = dealApi.agentCommissions?.mainAgent;
+                          const additionalAgents =
+                            dealApi.agentCommissions?.additionalAgents || [];
+                          const totalExpected =
+                            dealApi.agentCommissions?.totalExpected;
+                          const totalPaid =
+                            dealApi.agentCommissions?.totalPaid || 0;
+
+                          return (
+                            <div className="space-y-1">
+                              {/* Main Agent Commission */}
+                              {mainAgent && (
+                                <div className="text-sm">
+                                  <div className="text-gray-900 dark:text-gray-100 font-medium">
+                                    Main: AED{" "}
+                                    {Number(
+                                      mainAgent.expectedAmount || 0
+                                    ).toLocaleString()}
+                                  </div>
+                                  {mainAgent.status?.name && (
+                                    <span
+                                      className={`text-white inline-block px-2 py-0.5 rounded text-xs ${
+                                        mainAgent.status.name === "Paid"
+                                          ? "bg-green-600 dark:bg-green-500"
+                                          : mainAgent.status.name ===
+                                            "Partially Paid"
+                                          ? "bg-orange-600 dark:bg-orange-500"
+                                          : "bg-gray-600 dark:bg-gray-500"
+                                      }`}
+                                    >
+                                      {mainAgent.status.name}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Additional Agents */}
+                              {additionalAgents.length > 0 && (
+                                <div className="text-xs text-gray-600 dark:text-gray-400">
+                                  +{additionalAgents.length} additional agent
+                                  {additionalAgents.length > 1 ? "s" : ""}
+                                  {additionalAgents.map((addAgent, idx) => (
+                                    <div key={idx} className="ml-2">
+                                      • {addAgent.agent?.name || "External"}:{" "}
+                                      {addAgent.commissionType?.name ===
+                                      "Percentage"
+                                        ? `${addAgent.commissionValue}%`
+                                        : `AED ${Number(
+                                            addAgent.commissionValue
+                                          ).toLocaleString()}`}
+                                      {addAgent.isInternal !== undefined && (
+                                        <span className="ml-1 text-xs">
+                                          (
+                                          {addAgent.isInternal
+                                            ? "Internal"
+                                            : "External"}
+                                          )
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Total Summary */}
+                              {totalExpected !== undefined && (
+                                <div className="text-xs text-gray-700 dark:text-gray-300 font-semibold pt-1 border-t border-gray-200 dark:border-gray-700">
+                                  Total: AED{" "}
+                                  {Number(totalExpected).toLocaleString()}
+                                  {totalPaid > 0 &&
+                                    ` (Paid: AED ${Number(
+                                      totalPaid
+                                    ).toLocaleString()})`}
+                                </div>
+                              )}
                             </div>
-                          ) : null;
+                          );
                         })()}
                       </td>
                       <td className="py-3 px-4">
