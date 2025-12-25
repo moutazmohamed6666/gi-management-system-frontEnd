@@ -88,7 +88,9 @@ export function useDealSubmission({
         unitTypeId: data.unitTypeId,
         bedroomId: data.bedroomId || undefined,
         size: parseFloat(data.size) || 0,
-        downpayment: data.downpayment ? parseFloat(data.downpayment) : undefined,
+        downpayment: data.downpayment
+          ? parseFloat(data.downpayment)
+          : undefined,
         buyer: {
           name: data.buyerName,
           phone: data.buyerPhone,
@@ -105,9 +107,18 @@ export function useDealSubmission({
         },
         agentCommissionTypeId: (() => {
           if (currentRole === "agent") {
+            // If agentCommissionTypeId is set in form data (e.g., override type), use it
+            // Otherwise, fall back to the user's default commission type from sessionStorage
             const loginCommissionType =
               sessionStorage.getItem("userCommissionType");
-            return loginCommissionType || data.agentCommissionTypeId || undefined;
+            const finalTypeId =
+              data.agentCommissionTypeId || loginCommissionType || undefined;
+            console.log("Agent commission type ID being sent:", {
+              formData: data.agentCommissionTypeId,
+              sessionStorage: loginCommissionType,
+              final: finalTypeId,
+            });
+            return finalTypeId;
           }
           return data.agentCommissionTypeId || undefined;
         })(),
@@ -132,27 +143,28 @@ export function useDealSubmission({
           }
           return data.purchaseStatusId || undefined;
         })(),
-        additionalAgents: data.additionalAgents && data.additionalAgents.length > 0
-          ? data.additionalAgents.map(agent => 
-              agent.type === "internal"
-                ? {
-                    agentId: agent.agentId || "",
-                    commissionTypeId: agent.commissionTypeId || "",
-                    commissionValue: agent.commissionValue
-                      ? parseFloat(agent.commissionValue)
-                      : 0,
-                    isInternal: true,
-                  }
-                : {
-                    externalAgentName: agent.agencyName || "",
-                    commissionTypeId: agent.commissionTypeId || "",
-                    commissionValue: agent.commissionValue
-                      ? parseFloat(agent.commissionValue)
-                      : 0,
-                    isInternal: false,
-                  }
-            )
-          : undefined,
+        additionalAgents:
+          data.additionalAgents && data.additionalAgents.length > 0
+            ? data.additionalAgents.map((agent) =>
+                agent.type === "internal"
+                  ? {
+                      agentId: agent.agentId || "",
+                      commissionTypeId: agent.commissionTypeId || "",
+                      commissionValue: agent.commissionValue
+                        ? parseFloat(agent.commissionValue)
+                        : 0,
+                      isInternal: true,
+                    }
+                  : {
+                      externalAgentName: agent.agencyName || "",
+                      commissionTypeId: agent.commissionTypeId || "",
+                      commissionValue: agent.commissionValue
+                        ? parseFloat(agent.commissionValue)
+                        : 0,
+                      isInternal: false,
+                    }
+              )
+            : undefined,
       };
 
       const payload: CreateDealRequest = isAgentCreating
@@ -226,4 +238,3 @@ export function useDealSubmission({
     handlePreviewClose,
   };
 }
-

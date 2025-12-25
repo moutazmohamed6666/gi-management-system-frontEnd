@@ -1,12 +1,24 @@
 "use client";
 
-import { Control, Controller, FieldErrors, UseFormRegister, UseFormSetValue } from "react-hook-form";
+import {
+  Control,
+  Controller,
+  FieldErrors,
+  UseFormRegister,
+  UseFormSetValue,
+} from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { Plus, X } from "lucide-react";
 import { AdditionalAgent } from "@/lib/hooks/useDealFormData";
 
@@ -70,7 +82,6 @@ export function CommissionDetailsSection({
   currentRole,
   filtersLoading,
 }: CommissionDetailsSectionProps) {
-  
   const addAdditionalAgent = () => {
     const newAgent: AdditionalAgent = {
       type: "external",
@@ -93,7 +104,11 @@ export function CommissionDetailsSection({
     });
   };
 
-  const updateAdditionalAgent = (index: number, field: keyof AdditionalAgent, value: string) => {
+  const updateAdditionalAgent = (
+    index: number,
+    field: keyof AdditionalAgent,
+    value: string
+  ) => {
     const updated = [...watchedAdditionalAgents];
     updated[index] = { ...updated[index], [field]: value };
     setValue("additionalAgents", updated, {
@@ -178,7 +193,10 @@ export function CommissionDetailsSection({
                     type="text"
                     {...register("totalCommissionValue", {
                       onChange: (e) => {
-                        const numericValue = e.target.value.replace(/[^0-9]/g, "");
+                        const numericValue = e.target.value.replace(
+                          /[^0-9]/g,
+                          ""
+                        );
                         setValue("totalCommissionValue", numericValue, {
                           shouldValidate: true,
                         });
@@ -209,6 +227,7 @@ export function CommissionDetailsSection({
                   render={({ field }) => {
                     const loginCommissionType =
                       sessionStorage.getItem("userCommissionType");
+                    // Use field.value if it exists (including programmatic updates), otherwise fallback to loginCommissionType
                     const effectiveValue =
                       currentRole === "agent"
                         ? field.value || loginCommissionType || ""
@@ -218,6 +237,7 @@ export function CommissionDetailsSection({
                       <Select
                         value={effectiveValue}
                         onValueChange={(value) => {
+                          // Allow programmatic changes but prevent manual user changes for agents
                           if (currentRole !== "agent") {
                             field.onChange(value);
                           }
@@ -258,17 +278,23 @@ export function CommissionDetailsSection({
                       if (
                         numericValue &&
                         numericValue.trim() !== "" &&
-                        commissionTypes.length > 0
+                        commissionTypes.length > 0 &&
+                        currentRole === "agent"
                       ) {
                         const overrideType = commissionTypes.find((type) =>
                           type.name.toLowerCase().includes("override")
                         );
 
+                        console.log("Setting override type:", overrideType);
                         if (overrideType) {
                           setValue("agentCommissionTypeId", overrideType.id, {
                             shouldValidate: true,
                             shouldDirty: true,
                           });
+                          console.log(
+                            "Override type ID set to:",
+                            overrideType.id
+                          );
                         }
                       }
                     },
@@ -303,7 +329,8 @@ export function CommissionDetailsSection({
 
             {watchedAdditionalAgents.length === 0 ? (
               <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
-                No additional agents added. Click "Add Agent" to include another agent.
+                No additional agents added. Click &quot;Add Agent&quot; to
+                include another agent.
               </div>
             ) : (
               <div className="space-y-4">
@@ -398,7 +425,11 @@ export function CommissionDetailsSection({
                           id={`agencyName-${index}`}
                           value={agent.agencyName}
                           onChange={(e) =>
-                            updateAdditionalAgent(index, "agencyName", e.target.value)
+                            updateAdditionalAgent(
+                              index,
+                              "agencyName",
+                              e.target.value
+                            )
                           }
                           placeholder="Enter agency or agent name"
                           className="mt-1"
@@ -414,7 +445,11 @@ export function CommissionDetailsSection({
                       <Select
                         value={agent.commissionTypeId}
                         onValueChange={(value) =>
-                          updateAdditionalAgent(index, "commissionTypeId", value)
+                          updateAdditionalAgent(
+                            index,
+                            "commissionTypeId",
+                            value
+                          )
                         }
                         disabled={filtersLoading}
                       >
@@ -441,8 +476,15 @@ export function CommissionDetailsSection({
                         type="text"
                         value={agent.commissionValue}
                         onChange={(e) => {
-                          const numericValue = e.target.value.replace(/[^0-9]/g, "");
-                          updateAdditionalAgent(index, "commissionValue", numericValue);
+                          const numericValue = e.target.value.replace(
+                            /[^0-9]/g,
+                            ""
+                          );
+                          updateAdditionalAgent(
+                            index,
+                            "commissionValue",
+                            numericValue
+                          );
                         }}
                         placeholder="Enter commission value"
                         className="mt-1"
@@ -451,10 +493,13 @@ export function CommissionDetailsSection({
                         <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded text-sm">
                           <p className="text-blue-900 dark:text-blue-100 font-semibold">
                             Commission: AED{" "}
-                            {parseFloat(agent.commissionValue).toLocaleString("en-US", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
+                            {parseFloat(agent.commissionValue).toLocaleString(
+                              "en-US",
+                              {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              }
+                            )}
                           </p>
                         </div>
                       )}

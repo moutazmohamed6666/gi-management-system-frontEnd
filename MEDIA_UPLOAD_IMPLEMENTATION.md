@@ -1,6 +1,7 @@
 # Media Upload Implementation
 
 ## Overview
+
 This document describes the implementation of the media upload feature for deals, which allows users to upload files organized by media type after creating a deal.
 
 ## Changes Made
@@ -8,15 +9,18 @@ This document describes the implementation of the media upload feature for deals
 ### 1. Media Types Filter Integration
 
 #### `lib/filters.ts`
+
 - Added `getMediaTypes()` function to fetch media types from `/api/filters/media-types`
 
 #### `lib/useFilters.ts`
+
 - Added `mediaTypes` to the `UseFiltersReturn` interface
 - Updated the hook to fetch and return media types along with other filters
 
 ### 2. Media Upload API
 
 #### `lib/deals.ts`
+
 - Added `uploadMedia()` function to upload files to `/api/media/deal/{dealId}`
 - Uses FormData to send file and mediaTypeId
 - Handles authentication via Bearer token
@@ -24,6 +28,7 @@ This document describes the implementation of the media upload feature for deals
 ### 3. Media Upload Component
 
 #### `components/DealMediaUpload.tsx`
+
 - New component for uploading media files
 - Features:
   - Tabs for each media type (dynamically generated from API)
@@ -38,6 +43,7 @@ This document describes the implementation of the media upload feature for deals
 ### 4. Media Upload Page Route
 
 #### `app/deals/[id]/media/page.tsx`
+
 - New page route at `/deals/{dealId}/media`
 - Renders the `DealMediaUpload` component
 - Includes authentication check
@@ -46,14 +52,17 @@ This document describes the implementation of the media upload feature for deals
 ### 5. Deal Creation Flow Update
 
 #### `lib/hooks/useDealSubmission.ts`
+
 - Modified `onSave` callback to accept optional `createdDealId` parameter
 - Returns the created deal ID from the API response
 - Passes the ID to the callback for navigation
 
 #### `components/DealForm.tsx`
+
 - Updated `DealFormProps` interface to accept `createdDealId` in `onSave` callback
 
 #### `app/deals/new/page.tsx`
+
 - Updated `handleSave` to navigate to media upload page after deal creation
 - Route: `/deals/{createdDealId}/media`
 
@@ -83,17 +92,20 @@ This document describes the implementation of the media upload feature for deals
 ## Technical Details
 
 ### File Upload
+
 - Uses native `FormData` API for multipart uploads
 - Supports multiple file selection
 - File size is displayed in human-readable format
 - Upload progress is tracked per file
 
 ### State Management
+
 - Files are organized by media type ID
 - Each file has a status: pending, uploading, success, or error
 - Error messages are displayed for failed uploads
 
 ### UI/UX
+
 - Drag & drop zone with visual feedback
 - Tab-based organization by media type
 - Badge showing file count per media type
@@ -134,4 +146,3 @@ Potential improvements for future iterations:
 - [ ] Authentication is required
 - [ ] File size is displayed correctly
 - [ ] Status icons update correctly
-
