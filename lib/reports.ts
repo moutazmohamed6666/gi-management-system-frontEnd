@@ -336,15 +336,21 @@ export const reportsApi = {
         const errorData = await response
           .json()
           .catch(() => ({ message: "Export failed" }));
-        throw new Error(errorData.message || `Export failed: ${response.status}`);
+        throw new Error(
+          errorData.message || `Export failed: ${response.status}`
+        );
       }
 
       // Get the filename from Content-Disposition header or generate one
       const contentDisposition = response.headers.get("Content-Disposition");
-      let filename = `report_${params.report_type || "all"}_${new Date().toISOString().split("T")[0]}`;
-      
+      let filename = `report_${params.report_type || "all"}_${
+        new Date().toISOString().split("T")[0]
+      }`;
+
       if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        const filenameMatch = contentDisposition.match(
+          /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
+        );
         if (filenameMatch && filenameMatch[1]) {
           filename = filenameMatch[1].replace(/['"]/g, "");
         }
@@ -384,4 +390,3 @@ export const reportsApi = {
     return reportsApi.exportReport({ ...params, format: "pdf" });
   },
 };
-

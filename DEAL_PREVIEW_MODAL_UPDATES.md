@@ -1,6 +1,7 @@
 # Deal Preview Modal Updates
 
 ## Overview
+
 Updated the Review Deal Details modal to show comprehensive commission details with clear separation between deal commission and agent commissions.
 
 ## Changes Made
@@ -8,18 +9,22 @@ Updated the Review Deal Details modal to show comprehensive commission details w
 ### 1. Updated `DealPreviewData` Interface (DealPreviewModal.tsx)
 
 **Removed:**
+
 - `commissionRate: string` (generic field)
 - `commissionType: string` (generic field)
 - `totalCommissionValue?: string` (generic field)
 - `additionalAgentCommission?: string` (simplified field)
 
 **Added:**
+
 - **Deal Commission Fields:**
+
   - `dealCommissionRate: string` - The rate/value for the overall deal commission
   - `dealCommissionType: string` - Type of commission for the deal (Fixed/Percentage)
   - `totalDealCommission?: string` - Total commission value for the deal
 
 - **Main Agent Commission Fields:**
+
   - `mainAgentName?: string` - Name of the main agent
   - `mainAgentCommissionRate?: string` - Commission rate/value for main agent
   - `mainAgentCommissionType?: string` - Type of commission for main agent
@@ -35,23 +40,27 @@ Updated the Review Deal Details modal to show comprehensive commission details w
 **Restructured Commission Display:**
 
 1. **Financial Summary Section** - Simplified to show only:
+
    - Sales Value
    - Purchase Value (if applicable)
 
 2. **Deal Commission Section** (NEW) - Blue/Indigo theme:
+
    - Commission Type
    - Commission Rate/Value
    - Total Deal Commission (highlighted)
 
 3. **Agent Commissions Section** (NEW) - Separated into:
-   
+
    **Main Agent Subsection** (Emerald theme):
+
    - Agent Name
    - Commission Type
    - Commission Rate/Value
    - Expected Commission (highlighted)
-   
+
    **Additional Agent Subsection** (Purple theme):
+
    - Type (Internal/External)
    - Agent Name
    - Commission Type
@@ -63,6 +72,7 @@ Updated the Review Deal Details modal to show comprehensive commission details w
 **Modified `getPreviewData()` function:**
 
 - Added helper functions:
+
   - `getDealCommissionTypeName()` - Gets commission type for the deal
   - `getAgentCommissionTypeName()` - Gets commission type for main agent
   - `getAdditionalAgentCommissionTypeName()` - Gets commission type for additional agent
@@ -76,11 +86,13 @@ Updated the Review Deal Details modal to show comprehensive commission details w
 ## Visual Improvements
 
 1. **Color-Coded Sections:**
+
    - Deal Commission: Blue/Indigo gradient
    - Main Agent: Emerald/Green gradient
    - Additional Agent: Purple gradient
 
 2. **Clear Hierarchy:**
+
    - Section headers with proper font weights
    - Subsection headers for agent types
    - Highlighted totals with borders and bold text
@@ -93,10 +105,12 @@ Updated the Review Deal Details modal to show comprehensive commission details w
 ## Benefits
 
 1. **Clarity:** Users can now clearly see the difference between:
+
    - Total deal commission (what the company receives)
    - Agent commissions (what agents will receive)
 
 2. **Transparency:** All commission details are visible before submission:
+
    - Commission types for each party
    - Rates/values for each commission
    - Expected amounts for agents
@@ -106,11 +120,13 @@ Updated the Review Deal Details modal to show comprehensive commission details w
 ## Testing Recommendations
 
 1. Test with deals that have:
+
    - Only main agent (no additional agent)
    - Main agent + internal additional agent
    - Main agent + external additional agent
 
 2. Verify commission calculations display correctly for:
+
    - Fixed commission types
    - Percentage-based commission types
    - Mixed commission types (deal vs agent)
@@ -123,4 +139,3 @@ Updated the Review Deal Details modal to show comprehensive commission details w
 - All commission fields are optional to handle various deal scenarios
 - Currency formatting is consistent using the existing `formatCurrency` function
 - Dark mode support is maintained throughout all new sections
-

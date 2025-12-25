@@ -41,7 +41,10 @@ export function useCEODashboardMetrics({
       filteredDeals
         .filter((d) => d.statusId !== "Closed")
         .reduce((sum, d) => {
-          const value = typeof d.dealValue === 'string' ? parseFloat(d.dealValue) : d.dealValue;
+          const value =
+            typeof d.dealValue === "string"
+              ? parseFloat(d.dealValue)
+              : d.dealValue;
           return sum + (value || 0);
         }, 0)
     );
@@ -65,13 +68,13 @@ export function useCEODashboardMetrics({
   // Calculate average deal size
   const avgDealSize = useMemo(() => {
     return filteredDeals.length > 0
-      ? filteredDeals.reduce(
-          (sum, d) => {
-            const value = typeof d.dealValue === 'string' ? parseFloat(d.dealValue) : d.dealValue;
-            return sum + (value || 0);
-          },
-          0
-        ) / filteredDeals.length
+      ? filteredDeals.reduce((sum, d) => {
+          const value =
+            typeof d.dealValue === "string"
+              ? parseFloat(d.dealValue)
+              : d.dealValue;
+          return sum + (value || 0);
+        }, 0) / filteredDeals.length
       : 0;
   }, [filteredDeals]);
 
@@ -138,4 +141,3 @@ export function useCEODashboardMetrics({
     managerPerformance,
   };
 }
-

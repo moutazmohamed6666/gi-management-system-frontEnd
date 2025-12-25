@@ -113,7 +113,10 @@ export function useDealFormData() {
   // Watch fields for conditional rendering and filtering
   const watchedFields = {
     developerId: useWatch({ control: form.control, name: "developerId" }),
-    additionalAgents: useWatch({ control: form.control, name: "additionalAgents" }),
+    additionalAgents: useWatch({
+      control: form.control,
+      name: "additionalAgents",
+    }),
     salesValue: useWatch({ control: form.control, name: "salesValue" }),
     bookingDate: useWatch({ control: form.control, name: "bookingDate" }),
   };
@@ -123,4 +126,3 @@ export function useDealFormData() {
     watchedFields,
   };
 }
-

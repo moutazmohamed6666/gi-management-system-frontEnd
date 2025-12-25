@@ -1,6 +1,7 @@
 # Implementation Summary: Deal Form & Reports Enhancements
 
 ## Overview
+
 This document summarizes the changes made to implement new features for the Create Deal flow (Agent role) and Finance Reports tab.
 
 ## Changes Implemented
@@ -8,15 +9,18 @@ This document summarizes the changes made to implement new features for the Crea
 ### 1. API Layer Updates
 
 #### `lib/filters.ts`
+
 - **Added**: `getBedrooms()` API function to fetch bedroom options from `/api/filters/bedrooms`
 - **Updated**: `fetchAllFilters()` to include bedrooms in the batch fetch
 
 #### `lib/useFilters.ts`
+
 - **Added**: `bedrooms` to the `UseFiltersReturn` interface
 - **Updated**: State initialization and fetch logic to include bedrooms
 - **Result**: Bedrooms filter is now available throughout the application
 
 #### `lib/deals.ts`
+
 - **Updated**: `BuyerSellerInput` interface to include optional `email` field
 - **Updated**: `CreateDealRequest` interface to include:
   - `purchaseValue?: number` - New purchase value field
@@ -25,6 +29,7 @@ This document summarizes the changes made to implement new features for the Crea
 - **Note**: `additionalAgents` already supports array structure for multiple external agents
 
 #### `lib/reports.ts`
+
 - **Updated**: `ReportsAnalyticsParams` interface to include `purchase_status_id?: string`
 - **Updated**: `getAnalytics()` function to pass purchase_status_id in query params
 
@@ -33,16 +38,19 @@ This document summarizes the changes made to implement new features for the Crea
 ### 2. Create Deal Form Updates (`components/DealForm.tsx`)
 
 #### A. Purchase Status Field (Now Visible for Agents)
+
 - **Changed**: Removed role-based hiding (`currentRole !== "agent"`)
 - **Result**: Purchase Status dropdown is now visible and editable for all roles including agents
 
 #### B. Purchase Value Field
+
 - **Added**: New numeric input field for "Purchase Value"
 - **Location**: Commission Details section, displayed alongside Sales Value in a 2-column grid
 - **Validation**: Numeric only, optional field
 - **Payload**: Included in `basePayload.purchaseValue`
 
 #### C. Bedrooms Dropdown
+
 - **Added**: New dropdown in Unit Details section
 - **Data Source**: Fetched from `api/filters/bedrooms` via `useFilters` hook
 - **Location**: Unit Details card, 4-column grid layout
@@ -50,14 +58,16 @@ This document summarizes the changes made to implement new features for the Crea
 - **Payload**: Included in `basePayload.bedroomsId`
 
 #### D. Buyer/Seller Email Fields (Optional)
+
 - **Added**: Email input fields for both buyer and seller
 - **Validation**: Email format validation (only if value provided)
-- **Location**: 
+- **Location**:
   - Seller email: After seller phone in Seller Information card
   - Buyer email: After buyer phone in Buyer Information card
 - **Payload**: Included in `buyer.email` and `seller.email` (undefined if empty)
 
 #### E. External Agents (Multi-Support)
+
 - **Implementation**: Backend-ready array structure maintained
 - **Current UI**: Single additional agent (internal or external)
 - **Payload**: Sends as array with one item
@@ -65,6 +75,7 @@ This document summarizes the changes made to implement new features for the Crea
 - **Backend Compatibility**: Array structure ensures backend can accept multiple agents when UI is enhanced
 
 #### F. Preview Modal
+
 - **Created**: New component `components/DealPreviewModal.tsx`
 - **Trigger**: Shown before final submission when creating a new deal (not when editing)
 - **Features**:
@@ -82,10 +93,11 @@ This document summarizes the changes made to implement new features for the Crea
 ### 3. Finance Reports Tab Updates (`components/Reports.tsx`)
 
 #### Purchase Status Filter
+
 - **Added**: New "Purchase Status" dropdown filter
 - **Location**: Filters section, displayed in 6-column grid layout
 - **Options**: "All Statuses" + all purchase statuses from API
-- **Integration**: 
+- **Integration**:
   - Filter value stored in `selectedPurchaseStatus` state
   - Passed to `reportsApi.getAnalytics()` as `purchase_status_id`
   - Included in `fetchAnalytics` dependency array for auto-refresh
@@ -96,12 +108,13 @@ This document summarizes the changes made to implement new features for the Crea
 ## Form Data Type Updates
 
 ### `DealFormData` Interface
+
 ```typescript
 // Added/Modified fields:
-bedroomsId: string;           // Changed from "bedrooms" to "bedroomsId"
-purchaseValue: string;        // New field
-sellerEmail: string;          // New field
-buyerEmail: string;           // New field
+bedroomsId: string; // Changed from "bedrooms" to "bedroomsId"
+purchaseValue: string; // New field
+sellerEmail: string; // New field
+buyerEmail: string; // New field
 ```
 
 ---
@@ -109,6 +122,7 @@ buyerEmail: string;           // New field
 ## Payload Changes
 
 ### Create Deal Payload (`basePayload`)
+
 ```typescript
 {
   // Existing fields...
@@ -137,11 +151,13 @@ buyerEmail: string;           // New field
 ## Validation Rules
 
 ### Email Validation
+
 - **Function**: `validateEmail(email: string)`
 - **Rule**: Optional field - only validates format if value is provided
 - **Regex**: `/^[^\s@]+@[^\s@]+\.[^\s@]+$/`
 
 ### Numeric Fields
+
 - **Purchase Value**: Numeric only (strips non-digits)
 - **Sales Value**: Numeric only (existing)
 - **Bedrooms**: Dropdown selection (no manual input)
@@ -151,6 +167,7 @@ buyerEmail: string;           // New field
 ## UI/UX Enhancements
 
 ### Preview Modal Design
+
 - **Layout**: Responsive, max-width 4xl, scrollable
 - **Color Coding**:
   - Green gradient: Financial summary section
@@ -158,12 +175,13 @@ buyerEmail: string;           // New field
   - Green background: Seller information
   - Purple background: Additional agent
   - Gray background: General information sections
-- **Accessibility**: 
+- **Accessibility**:
   - Dialog component with proper focus management
   - Escape key to close
   - Clear action buttons
 
 ### Form Layout Adjustments
+
 - **Unit Details**: Now 4-column grid (was 3-column for agents/finance)
 - **Commission Details**: Sales Value and Purchase Value in 2-column grid
 - **Buyer/Seller**: Email field added between phone and nationality
@@ -173,23 +191,28 @@ buyerEmail: string;           // New field
 ## Backend Assumptions & Notes
 
 ### 1. Bedrooms API Endpoint
+
 - **Assumption**: `/api/filters/bedrooms` exists and returns standard filter format
 - **Expected Response**: `[{ id: string, name: string }, ...]`
 
 ### 2. Purchase Value Field
+
 - **Assumption**: Backend accepts `purchaseValue` as optional numeric field in deal payload
 - **Field Type**: Number (parsed from string input)
 
 ### 3. Email Fields
+
 - **Assumption**: Backend accepts `email` in buyer/seller objects
 - **Field Type**: String (optional)
 
 ### 4. Multiple External Agents
+
 - **Current**: Payload sends `additionalAgents` as array with single item
 - **Future**: UI can be enhanced to add/remove multiple external agents
 - **Backend**: Should accept array of `AdditionalAgent` objects
 
 ### 5. Purchase Status in Reports
+
 - **Assumption**: Backend `/api/reports/analytics` endpoint accepts `purchase_status_id` query parameter
 - **Note**: If not supported, backend team needs to add this filter
 
@@ -198,18 +221,21 @@ buyerEmail: string;           // New field
 ## Testing Recommendations
 
 ### Unit Tests (if test suite exists)
+
 1. Email validation function
 2. Preview data transformation logic
 3. Form submission with new fields
 4. Reports filter state management
 
 ### Integration Tests
+
 1. Create deal flow with all new fields populated
 2. Preview modal display and confirmation
 3. Reports filtering with purchase status
 4. Bedrooms dropdown population from API
 
 ### Manual Testing Checklist
+
 - [ ] Agent can see and select Purchase Status
 - [ ] Purchase Value accepts numeric input
 - [ ] Bedrooms dropdown loads options from API
@@ -238,12 +264,15 @@ buyerEmail: string;           // New field
 ## Migration Notes
 
 ### Breaking Changes
+
 - None. All changes are additive and backward-compatible.
 
 ### Optional Fields
+
 All new fields are optional in the payload, ensuring existing functionality is not disrupted.
 
 ### Default Values
+
 - Email fields: Empty string (sent as `undefined` in payload)
 - Purchase Value: Empty string (sent as `undefined` in payload)
 - Bedrooms: Empty string (sent as `undefined` in payload)
@@ -253,7 +282,9 @@ All new fields are optional in the payload, ensuring existing functionality is n
 ## Future Enhancements
 
 ### Multi-External Agents UI
+
 To fully implement multi-external agent support:
+
 1. Change form state to support array of external agents
 2. Add UI for adding/removing external agent entries (chip list or repeated rows)
 3. Update form validation for array
@@ -261,6 +292,7 @@ To fully implement multi-external agent support:
 5. Payload already supports this structure
 
 ### Preview Modal Enhancements
+
 - Add print functionality
 - Add "Save as Draft" option
 - Show calculated commission breakdown
@@ -280,4 +312,3 @@ To fully implement multi-external agent support:
 ## Conclusion
 
 All requirements have been successfully implemented with minimal disruption to existing behavior. The code follows existing patterns, reuses components, and maintains backward compatibility. The preview modal enhances user experience by allowing review before submission, and all new fields are properly validated and included in API payloads.
-

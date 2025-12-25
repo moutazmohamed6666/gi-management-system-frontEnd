@@ -21,19 +21,20 @@ import {
 
 ## Hooks Overview
 
-| Hook | Purpose | Key Returns |
-|------|---------|-------------|
-| `useDealFormData` | Form state management | `form`, `watchedFields` |
-| `useDealFormDefaults` | Auto-fill defaults | `defaultStatusId`, `originalCommissionValue` |
-| `useDealLoader` | Load existing deal | `dealError`, `loadedDealId`, `retryLoadDeal` |
-| `useDealSubmission` | Handle submission | `isSubmitting`, `handleFormSubmit`, preview handlers |
-| `useDealPreview` | Prepare preview data | `previewData` (formatted for display) |
-| `useDealValidation` | Validation functions | `validatePhone`, `validateEmail`, `isValidUuid` |
-| `useDealFormHelpers` | Utility functions | `filteredProjects`, `getCurrentRole` |
+| Hook                  | Purpose               | Key Returns                                          |
+| --------------------- | --------------------- | ---------------------------------------------------- |
+| `useDealFormData`     | Form state management | `form`, `watchedFields`                              |
+| `useDealFormDefaults` | Auto-fill defaults    | `defaultStatusId`, `originalCommissionValue`         |
+| `useDealLoader`       | Load existing deal    | `dealError`, `loadedDealId`, `retryLoadDeal`         |
+| `useDealSubmission`   | Handle submission     | `isSubmitting`, `handleFormSubmit`, preview handlers |
+| `useDealPreview`      | Prepare preview data  | `previewData` (formatted for display)                |
+| `useDealValidation`   | Validation functions  | `validatePhone`, `validateEmail`, `isValidUuid`      |
+| `useDealFormHelpers`  | Utility functions     | `filteredProjects`, `getCurrentRole`                 |
 
 ## Usage Examples
 
 ### Basic Setup
+
 ```typescript
 function MyDealForm() {
   // 1. Get form instance
@@ -75,6 +76,7 @@ function MyDealForm() {
 ```
 
 ### Validation
+
 ```typescript
 function MyForm() {
   const { validatePhone, validateEmail } = useDealValidation();
@@ -82,8 +84,7 @@ function MyForm() {
   return (
     <input
       {...register("buyerPhone", {
-        validate: (value) => 
-          validatePhone(value) || "Invalid phone number"
+        validate: (value) => validatePhone(value) || "Invalid phone number",
       })}
     />
   );
@@ -91,10 +92,11 @@ function MyForm() {
 ```
 
 ### Loading Existing Deal
+
 ```typescript
 function EditDealForm({ dealId }: { dealId: string }) {
   const { form } = useDealFormData();
-  
+
   const { dealError, loadedDealId, retryLoadDeal } = useDealLoader({
     dealId,
     reset: form.reset,
@@ -118,11 +120,12 @@ function EditDealForm({ dealId }: { dealId: string }) {
 ```
 
 ### Preview Modal
+
 ```typescript
 function DealFormWithPreview() {
   const { form } = useDealFormData();
   const { pendingFormData, showPreview } = useDealSubmission({...});
-  
+
   const previewData = useDealPreview({
     pendingFormData,
     defaultStatusId: "...",
@@ -152,6 +155,7 @@ function DealFormWithPreview() {
 ## Type Definitions
 
 ### DealFormData
+
 Complete type definition for the deal form:
 
 ```typescript
@@ -205,6 +209,7 @@ type DealFormData = {
 ```
 
 ### UserRole
+
 ```typescript
 type UserRole = "agent" | "finance" | "ceo" | "admin";
 ```
@@ -243,6 +248,7 @@ useDealFormHelpers
 ## Testing
 
 ### Unit Test Example
+
 ```typescript
 import { renderHook } from "@testing-library/react-hooks";
 import { useDealValidation } from "@/lib/hooks";
@@ -250,14 +256,14 @@ import { useDealValidation } from "@/lib/hooks";
 describe("useDealValidation", () => {
   it("validates phone numbers", () => {
     const { result } = renderHook(() => useDealValidation());
-    
+
     expect(result.current.validatePhone("+1234567890")).toBe(true);
     expect(result.current.validatePhone("123")).toBe(false);
   });
 
   it("validates email addresses", () => {
     const { result } = renderHook(() => useDealValidation());
-    
+
     expect(result.current.validateEmail("test@example.com")).toBe(true);
     expect(result.current.validateEmail("invalid")).toBe(false);
     expect(result.current.validateEmail("")).toBe(true); // Optional
@@ -266,6 +272,7 @@ describe("useDealValidation", () => {
 ```
 
 ### Integration Test Example
+
 ```typescript
 import { render, fireEvent, waitFor } from "@testing-library/react";
 import { DealForm } from "@/components/DealForm";
@@ -296,6 +303,7 @@ describe("DealForm Integration", () => {
 ## Best Practices
 
 ### 1. Always use with `useFilters`
+
 ```typescript
 // ✅ Good
 const filters = useFilters();
@@ -308,6 +316,7 @@ const { form } = useDealFormData();
 ```
 
 ### 2. Handle loading states
+
 ```typescript
 // ✅ Good
 if (dealError) return <ErrorState />;
@@ -318,15 +327,21 @@ return <DealForm />; // May show stale data
 ```
 
 ### 3. Check preview data exists
+
 ```typescript
 // ✅ Good
-{showPreview && previewData && <PreviewModal data={previewData} />}
+{
+  showPreview && previewData && <PreviewModal data={previewData} />;
+}
 
 // ❌ Bad - may crash if previewData is null
-{showPreview && <PreviewModal data={previewData} />}
+{
+  showPreview && <PreviewModal data={previewData} />;
+}
 ```
 
 ### 4. Use TypeScript strictly
+
 ```typescript
 // ✅ Good
 const data: DealFormData = formData;
@@ -338,6 +353,7 @@ const data: any = formData;
 ## Troubleshooting
 
 ### Issue: "Form not resetting when deal loads"
+
 **Solution**: Ensure `useDealLoader` receives the `reset` function from `useDealFormData`
 
 ```typescript
@@ -346,6 +362,7 @@ useDealLoader({ dealId, reset: form.reset }); // ✅ Correct
 ```
 
 ### Issue: "Preview data shows IDs instead of names"
+
 **Solution**: Ensure all filter options are passed to `useDealPreview`
 
 ```typescript
@@ -358,6 +375,7 @@ const previewData = useDealPreview({
 ```
 
 ### Issue: "Validation not working"
+
 **Solution**: Use validation functions in `register` or `Controller`
 
 ```typescript
@@ -389,8 +407,8 @@ If you have similar form logic elsewhere:
 ## Support
 
 For questions or issues:
+
 - Check this README
 - Review `REFACTORING_SUMMARY.md` in `components/deal-form/`
 - Review `BEFORE_AFTER.md` for detailed comparison
 - Ask the team!
-

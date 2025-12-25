@@ -1,10 +1,21 @@
 "use client";
 
-import { Control, Controller, FieldErrors, UseFormRegister } from "react-hook-form";
+import {
+  Control,
+  Controller,
+  FieldErrors,
+  UseFormRegister,
+} from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { DealFormData } from "@/lib/hooks/useDealFormData";
 
 interface BuyerSellerSectionProps {
@@ -272,4 +283,3 @@ export function BuyerSellerSection({
     </div>
   );
 }
-

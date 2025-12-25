@@ -88,9 +88,8 @@ export function useDealLoader({ dealId, reset }: UseDealLoaderProps) {
           (buyer as { source?: { id: string } })?.source?.id ||
           (buyer as { sourceId?: string })?.sourceId ||
           "";
-        const buyerEmail =
-          (buyer as { email?: string })?.email || "";
-        
+        const buyerEmail = (buyer as { email?: string })?.email || "";
+
         const sellerNationalityId =
           (seller as { nationality?: { id: string } })?.nationality?.id ||
           (seller as { nationalityId?: string })?.nationalityId ||
@@ -99,8 +98,7 @@ export function useDealLoader({ dealId, reset }: UseDealLoaderProps) {
           (seller as { source?: { id: string } })?.source?.id ||
           (seller as { sourceId?: string })?.sourceId ||
           "";
-        const sellerEmail =
-          (seller as { email?: string })?.email || "";
+        const sellerEmail = (seller as { email?: string })?.email || "";
 
         // Extract agent commission
         let agentCommissionTypeId = "";
@@ -162,25 +160,29 @@ export function useDealLoader({ dealId, reset }: UseDealLoaderProps) {
 
         // Map to form structure
         const mappedAdditionalAgents = additionalAgents.map((agent) => ({
-          type: (agent.isInternal ? "internal" : "external") as "internal" | "external",
+          type: (agent.isInternal ? "internal" : "external") as
+            | "internal"
+            | "external",
           agentId: agent.agentId || "",
           agencyName: agent.externalAgentName || "",
-          commissionValue: agent.commissionValue ? String(agent.commissionValue) : "",
+          commissionValue: agent.commissionValue
+            ? String(agent.commissionValue)
+            : "",
           commissionTypeId: agent.commissionTypeId || "",
         }));
 
         // Extract bedroom data - now nested in unit object
-        const bedroomId = 
+        const bedroomId =
           deal.unit?.bedroom?.id ||
-          (deal as unknown as { bedroomId?: string })?.bedroomId || 
+          (deal as unknown as { bedroomId?: string })?.bedroomId ||
           (deal as unknown as { bedroomsId?: string })?.bedroomsId || // backward compatibility
           "";
 
         // Extract downpayment data
-        const downpayment = 
-          (deal as unknown as { downpayment?: number })?.downpayment
-            ? String((deal as unknown as { downpayment: number }).downpayment)
-            : "";
+        const downpayment = (deal as unknown as { downpayment?: number })
+          ?.downpayment
+          ? String((deal as unknown as { downpayment: number }).downpayment)
+          : "";
 
         // Reset form with deal data
         reset({
@@ -266,4 +268,3 @@ export function useDealLoader({ dealId, reset }: UseDealLoaderProps) {
     retryLoadDeal,
   };
 }
-

@@ -61,22 +61,29 @@ DealForm (Parent)
 ## Component Responsibilities
 
 ### DealInformationSection
+
 Manages all deal-level metadata including dates, type, and status. Handles conditional rendering based on user role (agents don't see certain fields).
 
 ### PropertyDetailsSection
+
 Controls property identification with cascading developer→project relationship. Resets project when developer changes.
 
 ### UnitDetailsSection
+
 Handles all unit-specific details with numeric validation for unit number and size.
 
 ### PurchaseValueSection
+
 Simple component for purchase value input with numeric-only validation.
 
 ### BuyerSellerSection
+
 Displays buyer and seller information side-by-side in a responsive grid. Includes phone and email validation.
 
 ### CommissionDetailsSection
+
 Most complex section handling:
+
 - Sales value
 - Total deal commission
 - Agent commission (with role-based restrictions)
@@ -87,6 +94,7 @@ Most complex section handling:
 ## Shared Props Pattern
 
 All components receive:
+
 - `control` - React Hook Form control object
 - `errors` - Form validation errors
 - `filtersLoading` - Loading state for dropdowns
@@ -114,4 +122,3 @@ All components share the same `DealFormData` type to ensure consistency. This ty
 ## Validation
 
 Validation is handled at the form level through React Hook Form's `rules` prop in Controller components. Each section implements its own validation logic relevant to its fields.
-

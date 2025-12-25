@@ -1,31 +1,38 @@
 # Deal Form API Update Summary
 
 ## Overview
+
 Updated the Deal Form and related components to match the new API structure for creating deals.
 
 ## Date
+
 December 23, 2025
 
 ## API Changes Implemented
 
 ### 1. New Fields Added
+
 - **`downpayment`** (number, optional): New field for capturing downpayment amount
 
 ### 2. Fields Renamed
+
 - **`bedroomsId`** → **`bedroomId`**: Changed to singular form to match API
 
 ### 3. Fields Removed
+
 - **`purchaseValue`**: No longer part of the API
 - **`numberOfDeal`**: Removed from API (was always set to 1)
 - **`stageId`**: No longer part of the API
 - **`agentCommissionTypeOverride`**: Override logic removed from API
 
 ### 4. Updated closeDate Behavior
+
 - **`closeDate`**: Now optional in the API (agents don't need to provide it when creating deals)
 
 ## Files Modified
 
 ### 1. Core Type Definitions
+
 - **`lib/hooks/useDealFormData.ts`**
   - Updated `DealFormData` type to use `bedroomId` instead of `bedroomsId`
   - Added `downpayment` field to form data
@@ -33,6 +40,7 @@ December 23, 2025
   - Updated default form values
 
 ### 2. API Types
+
 - **`lib/deals.ts`**
   - Updated `CreateDealRequest` interface:
     - Changed `bedroomsId?` to `bedroomId?`
@@ -43,7 +51,9 @@ December 23, 2025
     - Made `closeDate` optional
 
 ### 3. Business Logic Hooks
+
 - **`lib/hooks/useDealSubmission.ts`**
+
   - Updated payload building to use `bedroomId` instead of `bedroomsId`
   - Added `downpayment` to payload
   - Removed `purchaseValue` from payload
@@ -51,6 +61,7 @@ December 23, 2025
   - Removed `agentCommissionTypeOverride` logic
 
 - **`lib/hooks/useDealLoader.ts`**
+
   - Updated deal loading to handle both `bedroomId` and `bedroomsId` (backward compatibility)
   - Added handling for `downpayment` field
   - Removed `purchaseValue` and `bedroomsId` from reset call
@@ -61,23 +72,29 @@ December 23, 2025
   - Removed `purchaseValue` from preview data
 
 ### 4. UI Components
+
 - **`components/deal-form/DealInformationSection.tsx`**
+
   - Updated type definition to use `bedroomId` and `downpayment`
   - Replaced "Purchase Value" field with "Downpayment" field
   - Updated field ID and placeholder text
 
 - **`components/deal-form/UnitDetailsSection.tsx`**
+
   - Updated type definition to use `bedroomId`
   - Changed field name from `bedroomsId` to `bedroomId`
   - Updated Controller to use correct field name
 
 - **`components/deal-form/PropertyDetailsSection.tsx`**
+
   - Updated type definition to use `bedroomId` and `downpayment`
 
 - **`components/deal-form/BuyerSellerSection.tsx`**
+
   - Updated type definition to use `bedroomId` and `downpayment`
 
 - **`components/deal-form/CommissionDetailsSection.tsx`**
+
   - Updated type definition to use `bedroomId` and `downpayment`
 
 - **`components/DealPreviewModal.tsx`**
@@ -142,8 +159,8 @@ December 23, 2025
 The deal loader (`useDealLoader.ts`) maintains backward compatibility by checking for both the old field name (`bedroomsId`) and the new field name (`bedroomId`) when loading existing deals:
 
 ```typescript
-const bedroomId = 
-  (deal as unknown as { bedroomId?: string })?.bedroomId || 
+const bedroomId =
+  (deal as unknown as { bedroomId?: string })?.bedroomId ||
   (deal as unknown as { bedroomsId?: string })?.bedroomsId || // backward compatibility
   "";
 ```
@@ -169,4 +186,3 @@ const bedroomId =
 ✅ All changes implemented and tested
 ✅ No linter errors
 ✅ Backward compatibility maintained for loading existing deals
-

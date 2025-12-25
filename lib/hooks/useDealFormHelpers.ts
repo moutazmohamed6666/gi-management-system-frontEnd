@@ -15,13 +15,13 @@ export function useDealFormHelpers({
   // Filter projects by selected developer
   const filteredProjects = useMemo(() => {
     if (!watchedDeveloperId) return [];
-    
+
     type ProjectOption = { developerId?: string };
     const projectsWithDeveloper = allProjects.filter((project) => {
       const devId = (project as unknown as ProjectOption).developerId;
       return devId === watchedDeveloperId;
     });
-    
+
     return projectsWithDeveloper.length > 0
       ? projectsWithDeveloper
       : allProjects;
@@ -31,7 +31,11 @@ export function useDealFormHelpers({
   const getCurrentRole = () => {
     return (
       (typeof window !== "undefined"
-        ? (sessionStorage.getItem("userRole") as "agent" | "finance" | "ceo" | "admin")
+        ? (sessionStorage.getItem("userRole") as
+            | "agent"
+            | "finance"
+            | "ceo"
+            | "admin")
         : "agent") || "agent"
     );
   };
@@ -41,4 +45,3 @@ export function useDealFormHelpers({
     getCurrentRole,
   };
 }
-

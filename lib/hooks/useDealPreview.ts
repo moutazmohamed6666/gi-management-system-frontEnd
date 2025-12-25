@@ -103,13 +103,16 @@ export function useDealPreview({
     };
 
     const getAdditionalAgentsPreview = () => {
-      if (!pendingFormData.additionalAgents || pendingFormData.additionalAgents.length === 0) {
+      if (
+        !pendingFormData.additionalAgents ||
+        pendingFormData.additionalAgents.length === 0
+      ) {
         return [];
       }
 
       return pendingFormData.additionalAgents.map((agent) => {
         let agentName = "N/A";
-        
+
         if (agent.type === "internal") {
           const foundAgent = allAgents.find((a) => a.id === agent.agentId);
           agentName = foundAgent?.name || "N/A";
@@ -185,4 +188,3 @@ export function useDealPreview({
 
   return previewData;
 }
-

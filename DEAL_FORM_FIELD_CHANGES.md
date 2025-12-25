@@ -2,20 +2,22 @@
 
 ## Field Mapping: Old API → New API
 
-| Old Field Name | New Field Name | Type | Status | Notes |
-|----------------|----------------|------|--------|-------|
-| `bedroomsId` | `bedroomId` | string (UUID) | ✏️ **RENAMED** | Changed to singular |
-| `purchaseValue` | `downpayment` | number | 🔄 **REPLACED** | Different field with different purpose |
-| `numberOfDeal` | ❌ | number | 🗑️ **REMOVED** | Was always 1, now handled by backend |
-| `stageId` | ❌ | string (UUID) | 🗑️ **REMOVED** | No longer in API |
-| `agentCommissionTypeOverride` | ❌ | boolean | 🗑️ **REMOVED** | Override logic removed |
-| ❌ | `downpayment` | number | ✨ **NEW** | New field for downpayment amount |
-| `closeDate` | `closeDate` | string (ISO) | 🔧 **MODIFIED** | Now optional (not required for agents) |
+| Old Field Name                | New Field Name | Type          | Status          | Notes                                  |
+| ----------------------------- | -------------- | ------------- | --------------- | -------------------------------------- |
+| `bedroomsId`                  | `bedroomId`    | string (UUID) | ✏️ **RENAMED**  | Changed to singular                    |
+| `purchaseValue`               | `downpayment`  | number        | 🔄 **REPLACED** | Different field with different purpose |
+| `numberOfDeal`                | ❌             | number        | 🗑️ **REMOVED**  | Was always 1, now handled by backend   |
+| `stageId`                     | ❌             | string (UUID) | 🗑️ **REMOVED**  | No longer in API                       |
+| `agentCommissionTypeOverride` | ❌             | boolean       | 🗑️ **REMOVED**  | Override logic removed                 |
+| ❌                            | `downpayment`  | number        | ✨ **NEW**      | New field for downpayment amount       |
+| `closeDate`                   | `closeDate`    | string (ISO)  | 🔧 **MODIFIED** | Now optional (not required for agents) |
 
 ## UI Changes
 
 ### Deal Information Section
+
 **Before:**
+
 - Booking Date
 - CF Expiry
 - Close Date
@@ -25,6 +27,7 @@
 - **Purchase Value** ← 🗑️ REMOVED
 
 **After:**
+
 - Booking Date
 - CF Expiry
 - Close Date
@@ -34,13 +37,16 @@
 - **Downpayment** ← ✨ NEW
 
 ### Unit Details Section
+
 **Before:**
+
 - Unit Number
 - Unit Type
 - Size
 - **Bedrooms** (field: `bedroomsId`) ← ✏️ RENAMED
 
 **After:**
+
 - Unit Number
 - Unit Type
 - Size
@@ -49,45 +55,49 @@
 ## Form Data Type Changes
 
 ### Before:
+
 ```typescript
 export type DealFormData = {
   // ...
   bedroomsId: string;
   purchaseValue: string;
   // ...
-}
+};
 ```
 
 ### After:
+
 ```typescript
 export type DealFormData = {
   // ...
   bedroomId: string;
   downpayment: string;
   // ...
-}
+};
 ```
 
 ## API Payload Changes
 
 ### Before:
+
 ```json
 {
   "dealValue": 0,
   "purchaseValue": 0,
   "bedroomsId": "uuid-here",
   "numberOfDeal": 1,
-  "stageId": "uuid-here",
+  "stageId": "uuid-here"
   // ...
 }
 ```
 
 ### After:
+
 ```json
 {
   "dealValue": 0,
   "downpayment": 0,
-  "bedroomId": "uuid-here",
+  "bedroomId": "uuid-here"
   // numberOfDeal removed
   // stageId removed
   // ...
@@ -97,9 +107,11 @@ export type DealFormData = {
 ## Preview Modal Changes
 
 ### Before:
+
 - Shows "Purchase Value" if available
 
 ### After:
+
 - Shows "Downpayment" if available
 
 ## Migration Notes
@@ -133,4 +145,3 @@ export type DealFormData = {
 - [ ] Test as CEO role
 - [ ] Verify commission calculations
 - [ ] Check form validation
-
