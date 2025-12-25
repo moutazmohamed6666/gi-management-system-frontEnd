@@ -1,6 +1,6 @@
 // Deals API Types and Utilities
 
-import { apiClient } from "./api";
+import { apiClient, getAuthToken } from "./api";
 
 // ============================================================================
 // Type Definitions
@@ -223,18 +223,14 @@ export interface Media {
 // Deal Media File (from GET /api/media/deal/{dealId})
 export interface DealMediaFile {
   id: string;
-  dealId: string;
-  mediaTypeId: string;
   mediaType: {
     id: string;
     name: string;
   };
   filename: string;
-  originalFilename: string;
   fileSize: number;
   mimeType: string;
-  fileUrl: string;
-  uploadedById: string;
+  url: string; // URL for viewing/downloading
   uploadedBy: {
     id: string;
     name: string;
@@ -242,6 +238,12 @@ export interface DealMediaFile {
   };
   createdAt: string;
   updatedAt: string;
+  // Optional fields for backward compatibility
+  dealId?: string;
+  mediaTypeId?: string;
+  originalFilename?: string;
+  fileUrl?: string;
+  uploadedById?: string;
 }
 
 // Deal type matching the actual API response
@@ -653,6 +655,35 @@ export const dealsApi = {
   // Get all media files for a deal
   getDealMedia: async (dealId: string): Promise<DealMediaFile[]> => {
     return apiClient<DealMediaFile[]>(`/api/media/deal/${dealId}`);
+  },
+
+  // Download a media file
+  downloadMedia: async (mediaId: string): Promise<Blob> => {
+    const token = getAuthToken();
+    const API_BASE_URL =
+      process.env.NEXT_PUBLIC_API_BASE_URL || "https://dev.shaheen-env.work";
+    const url = `${API_BASE_URL}/api/media/${mediaId}/download`;
+
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ message: "Download failed" }));
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`
+      );
+    }
+
+    return await response.blob();
   },
 
   // Delete a media file

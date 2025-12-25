@@ -57,20 +57,7 @@ export function DealMediaSection({ dealId }: DealMediaSectionProps) {
 
   const handleDownload = async (file: DealMediaFile) => {
     try {
-      const token = sessionStorage.getItem("authToken");
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://dev.shaheen-env.work";
-
-      const response = await fetch(file.fileUrl, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to download file");
-      }
-
-      const blob = await response.blob();
+      const blob = await dealsApi.downloadMedia(file.id);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -81,7 +68,7 @@ export function DealMediaSection({ dealId }: DealMediaSectionProps) {
       document.body.removeChild(a);
 
       toast.success("Download started", {
-        description: `Downloading ${file.originalFilename}`,
+        description: `Downloading ${file.originalFilename || file.filename}`,
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Download failed";
@@ -92,11 +79,12 @@ export function DealMediaSection({ dealId }: DealMediaSectionProps) {
   };
 
   const handleView = (file: DealMediaFile) => {
-    const token = sessionStorage.getItem("authToken");
+    // Use url from API response for viewing
+    const viewUrl = file.url || file.fileUrl;
     
-    // Open in new tab with auth header (for supported file types)
+    // Open in new tab (for supported file types)
     if (file.mimeType.startsWith("image/") || file.mimeType === "application/pdf") {
-      window.open(file.fileUrl, "_blank");
+      window.open(viewUrl, "_blank");
     } else {
       // For other file types, download instead
       handleDownload(file);
@@ -115,7 +103,7 @@ export function DealMediaSection({ dealId }: DealMediaSectionProps) {
       await dealsApi.deleteMedia(fileToDelete.id);
       
       toast.success("File deleted", {
-        description: `${fileToDelete.originalFilename} has been deleted successfully`,
+        description: `${fileToDelete.originalFilename || fileToDelete.filename} has been deleted successfully`,
       });
 
       // Remove the file from the local state
@@ -271,7 +259,7 @@ export function DealMediaSection({ dealId }: DealMediaSectionProps) {
                   <div className="flex items-center space-x-4 flex-1 min-w-0">
                     <div className="text-3xl">{getFileIcon(file.mimeType)}</div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{file.originalFilename}</p>
+                      <p className="text-sm font-medium truncate">{file.originalFilename || file.filename}</p>
                       <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
                         <span>{formatFileSize(file.fileSize)}</span>
                         <span>•</span>
@@ -325,7 +313,7 @@ export function DealMediaSection({ dealId }: DealMediaSectionProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Media File</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete <strong>{fileToDelete?.originalFilename}</strong>?
+              Are you sure you want to delete <strong>{fileToDelete?.originalFilename || fileToDelete?.filename}</strong>?
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
