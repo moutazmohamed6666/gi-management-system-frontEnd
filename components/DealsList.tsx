@@ -792,13 +792,11 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
                                   {additionalAgents.length > 1 ? "s" : ""}
                                   {additionalAgents.map((addAgent, idx) => (
                                     <div key={idx} className="ml-2">
-                                      • {addAgent.agent?.name || "External"}:{" "}
-                                      {addAgent.commissionType?.name ===
-                                      "Percentage"
-                                        ? `${addAgent.commissionValue}%`
-                                        : `AED ${Number(
-                                            addAgent.commissionValue
-                                          ).toLocaleString()}`}
+                                      • {addAgent.agent?.name || "External"}:
+                                      AED{" "}
+                                      {Number(
+                                        addAgent.commissionValue
+                                      ).toLocaleString()}
                                       {addAgent.isInternal !== undefined && (
                                         <span className="ml-1 text-xs">
                                           (
