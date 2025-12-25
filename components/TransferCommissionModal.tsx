@@ -331,27 +331,22 @@ export function TransferCommissionModal({
           </div>
 
           <div>
-            <Label
-              htmlFor="toAccount"
-              className="text-gray-900 dark:text-white"
-            >
-              Destination Account <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="toAccount"
-              type="text"
-              value={toAccount}
-              onChange={(e) => setToAccount(e.target.value)}
-              placeholder="Enter destination account name"
-              className="mt-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-          </div>
-
-          <div>
             <Label htmlFor="toUserId" className="text-gray-900 dark:text-white">
               Select User <span className="text-red-500">*</span>
             </Label>
-            <Select value={toUserId} onValueChange={setToUserId}>
+            <Select
+              value={toUserId}
+              onValueChange={(value) => {
+                setToUserId(value);
+                // Automatically fill toAccount with selected user's name
+                const selectedUser = getAvailableUsers().find(
+                  (u) => u.id === value
+                );
+                if (selectedUser) {
+                  setToAccount(selectedUser.name);
+                }
+              }}
+            >
               <SelectTrigger
                 id="toUserId"
                 className="mt-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -383,6 +378,22 @@ export function TransferCommissionModal({
                 )}
               </SelectContent>
             </Select>
+          </div>
+          <div>
+            <Label
+              htmlFor="toAccount"
+              className="text-gray-900 dark:text-white"
+            >
+              User Name <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="toAccount"
+              type="text"
+              value={toAccount}
+              disabled
+              placeholder="User name will be filled automatically"
+              className="mt-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white opacity-60 cursor-not-allowed"
+            />
           </div>
 
           <div>
