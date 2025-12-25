@@ -111,29 +111,95 @@ export function Reports() {
       if (userRole === "finance" || userRole === "ceo") {
         const compData = await financeApi.getComprehensiveData();
 
+        // Type for monthly revenue items (all optional since API shape varies)
+        interface MonthlyRevenueItem {
+          month: string;
+          dealClosed?: number;
+          commissionCollected?: number;
+          pendingCommission?: number;
+          totalCommission?: number;
+          grossRevenue?: number;
+          externalAgentCommissions?: number;
+          agentCommission?: number;
+          managerCommission?: number;
+          netRevenue?: number;
+          revenue?: number;
+          numberOfDeals?: number;
+          numberOfUnits?: number;
+        }
+
+        // Calculate totals from monthlyRevenue array
+        const monthlyRevenue = (compData.monthlyRevenue ||
+          []) as MonthlyRevenueItem[];
+        const totalDeals = monthlyRevenue.reduce(
+          (sum, item) => sum + (item.dealClosed || 0),
+          0
+        );
+        const totalCollected = monthlyRevenue.reduce(
+          (sum, item) => sum + (item.commissionCollected || 0),
+          0
+        );
+        const totalPending = monthlyRevenue.reduce(
+          (sum, item) => sum + (item.pendingCommission || 0),
+          0
+        );
+        const totalCommission = monthlyRevenue.reduce(
+          (sum, item) => sum + (item.totalCommission || 0),
+          0
+        );
+        const totalGrossRevenue = monthlyRevenue.reduce(
+          (sum, item) => sum + (item.grossRevenue || 0),
+          0
+        );
+        const totalExternalAgentCommissions = monthlyRevenue.reduce(
+          (sum, item) => sum + (item.externalAgentCommissions || 0),
+          0
+        );
+        const totalAgentCommission = monthlyRevenue.reduce(
+          (sum, item) => sum + (item.agentCommission || 0),
+          0
+        );
+        const totalManagerCommission = monthlyRevenue.reduce(
+          (sum, item) => sum + (item.managerCommission || 0),
+          0
+        );
+        const totalNetRevenue = monthlyRevenue.reduce(
+          (sum, item) => sum + (item.netRevenue || 0),
+          0
+        );
+
         // Transform the comprehensive response to AnalyticsResponse format
         response = {
           report_type: "monthly_revenue",
-          data: compData.monthlyRevenueDetails.map((detail) => ({
-            month: detail.month,
-            revenue: detail.revenue,
-            deals: detail.numberOfDeals,
-            units: detail.numberOfUnits,
+          data: monthlyRevenue.map((item) => ({
+            month: item.month,
+            revenue: item.grossRevenue || 0,
+            deals: item.dealClosed || 0,
+            dealClosed: item.dealClosed || 0,
+            commissionCollected: item.commissionCollected || 0,
+            pendingCommission: item.pendingCommission || 0,
+            totalCommission: item.totalCommission || 0,
+            grossRevenue: item.grossRevenue || 0,
+            externalAgentCommissions: item.externalAgentCommissions || 0,
+            agentCommission: item.agentCommission || 0,
+            managerCommission: item.managerCommission || 0,
+            netRevenue: item.netRevenue || 0,
           })),
           summary: {
-            total_revenue: compData.totalRevenue,
-            total_deals: compData.dealClosed,
-            total_collected: compData.commissionCollected,
-            total_pending: compData.pendingCommission,
-            total_transferred: compData.commissionOverview.transferred,
-            total_expected: compData.commissionOverview.expected,
-            collection_rate: compData.commissionOverview.collectionProgress,
-            total_commission: compData.totalCommission,
-            gross_revenue: compData.grossRevenue,
-            external_agent_commissions: compData.externalAgentCommissions,
-            agent_commission: compData.agentCommission,
-            manager_commission: compData.managerCommission,
-            net_revenue: compData.netRevenue,
+            total_revenue: totalGrossRevenue,
+            total_deals: totalDeals,
+            total_collected: totalCollected,
+            total_pending: totalPending,
+            total_transferred: compData.commissionOverview?.transferred || 0,
+            total_expected: compData.commissionOverview?.expected || 0,
+            collection_rate:
+              compData.commissionOverview?.collectionProgress || 0,
+            total_commission: totalCommission,
+            gross_revenue: totalGrossRevenue,
+            external_agent_commissions: totalExternalAgentCommissions,
+            agent_commission: totalAgentCommission,
+            manager_commission: totalManagerCommission,
+            net_revenue: totalNetRevenue,
           },
         };
       } else {
@@ -750,11 +816,33 @@ export function Reports() {
                 <div className="flex items-center justify-between">
                   <CardTitle>{getReportTypeLabel(reportType)}</CardTitle>
                   <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <div
-                      className="h-3 w-3 rounded-full"
-                      style={{ backgroundColor: "var(--gi-dark-green)" }}
-                    ></div>
-                    <span>Data</span>
+                    {reportType === "monthly_revenue" ? (
+                      <>
+                        <div className="flex items-center gap-1">
+                          <div className="h-3 w-3 rounded-full bg-purple-500"></div>
+                          <span>Total Commission</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div
+                            className="h-3 w-3 rounded-full"
+                            style={{ backgroundColor: "var(--gi-dark-green)" }}
+                          ></div>
+                          <span>Gross Revenue</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="h-3 w-3 rounded-full bg-teal-500"></div>
+                          <span>Net Revenue</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div
+                          className="h-3 w-3 rounded-full"
+                          style={{ backgroundColor: "var(--gi-dark-green)" }}
+                        ></div>
+                        <span>Data</span>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -766,13 +854,23 @@ export function Reports() {
                     count?: number;
                     value?: number;
                     commission?: number;
+                    commissionCollected?: number;
+                    pendingCommission?: number;
+                    grossRevenue?: number;
+                    totalCommission?: number;
+                    netRevenue?: number;
                     [key: string]: unknown;
                   };
                   const typedChartData = chartData as ChartDataItem[];
                   const hasData =
                     typedChartData.length > 0 &&
                     (reportType === "monthly_revenue"
-                      ? typedChartData.some((item) => (item.revenue || 0) > 0)
+                      ? typedChartData.some(
+                          (item) =>
+                            (item.totalCommission || 0) > 0 ||
+                            (item.grossRevenue || 0) > 0 ||
+                            (item.netRevenue || 0) > 0
+                        )
                       : reportType === "deal_pipeline"
                       ? typedChartData.some((item) => (item.count || 0) > 0)
                       : typedChartData.some((item) => {
@@ -805,7 +903,25 @@ export function Reports() {
                         <LineChart data={chartData}>
                           <defs>
                             <linearGradient
-                              id="colorRevenueReport"
+                              id="colorTotalCommission"
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop
+                                offset="5%"
+                                stopColor="#8b5cf6"
+                                stopOpacity={0.3}
+                              />
+                              <stop
+                                offset="95%"
+                                stopColor="#8b5cf6"
+                                stopOpacity={0}
+                              />
+                            </linearGradient>
+                            <linearGradient
+                              id="colorGrossRevenue"
                               x1="0"
                               y1="0"
                               x2="0"
@@ -819,6 +935,24 @@ export function Reports() {
                               <stop
                                 offset="95%"
                                 stopColor="var(--gi-dark-green)"
+                                stopOpacity={0}
+                              />
+                            </linearGradient>
+                            <linearGradient
+                              id="colorNetRevenue"
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop
+                                offset="5%"
+                                stopColor="#14b8a6"
+                                stopOpacity={0.3}
+                              />
+                              <stop
+                                offset="95%"
+                                stopColor="#14b8a6"
                                 stopOpacity={0}
                               />
                             </linearGradient>
@@ -848,15 +982,37 @@ export function Reports() {
                             }}
                             formatter={(value: number) => [
                               `AED ${value.toLocaleString()}`,
-                              "Revenue",
                             ]}
                           />
                           <Line
                             type="monotone"
-                            dataKey="revenue"
+                            dataKey="totalCommission"
+                            stroke="#8b5cf6"
+                            strokeWidth={3}
+                            fill="url(#colorTotalCommission)"
+                            name="Total Commission"
+                            dot={{ fill: "#8b5cf6", r: 4 }}
+                            activeDot={{ r: 6 }}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="grossRevenue"
                             stroke="var(--gi-dark-green)"
                             strokeWidth={3}
-                            fill="url(#colorRevenueReport)"
+                            fill="url(#colorGrossRevenue)"
+                            name="Gross Revenue"
+                            dot={{ fill: "var(--gi-dark-green)", r: 4 }}
+                            activeDot={{ r: 6 }}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="netRevenue"
+                            stroke="#14b8a6"
+                            strokeWidth={3}
+                            fill="url(#colorNetRevenue)"
+                            name="Net Revenue"
+                            dot={{ fill: "#14b8a6", r: 4 }}
+                            activeDot={{ r: 6 }}
                           />
                         </LineChart>
                       ) : reportType === "deal_pipeline" ? (
@@ -997,14 +1153,29 @@ export function Reports() {
                             <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100 font-medium rounded-tl-lg">
                               Month
                             </th>
-                            <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100 font-medium">
+                            <th className="text-right py-3 px-4 text-gray-900 dark:text-gray-100 font-medium">
                               Deals
                             </th>
-                            <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100 font-medium">
-                              Units
+                            <th className="text-right py-3 px-4 text-gray-900 dark:text-gray-100 font-medium">
+                              Collected
+                            </th>
+                            <th className="text-right py-3 px-4 text-gray-900 dark:text-gray-100 font-medium">
+                              Pending
+                            </th>
+                            <th className="text-right py-3 px-4 text-gray-900 dark:text-gray-100 font-medium">
+                              Total Comm.
+                            </th>
+                            <th className="text-right py-3 px-4 text-gray-900 dark:text-gray-100 font-medium">
+                              Gross Revenue
+                            </th>
+                            <th className="text-right py-3 px-4 text-gray-900 dark:text-gray-100 font-medium">
+                              Agent Comm.
+                            </th>
+                            <th className="text-right py-3 px-4 text-gray-900 dark:text-gray-100 font-medium">
+                              Manager Comm.
                             </th>
                             <th className="text-right py-3 px-4 text-gray-900 dark:text-gray-100 font-medium rounded-tr-lg">
-                              Revenue
+                              Net Revenue
                             </th>
                           </>
                         )}
@@ -1075,17 +1246,50 @@ export function Reports() {
                               <td className="py-3 px-4 text-gray-900 dark:text-gray-100 font-medium">
                                 {(row as { month: string }).month}
                               </td>
-                              <td className="py-3 px-4 text-gray-900 dark:text-gray-100">
-                                {(row as { deals: number }).deals}
+                              <td className="py-3 px-4 text-right text-gray-900 dark:text-gray-100">
+                                {(row as { dealClosed: number }).dealClosed}
                               </td>
-                              <td className="py-3 px-4 text-gray-900 dark:text-gray-100">
-                                {(row as { units: number }).units}
+                              <td className="py-3 px-4 text-right text-green-600 dark:text-green-400 font-medium">
+                                AED{" "}
+                                {(
+                                  row as { commissionCollected: number }
+                                ).commissionCollected.toLocaleString()}
+                              </td>
+                              <td className="py-3 px-4 text-right text-orange-600 dark:text-orange-400 font-medium">
+                                AED{" "}
+                                {(
+                                  row as { pendingCommission: number }
+                                ).pendingCommission.toLocaleString()}
+                              </td>
+                              <td className="py-3 px-4 text-right text-purple-600 dark:text-purple-400 font-medium">
+                                AED{" "}
+                                {(
+                                  row as { totalCommission: number }
+                                ).totalCommission.toLocaleString()}
                               </td>
                               <td className="py-3 px-4 text-right text-gray-900 dark:text-gray-100 font-medium">
                                 AED{" "}
                                 {(
-                                  row as { revenue: number }
-                                ).revenue.toLocaleString()}
+                                  row as { grossRevenue: number }
+                                ).grossRevenue.toLocaleString()}
+                              </td>
+                              <td className="py-3 px-4 text-right text-blue-600 dark:text-blue-400">
+                                AED{" "}
+                                {(
+                                  row as { agentCommission: number }
+                                ).agentCommission.toLocaleString()}
+                              </td>
+                              <td className="py-3 px-4 text-right text-pink-600 dark:text-pink-400">
+                                AED{" "}
+                                {(
+                                  row as { managerCommission: number }
+                                ).managerCommission.toLocaleString()}
+                              </td>
+                              <td className="py-3 px-4 text-right text-teal-600 dark:text-teal-400 font-medium">
+                                AED{" "}
+                                {(
+                                  row as { netRevenue: number }
+                                ).netRevenue.toLocaleString()}
                               </td>
                             </>
                           )}
