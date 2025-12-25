@@ -135,7 +135,11 @@ export function CommissionDetailsSection({
               {...register("salesValue", {
                 required: "Sales value is required",
                 onChange: (e) => {
-                  const numericValue = e.target.value.replace(/[^0-9]/g, "");
+                  let numericValue = e.target.value.replace(/[^0-9.]/g, "");
+                  const parts = numericValue.split(".");
+                  if (parts.length > 2) {
+                    numericValue = parts[0] + "." + parts.slice(1).join("");
+                  }
                   setValue("salesValue", numericValue, {
                     shouldValidate: true,
                   });
@@ -193,10 +197,15 @@ export function CommissionDetailsSection({
                     type="text"
                     {...register("totalCommissionValue", {
                       onChange: (e) => {
-                        const numericValue = e.target.value.replace(
-                          /[^0-9]/g,
+                        let numericValue = e.target.value.replace(
+                          /[^0-9.]/g,
                           ""
                         );
+                        const parts = numericValue.split(".");
+                        if (parts.length > 2) {
+                          numericValue =
+                            parts[0] + "." + parts.slice(1).join("");
+                        }
                         setValue("totalCommissionValue", numericValue, {
                           shouldValidate: true,
                         });
@@ -476,10 +485,15 @@ export function CommissionDetailsSection({
                         type="text"
                         value={agent.commissionValue}
                         onChange={(e) => {
-                          const numericValue = e.target.value.replace(
-                            /[^0-9]/g,
+                          let numericValue = e.target.value.replace(
+                            /[^0-9.]/g,
                             ""
                           );
+                          const parts = numericValue.split(".");
+                          if (parts.length > 2) {
+                            numericValue =
+                              parts[0] + "." + parts.slice(1).join("");
+                          }
                           updateAdditionalAgent(
                             index,
                             "commissionValue",
@@ -489,17 +503,35 @@ export function CommissionDetailsSection({
                         placeholder="Enter commission value"
                         className="mt-1"
                       />
-                      {watchedSalesValue && agent.commissionValue && (
+                      {agent.commissionValue && agent.commissionTypeId && (
                         <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded text-sm">
                           <p className="text-blue-900 dark:text-blue-100 font-semibold">
-                            Commission: AED{" "}
-                            {parseFloat(agent.commissionValue).toLocaleString(
-                              "en-US",
-                              {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
+                            Commission:{" "}
+                            {(() => {
+                              const commType = commissionTypes.find(
+                                (t) => t.id === agent.commissionTypeId
+                              );
+                              const typeName =
+                                commType?.name.toLowerCase() || "";
+                              const value = parseFloat(agent.commissionValue);
+
+                              if (typeName.includes("percentage")) {
+                                return `${value.toLocaleString("en-US", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}%`;
+                              } else if (typeName.includes("fixed")) {
+                                return `AED ${value.toLocaleString("en-US", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}`;
+                              } else {
+                                return value.toLocaleString("en-US", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                });
                               }
-                            )}
+                            })()}
                           </p>
                         </div>
                       )}

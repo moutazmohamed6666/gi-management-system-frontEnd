@@ -79,6 +79,42 @@ export function DealPreviewModal({
     return isNaN(num) ? "N/A" : `AED ${num.toLocaleString()}`;
   };
 
+  const formatCommissionValue = (value: string | undefined, type: string) => {
+    if (!value) return "N/A";
+    const num = parseFloat(value);
+    if (isNaN(num)) return "N/A";
+    
+    // Check if it's a percentage type
+    if (type.toLowerCase() === "percentage" || type.toLowerCase() === "percent") {
+      return `${num}%`;
+    }
+    
+    // Otherwise, format as currency
+    return `AED ${num.toLocaleString()}`;
+  };
+
+  const calculateTotalDealCommission = () => {
+    // Calculate based on commission type
+    const commissionRate = parseFloat(data.dealCommissionRate);
+    const salesValue = parseFloat(data.salesValue);
+
+    if (isNaN(commissionRate) || isNaN(salesValue)) {
+      return "N/A";
+    }
+
+    const isPercentage = data.dealCommissionType.toLowerCase() === "percentage" || 
+                         data.dealCommissionType.toLowerCase() === "percent";
+
+    if (isPercentage) {
+      // Calculate percentage of sales value
+      const calculatedCommission = (salesValue * commissionRate) / 100;
+      return formatCurrency(calculatedCommission.toString());
+    } else {
+      // For fixed amount, the commission rate is the total
+      return formatCurrency(data.dealCommissionRate);
+    }
+  };
+
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "N/A";
     const date = new Date(dateStr);
@@ -262,17 +298,15 @@ export function DealPreviewModal({
               <div className="flex justify-between items-center">
                 <p className="text-sm text-gray-600 dark:text-gray-400">Commission Rate/Value</p>
                 <p className="text-lg font-semibold text-indigo-600 dark:text-indigo-400">
-                  {data.dealCommissionRate || "N/A"}
+                  {formatCommissionValue(data.dealCommissionRate, data.dealCommissionType)}
                 </p>
               </div>
-              {data.totalDealCommission && (
-                <div className="flex justify-between items-center pt-2 border-t border-indigo-200 dark:border-indigo-800">
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Total Deal Commission</p>
-                  <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
-                    {formatCurrency(data.totalDealCommission)}
-                  </p>
-                </div>
-              )}
+              <div className="flex justify-between items-center pt-2 border-t border-indigo-200 dark:border-indigo-800">
+                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Total Deal Commission</p>
+                <p className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
+                  {calculateTotalDealCommission()}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -313,7 +347,7 @@ export function DealPreviewModal({
                     <div className="flex justify-between items-center pt-2 border-t border-emerald-200 dark:border-emerald-800">
                       <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Expected Commission</p>
                       <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                        {formatCurrency(data.mainAgentCommissionValue)}
+                        {formatCommissionValue(data.mainAgentCommissionValue, data.mainAgentCommissionType || "")}
                       </p>
                     </div>
                   )}
@@ -350,7 +384,7 @@ export function DealPreviewModal({
                             <div className="flex justify-between items-center pt-2 border-t border-purple-200 dark:border-purple-800">
                               <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Commission Value</p>
                               <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
-                                {formatCurrency(agent.commissionValue)}
+                                {formatCommissionValue(agent.commissionValue, agent.commissionType)}
                               </p>
                             </div>
                           </div>
@@ -381,7 +415,7 @@ export function DealPreviewModal({
                             <div className="flex justify-between items-center pt-2 border-t border-amber-200 dark:border-amber-800">
                               <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Commission Value</p>
                               <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
-                                {formatCurrency(agent.commissionValue)}
+                                {formatCommissionValue(agent.commissionValue, agent.commissionType)}
                               </p>
                             </div>
                           </div>
