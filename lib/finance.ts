@@ -200,6 +200,12 @@ export interface ComprehensiveFinanceResponse {
   dealClosed: number;
   commissionCollected: number;
   pendingCommission: number;
+  totalCommission: number;
+  grossRevenue: number;
+  externalAgentCommissions: number;
+  agentCommission: number;
+  managerCommission: number;
+  netRevenue: number;
   monthlyRevenue: Array<{
     month: string;
     revenue: number;

@@ -40,6 +40,11 @@ type DealApiResponse = Deal & {
   totalCommission?: {
     value: number | null;
     commissionValue: number | null;
+    collectedAmount?: number | null;
+    status?: {
+      id: string;
+      name: string;
+    } | null;
     type?: {
       id: string;
       name: string;
@@ -732,19 +737,51 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <div className="text-gray-900 dark:text-gray-100">
-                          {(() => {
-                            const dealApi = deal as DealApiResponse;
-                            // Use totalCommission.commissionValue for total deal commission
-                            const totalCommission =
-                              dealApi.totalCommission?.commissionValue ?? null;
-                            return totalCommission
-                              ? `AED ${Number(
-                                  totalCommission
-                                ).toLocaleString()}`
-                              : "-";
-                          })()}
-                        </div>
+                        {(() => {
+                          const dealApi = deal as DealApiResponse;
+                          // Use totalCommission.commissionValue for total deal commission
+                          const totalCommission =
+                            dealApi.totalCommission?.commissionValue ?? null;
+                          const commissionStatus =
+                            dealApi.totalCommission?.status?.name;
+                          const collectedAmount =
+                            dealApi.totalCommission?.collectedAmount ?? 0;
+
+                          return (
+                            <div className="space-y-1">
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {totalCommission
+                                  ? `AED ${Number(
+                                      totalCommission
+                                    ).toLocaleString()}`
+                                  : "-"}
+                              </div>
+                              {commissionStatus && (
+                                <div className="flex flex-col gap-0.5">
+                                  <span
+                                    className={`text-white inline-block px-2 py-0.5 rounded text-xs w-fit ${
+                                      commissionStatus === "Paid"
+                                        ? "bg-green-600 dark:bg-green-500"
+                                        : commissionStatus === "Partially Paid"
+                                        ? "bg-orange-600 dark:bg-orange-500"
+                                        : commissionStatus === "Pending"
+                                        ? "bg-gray-600 dark:bg-gray-500"
+                                        : "bg-blue-600 dark:bg-blue-500"
+                                    }`}
+                                  >
+                                    {commissionStatus}
+                                  </span>
+                                  {collectedAmount > 0 && (
+                                    <span className="text-xs text-gray-600 dark:text-gray-400">
+                                      Collected: AED{" "}
+                                      {Number(collectedAmount).toLocaleString()}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="py-3 px-4">
                         {(() => {

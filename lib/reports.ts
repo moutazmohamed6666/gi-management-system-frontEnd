@@ -164,6 +164,11 @@ export interface AnalyticsResponse {
     total_agents?: number;
     total_units?: number;
     total_value?: number;
+    gross_revenue?: number;
+    external_agent_commissions?: number;
+    agent_commission?: number;
+    manager_commission?: number;
+    net_revenue?: number;
   };
   filters_applied?: {
     from_date?: string;

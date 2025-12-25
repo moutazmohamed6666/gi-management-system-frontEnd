@@ -107,8 +107,8 @@ export function Reports() {
     try {
       let response: AnalyticsResponse;
 
-      // Use comprehensive endpoint for finance role (no filters supported)
-      if (userRole === "finance") {
+      // Use comprehensive endpoint for finance and CEO roles (no filters supported)
+      if (userRole === "finance" || userRole === "ceo") {
         const compData = await financeApi.getComprehensiveData();
 
         // Transform the comprehensive response to AnalyticsResponse format
@@ -128,6 +128,12 @@ export function Reports() {
             total_transferred: compData.commissionOverview.transferred,
             total_expected: compData.commissionOverview.expected,
             collection_rate: compData.commissionOverview.collectionProgress,
+            total_commission: compData.totalCommission,
+            gross_revenue: compData.grossRevenue,
+            external_agent_commissions: compData.externalAgentCommissions,
+            agent_commission: compData.agentCommission,
+            manager_commission: compData.managerCommission,
+            net_revenue: compData.netRevenue,
           },
         };
       } else {
@@ -226,10 +232,16 @@ export function Reports() {
 
   // Get summary metrics from API response
   const summaryMetrics = {
-    totalRevenue: analyticsData?.summary?.total_revenue || 0,
-    dealsCount: analyticsData?.summary?.total_deals || 0,
-    commissionReceived: analyticsData?.summary?.total_collected || 0,
-    outstanding: analyticsData?.summary?.total_pending || 0,
+    dealClosed: analyticsData?.summary?.total_deals || 0,
+    commissionCollected: analyticsData?.summary?.total_collected || 0,
+    pendingCommission: analyticsData?.summary?.total_pending || 0,
+    totalCommission: analyticsData?.summary?.total_commission || 0,
+    grossRevenue: analyticsData?.summary?.gross_revenue || 0,
+    externalAgentCommissions:
+      analyticsData?.summary?.external_agent_commissions || 0,
+    agentCommission: analyticsData?.summary?.agent_commission || 0,
+    managerCommission: analyticsData?.summary?.manager_commission || 0,
+    netRevenue: analyticsData?.summary?.net_revenue || 0,
   };
 
   // Transform API data for charts
@@ -467,92 +479,65 @@ export function Reports() {
       {/* Content - only show when not loading and no error */}
       {!isLoading && !error && (
         <>
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-linear-to-br from-green-50 to-white dark:from-green-900/20 dark:to-gray-800">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm text-gray-700 dark:text-gray-300">
-                  Total Revenue
+          {/* Top Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Total Commission Card */}
+            <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-purple-50 to-white dark:from-purple-900/20 dark:to-gray-800">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-5 pt-4">
+                <CardTitle className="text-base font-medium text-gray-600 dark:text-gray-400">
+                  Total Commission
+                </CardTitle>
+                <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0 px-5 pb-4">
+                <div className="text-3xl text-gray-900 dark:text-white font-bold">
+                  AED{" "}
+                  {summaryMetrics.totalCommission >= 1000
+                    ? `${(summaryMetrics.totalCommission / 1000).toFixed(0)}K`
+                    : summaryMetrics.totalCommission.toLocaleString()}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Gross Revenue Card */}
+            <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-green-50 to-white dark:from-green-900/20 dark:to-gray-800">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-5 pt-4">
+                <CardTitle className="text-base font-medium text-gray-600 dark:text-gray-400">
+                  Gross Revenue
                 </CardTitle>
                 <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                  <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl text-gray-900 dark:text-white font-semibold">
+              <CardContent className="pt-0 px-5 pb-4">
+                <div className="text-3xl text-gray-900 dark:text-white font-bold">
                   AED{" "}
-                  {summaryMetrics.totalRevenue >= 1000
-                    ? `${(summaryMetrics.totalRevenue / 1000).toFixed(0)}K`
-                    : summaryMetrics.totalRevenue.toLocaleString()}
+                  {summaryMetrics.grossRevenue >= 1000
+                    ? `${(summaryMetrics.grossRevenue / 1000).toFixed(0)}K`
+                    : summaryMetrics.grossRevenue.toLocaleString()}
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {analyticsData ? "From API" : "No data"}
-                </p>
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-linear-to-br from-blue-50 to-white dark:from-blue-900/20 dark:to-gray-800">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm text-gray-700 dark:text-gray-300">
-                  Deals Closed
+            {/* Net Revenue Card */}
+            <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-teal-50 to-white dark:from-teal-900/20 dark:to-gray-800">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-5 pt-4">
+                <CardTitle className="text-base font-medium text-gray-600 dark:text-gray-400">
+                  Net Revenue
                 </CardTitle>
-                <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                  <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <div className="h-10 w-10 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl text-gray-900 dark:text-white font-semibold">
-                  {summaryMetrics.dealsCount}
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Total deals
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-linear-to-br from-emerald-50 to-white dark:from-emerald-900/20 dark:to-gray-800">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm text-gray-700 dark:text-gray-300">
-                  Commission Collected
-                </CardTitle>
-                <div className="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                  <TrendingUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl text-gray-900 dark:text-white font-semibold">
+              <CardContent className="pt-0 px-5 pb-4">
+                <div className="text-3xl text-gray-900 dark:text-white font-bold">
                   AED{" "}
-                  {summaryMetrics.commissionReceived >= 1000
-                    ? `${(summaryMetrics.commissionReceived / 1000).toFixed(
-                        0
-                      )}K`
-                    : summaryMetrics.commissionReceived.toLocaleString()}
+                  {summaryMetrics.netRevenue >= 1000
+                    ? `${(summaryMetrics.netRevenue / 1000).toFixed(0)}K`
+                    : summaryMetrics.netRevenue.toLocaleString()}
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Total collected
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-linear-to-br from-orange-50 to-white dark:from-orange-900/20 dark:to-gray-800">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                <CardTitle className="text-sm text-gray-700 dark:text-gray-300">
-                  Outstanding
-                </CardTitle>
-                <div className="h-10 w-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                  <Users className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl text-gray-900 dark:text-white font-semibold">
-                  AED{" "}
-                  {summaryMetrics.outstanding >= 1000
-                    ? `${(summaryMetrics.outstanding / 1000).toFixed(0)}K`
-                    : summaryMetrics.outstanding.toLocaleString()}
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Pending payments
-                </p>
               </CardContent>
             </Card>
           </div>
@@ -561,6 +546,206 @@ export function Reports() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Main Chart based on report type */}
             <Card className="border-0 shadow-lg">
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Collection & Deals */}
+                  <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                        <Target className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        Collection & Deals
+                      </p>
+                    </div>
+                    <div className="space-y-2.5 ml-15">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          Collected
+                        </span>
+                        <span className="text-base font-bold text-gray-900 dark:text-white">
+                          AED{" "}
+                          {summaryMetrics.commissionCollected >= 1000
+                            ? `${(
+                                summaryMetrics.commissionCollected / 1000
+                              ).toFixed(0)}K`
+                            : summaryMetrics.commissionCollected.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          Pending
+                        </span>
+                        <span className="text-base font-bold text-orange-600 dark:text-orange-400">
+                          AED{" "}
+                          {summaryMetrics.pendingCommission >= 1000
+                            ? `${(
+                                summaryMetrics.pendingCommission / 1000
+                              ).toFixed(0)}K`
+                            : summaryMetrics.pendingCommission.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-emerald-200 dark:border-emerald-800">
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          Deals Closed
+                        </span>
+                        <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                          {summaryMetrics.dealClosed}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Commission Breakdown */}
+                  <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                        <Users className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                        Commission Breakdown
+                      </p>
+                    </div>
+                    <div className="space-y-2.5 ml-15">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          Agent
+                        </span>
+                        <span className="text-base font-bold text-gray-900 dark:text-white">
+                          AED{" "}
+                          {summaryMetrics.agentCommission >= 1000
+                            ? `${(
+                                summaryMetrics.agentCommission / 1000
+                              ).toFixed(0)}K`
+                            : summaryMetrics.agentCommission.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          External
+                        </span>
+                        <span className="text-base font-bold text-cyan-600 dark:text-cyan-400">
+                          AED{" "}
+                          {summaryMetrics.externalAgentCommissions >= 1000
+                            ? `${(
+                                summaryMetrics.externalAgentCommissions / 1000
+                              ).toFixed(0)}K`
+                            : summaryMetrics.externalAgentCommissions.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-indigo-200 dark:border-indigo-800">
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          Manager
+                        </span>
+                        <span className="text-base font-bold text-pink-600 dark:text-pink-400">
+                          AED{" "}
+                          {summaryMetrics.managerCommission >= 1000
+                            ? `${(
+                                summaryMetrics.managerCommission / 1000
+                              ).toFixed(0)}K`
+                            : summaryMetrics.managerCommission.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-0 shadow-lg">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl">Commission Overview</CardTitle>
+                  <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                    <div className="flex items-center gap-1">
+                      <div className="h-3 w-3 rounded-full bg-green-500"></div>
+                      <span>Collected</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="h-3 w-3 rounded-full bg-orange-500"></div>
+                      <span>Pending</span>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* Commission Progress */}
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-base font-medium text-gray-700 dark:text-gray-300">
+                        Collection Progress
+                      </span>
+                      <span className="text-base text-gray-900 dark:text-white font-semibold">
+                        {analyticsData?.summary?.collection_rate
+                          ? `${analyticsData.summary.collection_rate.toFixed(
+                              1
+                            )}%`
+                          : "0%"}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
+                      <div
+                        className="bg-green-500 h-4 rounded-full transition-all duration-500"
+                        style={{
+                          width: `${
+                            analyticsData?.summary?.collection_rate || 0
+                          }%`,
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Breakdown */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Collected
+                      </p>
+                      <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                        AED{" "}
+                        {(
+                          analyticsData?.summary?.total_collected || 0
+                        ).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Pending
+                      </p>
+                      <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                        AED{" "}
+                        {(
+                          analyticsData?.summary?.total_pending || 0
+                        ).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Transferred
+                      </p>
+                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        AED{" "}
+                        {(
+                          analyticsData?.summary?.total_transferred || 0
+                        ).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        Expected
+                      </p>
+                      <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                        AED{" "}
+                        {(
+                          analyticsData?.summary?.total_expected || 0
+                        ).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-0 shadow-lg lg:col-span-2">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <CardTitle>{getReportTypeLabel(reportType)}</CardTitle>
@@ -791,101 +976,9 @@ export function Reports() {
               </CardContent>
             </Card>
 
-            {/* Secondary Chart - Commission Breakdown */}
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                  <CardTitle>Commission Overview</CardTitle>
-                  <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                    <div className="flex items-center gap-1">
-                      <div className="h-3 w-3 rounded-full bg-green-500"></div>
-                      <span>Collected</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <div className="h-3 w-3 rounded-full bg-orange-500"></div>
-                      <span>Pending</span>
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {/* Commission Progress */}
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-gray-700 dark:text-gray-300">
-                        Collection Progress
-                      </span>
-                      <span className="text-gray-900 dark:text-white font-medium">
-                        {analyticsData?.summary?.collection_rate
-                          ? `${analyticsData.summary.collection_rate.toFixed(
-                              1
-                            )}%`
-                          : "0%"}
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-                      <div
-                        className="bg-green-500 h-3 rounded-full transition-all duration-500"
-                        style={{
-                          width: `${
-                            analyticsData?.summary?.collection_rate || 0
-                          }%`,
-                        }}
-                      ></div>
-                    </div>
-                  </div>
+            {/* Key Metrics Summary Card */}
 
-                  {/* Breakdown */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Collected
-                      </p>
-                      <p className="text-xl font-semibold text-green-600 dark:text-green-400">
-                        AED{" "}
-                        {(
-                          analyticsData?.summary?.total_collected || 0
-                        ).toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Pending
-                      </p>
-                      <p className="text-xl font-semibold text-orange-600 dark:text-orange-400">
-                        AED{" "}
-                        {(
-                          analyticsData?.summary?.total_pending || 0
-                        ).toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Transferred
-                      </p>
-                      <p className="text-xl font-semibold text-blue-600 dark:text-blue-400">
-                        AED{" "}
-                        {(
-                          analyticsData?.summary?.total_transferred || 0
-                        ).toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Expected
-                      </p>
-                      <p className="text-xl font-semibold text-purple-600 dark:text-purple-400">
-                        AED{" "}
-                        {(
-                          analyticsData?.summary?.total_expected || 0
-                        ).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Secondary Chart - Commission Breakdown */}
           </div>
 
           {/* Data Table */}
