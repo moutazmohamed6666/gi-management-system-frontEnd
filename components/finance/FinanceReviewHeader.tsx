@@ -58,81 +58,79 @@ export function FinanceReviewHeader({
         </div>
       </div>
       <div className="flex gap-2">
-        {!isDealApproved && (
-          <>
-            {isEditingOverview ? (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={onCancelEdit}
-                  disabled={isSaving}
-                  className="flex items-center gap-2"
-                >
-                  <X className="h-4 w-4" />
-                  Cancel
-                </Button>
-                <Button
-                  onClick={onSaveOverview}
-                  disabled={isSaving}
-                  className="flex items-center gap-2 gi-bg-dark-green"
-                >
-                  {isSaving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4" />
-                  )}
-                  Save Overview
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={onEdit}
-                  disabled={isLoading || isSaving}
-                  className="flex items-center gap-2"
-                >
-                  <Edit2 className="h-4 w-4" />
-                  Edit Deal
-                </Button>
-                <Button
-                  onClick={onApproveDeal}
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-                >
-                  <CheckCircle className="h-4 w-4" />
-                  Approve Deal Overview
-                </Button>
-              </>
-            )}
-          </>
-        )}
-        {isDealApproved && (
+        {isEditingOverview ? (
           <>
             <Button
               variant="outline"
-              onClick={onSaveFinanceData}
+              onClick={onCancelEdit}
               disabled={isSaving}
               className="flex items-center gap-2"
+            >
+              <X className="h-4 w-4" />
+              Cancel
+            </Button>
+            <Button
+              onClick={onSaveOverview}
+              disabled={isSaving}
+              className="flex items-center gap-2 gi-bg-dark-green"
             >
               {isSaving ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Save className="h-4 w-4" />
               )}
-              Save Finance Data
+              Save Overview
             </Button>
+          </>
+        ) : (
+          <>
             <Button
-              onClick={onApproveDeal}
-              disabled={isSaving}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+              variant="outline"
+              onClick={onEdit}
+              disabled={isLoading || isSaving}
+              className="flex items-center gap-2"
             >
-              {isSaving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <CheckCircle className="h-4 w-4" />
-              )}
-              Final Approval
+              <Edit2 className="h-4 w-4" />
+              Edit Deal
             </Button>
+
+            {!isDealApproved ? (
+              <Button
+                onClick={onApproveDeal}
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle className="h-4 w-4" />
+                Approve Deal Overview
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={onSaveFinanceData}
+                  disabled={isSaving}
+                  className="flex items-center gap-2"
+                >
+                  {isSaving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
+                  Save Finance Data
+                </Button>
+                <Button
+                  onClick={onApproveDeal}
+                  disabled={isSaving}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                >
+                  {isSaving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle className="h-4 w-4" />
+                  )}
+                  Final Approval
+                </Button>
+              </>
+            )}
           </>
         )}
       </div>

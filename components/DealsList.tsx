@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import type { Deal } from "@/lib/deals";
 import { dealsApi } from "@/lib/deals";
@@ -111,6 +112,7 @@ interface DealsListProps {
 }
 
 export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusIdFilter, setStatusIdFilter] = useState<string>("all");
   const [agentFilter, setAgentFilter] = useState<string>("all");
@@ -958,6 +960,27 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
                                     >
                                       <Edit2 className="h-4 w-4 mr-2" />
                                       Edit Status
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => onViewDeal(deal.id)}
+                                      className="justify-start hover:bg-green-100 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400"
+                                    >
+                                      <Eye className="h-4 w-4 mr-2" />
+                                      View Details
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setOpenPopoverId(null);
+                                        router.push(`/deals/${deal.id}`);
+                                      }}
+                                      className="justify-start hover:bg-amber-100 hover:text-amber-600 dark:hover:bg-amber-900/20 dark:hover:text-amber-400"
+                                    >
+                                      <Edit2 className="h-4 w-4 mr-2" />
+                                      Edit Deal
                                     </Button>
                                     {/* Finance: show all commission actions regardless of current status (TEMP) */}
                                     <Button

@@ -23,7 +23,7 @@ export function DealOverviewSection({
   dealOverview,
   onOverviewChange,
 }: DealOverviewSectionProps) {
-  if (isDealApproved) {
+  if (isDealApproved && !isEditingOverview) {
     return (
       <Accordion type="single" collapsible className="w-full">
         <AccordionItem value="deal-overview">
