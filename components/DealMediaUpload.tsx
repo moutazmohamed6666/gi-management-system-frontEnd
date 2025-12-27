@@ -220,9 +220,14 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
 
   const handleDownload = async (file: DealMediaFile) => {
     try {
+      const downloadUrl = file.url || file.fileUrl;
+      if (!downloadUrl) {
+        throw new Error("No download URL available");
+      }
+
       const token = sessionStorage.getItem("authToken");
 
-      const response = await fetch(file.fileUrl, {
+      const response = await fetch(downloadUrl, {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
@@ -254,8 +259,11 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
   };
 
   const handleView = (file: DealMediaFile) => {
+    const viewUrl = file.url || file.fileUrl;
+    if (!viewUrl) return;
+
     if (file.mimeType.startsWith("image/") || file.mimeType === "application/pdf") {
-      window.open(file.fileUrl, "_blank");
+      window.open(viewUrl, "_blank");
     } else {
       handleDownload(file);
     }
