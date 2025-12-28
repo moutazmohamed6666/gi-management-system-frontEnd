@@ -31,7 +31,7 @@ export function UserManagement() {
     roleId: string;
     defaultCommissionTypeId: string;
     defaultCommissionValue: number;
-    manager: string;
+    managerId: string;
   } | null>(null);
 
   // Fetch users from API
@@ -116,7 +116,7 @@ export function UserManagement() {
     roleId: string;
     defaultCommissionTypeId: string;
     defaultCommissionValue: number;
-    manager: string;
+    managerId: string;
   }) => {
     setIsSubmitting(true);
     try {
@@ -128,7 +128,7 @@ export function UserManagement() {
         roleId: data.roleId,
         defaultCommissionTypeId: data.defaultCommissionTypeId || undefined,
         defaultCommissionValue: data.defaultCommissionValue || undefined,
-        manager: data.manager || undefined,
+        managerId: data.managerId || undefined,
       });
 
       toast.success("User Created", {
@@ -164,7 +164,7 @@ export function UserManagement() {
       roleId: user.roleId || "",
       defaultCommissionTypeId: user.defaultCommissionTypeId || "",
       defaultCommissionValue: user.defaultCommissionValue || 0,
-      manager: user.manager || "",
+      managerId: user.managerId || "",
     });
     setShowEditModal(true);
   };
@@ -177,7 +177,7 @@ export function UserManagement() {
     roleId: string;
     defaultCommissionTypeId: string;
     defaultCommissionValue: number;
-    manager: string;
+    managerId: string;
   }) => {
     if (!selectedUser) {
       return;
@@ -191,7 +191,7 @@ export function UserManagement() {
         roleId?: string;
         defaultCommissionTypeId?: string;
         defaultCommissionValue?: number;
-        manager?: string;
+        managerId?: string;
         password?: string;
       } = {
         name: data.name,
@@ -207,8 +207,8 @@ export function UserManagement() {
         updateData.defaultCommissionValue = data.defaultCommissionValue;
       }
 
-      if (data.manager) {
-        updateData.manager = data.manager;
+      if (data.managerId) {
+        updateData.managerId = data.managerId;
       }
 
       if (data.password) {

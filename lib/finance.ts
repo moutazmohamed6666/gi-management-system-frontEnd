@@ -116,6 +116,12 @@ export interface GetRecentFinanceNotesParams {
   commission_type?: string; // "FIXED", "PERCENTAGE", "OVERRIDE"
 }
 
+// Agent Deal Status Breakdown Item
+export interface DealStatusBreakdownItem {
+  status: string;
+  count: number;
+}
+
 // Agent Metrics Response
 export interface AgentMetricsResponse {
   units_sold: {
@@ -130,6 +136,7 @@ export interface AgentMetricsResponse {
     status: string;
     period: string;
   };
+  deal_status_breakdown?: DealStatusBreakdownItem[];
 }
 
 // Agent My Performance Response

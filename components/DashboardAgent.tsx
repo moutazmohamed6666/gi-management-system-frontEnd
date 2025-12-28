@@ -35,6 +35,26 @@ import {
   Cell,
 } from "recharts";
 
+// Hook to detect mobile screen size
+function useIsMobile(breakpoint: number = 640) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < breakpoint);
+    };
+
+    // Check on mount
+    checkMobile();
+
+    // Listen for resize events
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, [breakpoint]);
+
+  return isMobile;
+}
+
 export function DashboardAgent() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -43,12 +63,14 @@ export function DashboardAgent() {
   const [agentMetrics, setAgentMetrics] = useState<AgentMetricsResponse | null>(
     null
   );
+  const [totalDeals, setTotalDeals] = useState(0);
   const [myPerformance, setMyPerformance] =
     useState<AgentMyPerformanceResponse | null>(null);
   const [monthlyPerformance, setMonthlyPerformance] =
     useState<AgentMonthlyPerformanceResponse | null>(null);
   const [metricsLoading, setMetricsLoading] = useState(true);
   const [metricsError, setMetricsError] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
   const handleDateChange = (start: string, end: string) => {
     setStartDate(start);
@@ -144,6 +166,7 @@ export function DashboardAgent() {
 
         const response = await dealsApi.getAgentDeals(params);
         const deals = Array.isArray(response.data) ? response.data : [];
+        setTotalDeals(response.total);
         setAgentDeals(deals);
       } catch (err) {
         console.error("Failed to fetch agent deals:", err);
@@ -223,9 +246,34 @@ export function DashboardAgent() {
     });
   }, [monthlyPerformance]);
 
-  // Status breakdown - calculated from deals since API doesn't provide this
+  // Status breakdown - use API data from agentMetrics.deal_status_breakdown
   const statusData = useMemo(() => {
-    // Calculate from agentDeals since API doesn't provide deal status breakdown
+    // Use API data if available
+    if (
+      agentMetrics?.deal_status_breakdown &&
+      agentMetrics.deal_status_breakdown.length > 0
+    ) {
+      // Define colors for each status
+      const statusColors: Record<string, string> = {
+        Submitted: "#3b82f6", // blue
+        "Finance Review": "#f59e0b", // amber
+        Draft: "#94a3b8", // slate
+        "CEO Approved": "var(--gi-dark-green)", // green
+        "Finance Approval": "#10b981", // emerald
+        Closed: "#059669", // green-600
+        "CEO Review": "#8b5cf6", // violet
+        Rejected: "#ef4444", // red
+        Pending: "#f97316", // orange
+      };
+
+      return agentMetrics.deal_status_breakdown.map((item) => ({
+        name: item.status,
+        value: item.count,
+        color: statusColors[item.status] || "#6b7280", // default gray
+      }));
+    }
+
+    // Fallback to calculated values from deals if API data not available
     const closed = agentDeals.filter((d) => {
       const paidAmount = getCommissionPaid(d);
       const totalAmount = getCommissionTotal(d);
@@ -260,7 +308,7 @@ export function DashboardAgent() {
         color: "#94a3b8",
       },
     ];
-  }, [agentDeals]);
+  }, [agentMetrics?.deal_status_breakdown, agentDeals]);
 
   // Check if all status values are zero
   const totalStatusValue = statusData.reduce(
@@ -561,17 +609,22 @@ export function DashboardAgent() {
           </CardHeader>
           <CardContent>
             {!hasStatusData ? (
-              <div className="flex flex-col items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
-                <BarChart3 className="h-12 w-12 mb-4 opacity-50" />
-                <p className="text-lg font-medium mb-1">No Data Available</p>
-                <p className="text-sm text-center">
+              <div className="flex flex-col items-center justify-center h-[200px] sm:h-[280px] text-gray-500 dark:text-gray-400">
+                <BarChart3 className="h-10 w-10 sm:h-12 sm:w-12 mb-4 opacity-50" />
+                <p className="text-base sm:text-lg font-medium mb-1">
+                  No Data Available
+                </p>
+                <p className="text-xs sm:text-sm text-center">
                   No deal status data available for the selected period
                 </p>
               </div>
             ) : (
               <>
                 <div className="flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height={300}>
+                  <ResponsiveContainer
+                    width="100%"
+                    height={isMobile ? 180 : 260}
+                  >
                     <PieChart>
                       <defs>
                         <filter id="shadow" height="130%">
@@ -588,12 +641,10 @@ export function DashboardAgent() {
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ name, value, percent }) =>
-                          `${name}: ${value} (${((percent ?? 0) * 100).toFixed(
-                            0
-                          )}%)`
+                        label={({ percent }) =>
+                          `${((percent ?? 0) * 100).toFixed(0)}%`
                         }
-                        outerRadius={100}
+                        outerRadius={isMobile ? 55 : 85}
                         fill="#8884d8"
                         dataKey="value"
                         style={{ filter: "url(#shadow)" }}
@@ -611,27 +662,36 @@ export function DashboardAgent() {
                           borderRadius: "8px",
                           boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                         }}
+                        formatter={(value: number, name: string) => [
+                          value,
+                          name,
+                        ]}
                       />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="grid grid-cols-3 gap-4 mt-6">
-                  {statusData.map((item, index) => (
-                    <div key={index} className="text-center">
-                      <div className="flex items-center justify-center gap-2 mb-1">
-                        <div
-                          className="h-3 w-3 rounded-full"
-                          style={{ backgroundColor: item.color }}
-                        ></div>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {item.name}
-                        </span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 mt-4">
+                  {statusData
+                    .filter((item) => item.value > 0)
+                    .map((item, index) => (
+                      <div
+                        key={index}
+                        className="text-center p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+                      >
+                        <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-1">
+                          <div
+                            className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full shrink-0"
+                            style={{ backgroundColor: item.color }}
+                          ></div>
+                          <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
+                            {item.name}
+                          </span>
+                        </div>
+                        <div className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">
+                          {item.value}
+                        </div>
                       </div>
-                      <div className="text-xl text-gray-900 dark:text-gray-100">
-                        {item.value}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </>
             )}
@@ -645,7 +705,7 @@ export function DashboardAgent() {
           <div className="flex items-center justify-between">
             <CardTitle>Recent Deals</CardTitle>
             <span className="text-sm text-gray-600">
-              {agentDeals.length} total deals
+              {totalDeals} total deals
             </span>
           </div>
         </CardHeader>

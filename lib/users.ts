@@ -144,4 +144,14 @@ export const usersApi = {
       method: "DELETE",
     });
   },
+
+  /**
+   * Get managers for dropdown selection
+   * GET /api/users?role=MANAGER
+   */
+  getManagers: async (): Promise<GetUsersResponse> => {
+    return apiClient<GetUsersResponse>(
+      "/api/users?role=MANAGER&page=1&page_size=50"
+    );
+  },
 };

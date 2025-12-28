@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -15,6 +15,7 @@ import {
 } from "../ui/dialog";
 import { Loader2 } from "lucide-react";
 import { useFilters } from "@/lib/useFilters";
+import { usersApi, type User } from "@/lib/users";
 
 interface UserFormData {
   name: string;
@@ -24,7 +25,7 @@ interface UserFormData {
   roleId: string;
   defaultCommissionTypeId: string;
   defaultCommissionValue: number;
-  manager: string;
+  managerId: string;
 }
 
 interface CreateUserModalProps {
@@ -41,6 +42,8 @@ export function CreateUserModal({
   isSubmitting,
 }: CreateUserModalProps) {
   const { roles, commissionTypes, isLoading: filtersLoading } = useFilters();
+  const [managers, setManagers] = useState<User[]>([]);
+  const [managersLoading, setManagersLoading] = useState(false);
 
   const {
     register,
@@ -56,9 +59,28 @@ export function CreateUserModal({
       roleId: "",
       defaultCommissionTypeId: "",
       defaultCommissionValue: 0,
-      manager: "",
+      managerId: "",
     },
   });
+
+  // Fetch managers when modal opens
+  useEffect(() => {
+    if (open) {
+      const fetchManagers = async () => {
+        setManagersLoading(true);
+        try {
+          const response = await usersApi.getManagers();
+          setManagers(Array.isArray(response.data) ? response.data : []);
+        } catch (error) {
+          console.error("Failed to fetch managers:", error);
+          setManagers([]);
+        } finally {
+          setManagersLoading(false);
+        }
+      };
+      fetchManagers();
+    }
+  }, [open]);
 
   // Reset form when modal closes
   useEffect(() => {
@@ -71,7 +93,7 @@ export function CreateUserModal({
         roleId: "",
         defaultCommissionTypeId: "",
         defaultCommissionValue: 0,
-        manager: "",
+        managerId: "",
       });
     }
   }, [open, reset]);
@@ -207,12 +229,20 @@ export function CreateUserModal({
                 )}
               </div>
               <div>
-                <Label htmlFor="create-manager">Manager (Optional)</Label>
-                <Input
-                  id="create-manager"
-                  placeholder="Enter manager name"
-                  {...register("manager")}
-                />
+                <Label htmlFor="create-managerId">Manager (Optional)</Label>
+                <select
+                  id="create-managerId"
+                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md bg-white dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+                  {...register("managerId")}
+                  disabled={managersLoading}
+                >
+                  <option value="">Select manager (optional)</option>
+                  {managers.map((manager) => (
+                    <option key={manager.id} value={manager.id}>
+                      {manager.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <Label htmlFor="create-password">Temporary Password *</Label>
