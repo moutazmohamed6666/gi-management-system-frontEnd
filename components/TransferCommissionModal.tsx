@@ -18,6 +18,7 @@ import {
   type TransferCommissionResponse,
 } from "@/lib/commissions";
 import { dealsApi, type Deal, type GetDealAgentsResponse } from "@/lib/deals";
+import { filtersApi, type FilterOption } from "@/lib/filters";
 
 interface TransferCommissionModalProps {
   deal: Deal;
@@ -36,19 +37,32 @@ export function TransferCommissionModal({
   const [toAccount, setToAccount] = useState<string>("");
   const [toUserId, setToUserId] = useState<string>("");
   const [amount, setAmount] = useState<string>("");
+  const [transferTypeId, setTransferTypeId] = useState<string>("");
+  const [comment, setComment] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingAgents, setIsLoadingAgents] = useState(false);
+  const [isLoadingTransferTypes, setIsLoadingTransferTypes] = useState(false);
   const [dealAgents, setDealAgents] = useState<GetDealAgentsResponse | null>(
     null
   );
+  const [transferTypes, setTransferTypes] = useState<FilterOption[]>([]);
   const [amountError, setAmountError] = useState<string>("");
 
-  // Fetch agents and managers when modal opens
-  useEffect(() => {
-    if (isOpen && deal.id) {
-      fetchDealAgents();
+  const fetchTransferTypes = async () => {
+    setIsLoadingTransferTypes(true);
+    try {
+      const response = await filtersApi.getCollectionTypes();
+      setTransferTypes(response);
+    } catch (error) {
+      console.error("Error fetching transfer types:", error);
+      toast.error("Failed to load transfer types", {
+        description: "Could not fetch transfer types",
+      });
+      setTransferTypes([]);
+    } finally {
+      setIsLoadingTransferTypes(false);
     }
-  }, [isOpen, deal.id]);
+  };
 
   const fetchDealAgents = async () => {
     setIsLoadingAgents(true);
@@ -65,6 +79,15 @@ export function TransferCommissionModal({
       setIsLoadingAgents(false);
     }
   };
+
+  // Fetch agents, managers, and transfer types when modal opens
+  useEffect(() => {
+    if (isOpen && deal.id) {
+      fetchDealAgents();
+      fetchTransferTypes();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, deal.id]);
 
   // Get all available users for transfer (mainAgent, manager, internalAgents)
   const getAvailableUsers = () => {
@@ -163,6 +186,10 @@ export function TransferCommissionModal({
       toast.error("Please select a user to transfer to");
       return;
     }
+    if (!transferTypeId) {
+      toast.error("Please select a transfer type");
+      return;
+    }
     if (!amount || parseFloat(amount) <= 0) {
       setAmountError("Please enter a valid amount");
       return;
@@ -177,6 +204,8 @@ export function TransferCommissionModal({
         toAccount,
         toUserId,
         amount: parseFloat(amount),
+        transferTypeId,
+        comment: comment.trim() || undefined,
       });
 
       const recipientName = getRecipientName(toUserId);
@@ -205,6 +234,8 @@ export function TransferCommissionModal({
     setToAccount("");
     setToUserId("");
     setAmount("");
+    setTransferTypeId("");
+    setComment("");
     setAmountError("");
   };
 
@@ -416,6 +447,59 @@ export function TransferCommissionModal({
               </p>
             )}
           </div>
+
+          <div>
+            <Label
+              htmlFor="transferType"
+              className="text-gray-900 dark:text-white"
+            >
+              Transfer Type <span className="text-red-500">*</span>
+            </Label>
+            <Select
+              value={transferTypeId}
+              onValueChange={(value) => setTransferTypeId(value)}
+            >
+              <SelectTrigger
+                id="transferType"
+                className="mt-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                disabled={isLoadingTransferTypes}
+              >
+                <SelectValue
+                  placeholder={
+                    isLoadingTransferTypes
+                      ? "Loading transfer types..."
+                      : "Select transfer type"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {transferTypes.map((type) => (
+                  <SelectItem key={type.id} value={type.id}>
+                    {type.name}
+                  </SelectItem>
+                ))}
+                {transferTypes.length === 0 && !isLoadingTransferTypes && (
+                  <div className="px-2 py-1 text-gray-500 text-sm">
+                    No transfer types found
+                  </div>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="comment" className="text-gray-900 dark:text-white">
+              Comment
+            </Label>
+            <textarea
+              id="comment"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Enter any notes or comments for this transfer"
+              rows={3}
+              className="mt-2 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-600 focus:border-transparent resize-none"
+            />
+          </div>
         </div>
 
         {/* Footer Actions */}
@@ -430,7 +514,13 @@ export function TransferCommissionModal({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={!toAccount || !toUserId || !amount || isSubmitting}
+            disabled={
+              !toAccount ||
+              !toUserId ||
+              !amount ||
+              !transferTypeId ||
+              isSubmitting
+            }
             className="gi-bg-dark-green dark:bg-green-600 dark:hover:bg-green-700"
           >
             {isSubmitting ? (

@@ -69,23 +69,23 @@ export function DateRangeFilter({ onDateChange }: DateRangeFilterProps) {
   return (
     <div className="space-y-3">
       {/* Row 1: Date Range Label + Preset Buttons */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
         <div className="flex items-center gap-2 shrink-0">
           <Calendar className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-          <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+          <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-medium">
             Date Range Filter
           </span>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5 sm:gap-2">
           <Button
             variant={activeFilter === "today" ? "default" : "outline"}
             size="sm"
             onClick={() => handleQuickFilter("today")}
             className={
               activeFilter === "today"
-                ? "gi-bg-dark-green dark:bg-[(--gi-green-80)] text-white h-8"
-                : "dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 h-8"
+                ? "gi-bg-dark-green dark:bg-[(--gi-green-80)] text-white h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3"
+                : "dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3"
             }
           >
             Today
@@ -96,11 +96,11 @@ export function DateRangeFilter({ onDateChange }: DateRangeFilterProps) {
             onClick={() => handleQuickFilter("week")}
             className={
               activeFilter === "week"
-                ? "gi-bg-dark-green dark:bg-[(--gi-green-80)] text-white h-8"
-                : "dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 h-8"
+                ? "gi-bg-dark-green dark:bg-[(--gi-green-80)] text-white h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3"
+                : "dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3"
             }
           >
-            Last 7 Days
+            <span className="hidden xs:inline">Last </span>7 Days
           </Button>
           <Button
             variant={activeFilter === "month" ? "default" : "outline"}
@@ -108,11 +108,11 @@ export function DateRangeFilter({ onDateChange }: DateRangeFilterProps) {
             onClick={() => handleQuickFilter("month")}
             className={
               activeFilter === "month"
-                ? "gi-bg-dark-green dark:bg-[(--gi-green-80)] text-white h-8"
-                : "dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 h-8"
+                ? "gi-bg-dark-green dark:bg-[(--gi-green-80)] text-white h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3"
+                : "dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3"
             }
           >
-            Last Month
+            <span className="hidden xs:inline">Last </span>Month
           </Button>
           <Button
             variant={activeFilter === "year" ? "default" : "outline"}
@@ -120,19 +120,19 @@ export function DateRangeFilter({ onDateChange }: DateRangeFilterProps) {
             onClick={() => handleQuickFilter("year")}
             className={
               activeFilter === "year"
-                ? "gi-bg-dark-green dark:bg-[(--gi-green-80)] text-white h-8"
-                : "dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 h-8"
+                ? "gi-bg-dark-green dark:bg-[(--gi-green-80)] text-white h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3"
+                : "dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 h-7 sm:h-8 text-xs sm:text-sm px-2 sm:px-3"
             }
           >
-            Last Year
+            <span className="hidden xs:inline">Last </span>Year
           </Button>
         </div>
       </div>
 
       {/* Row 2: Date Inputs + Action Buttons */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
         <div>
-          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1.5">
+          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1 sm:mb-1.5">
             Start Date
           </label>
           <StyledDatePicker
@@ -145,7 +145,7 @@ export function DateRangeFilter({ onDateChange }: DateRangeFilterProps) {
           />
         </div>
         <div>
-          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1.5">
+          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1 sm:mb-1.5">
             End Date
           </label>
           <StyledDatePicker
@@ -160,17 +160,17 @@ export function DateRangeFilter({ onDateChange }: DateRangeFilterProps) {
         <div className="flex items-end">
           <Button
             onClick={handleApplyFilter}
-            className="w-full gi-bg-dark-green dark:bg-[(--gi-green-80)] h-[38px] text-white text-sm"
+            className="w-full gi-bg-dark-green dark:bg-[(--gi-green-80)] h-[34px] sm:h-[38px] text-white text-xs sm:text-sm"
             disabled={!startDate && !endDate}
           >
-            Apply Filter
+            Apply
           </Button>
         </div>
         <div className="flex items-end">
           <Button
             variant="outline"
             onClick={handleClearFilter}
-            className="w-full h-[38px] dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 text-sm"
+            className="w-full h-[34px] sm:h-[38px] dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 text-xs sm:text-sm"
           >
             Clear
           </Button>

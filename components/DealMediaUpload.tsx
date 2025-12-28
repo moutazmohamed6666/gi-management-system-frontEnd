@@ -220,24 +220,9 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
 
   const handleDownload = async (file: DealMediaFile) => {
     try {
-      const downloadUrl = file.url || file.fileUrl;
-      if (!downloadUrl) {
-        throw new Error("No download URL available");
-      }
-
-      const token = sessionStorage.getItem("authToken");
-
-      const response = await fetch(downloadUrl, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to download file");
-      }
-
-      const blob = await response.blob();
+      // Use the API endpoint to download the file
+      const blob = await dealsApi.downloadMedia(file.id);
+      
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -324,46 +309,51 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <Button variant="ghost" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
+          <Button variant="ghost" onClick={onBack} size="sm" className="px-2 sm:px-4">
+            <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
             Back to Deals
           </Button>
         </div>
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          Deal ID: <span className="font-mono">{dealId}</span>
+        <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 px-2 sm:px-0">
+          Deal ID: <span className="font-mono break-all">{dealId}</span>
         </div>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Upload Deal Media</CardTitle>
-          <CardDescription>
-            Upload documents and media files for this deal. Select a media type tab and drag & drop
-            files or click to browse.
+        <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
+          <CardTitle className="text-lg sm:text-xl">Upload Deal Media</CardTitle>
+          <CardDescription className="text-sm">
+            Upload documents and media files for this deal. Select a media type tab and drag & drop files or click to browse.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-4 sm:px-6">
           <Tabs value={selectedMediaType} onValueChange={setSelectedMediaType}>
-            <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${mediaTypes.length}, minmax(0, 1fr))` }}>
-              {mediaTypes.map((type) => (
-                <TabsTrigger key={type.id} value={type.id}>
-                  {type.name}
-                  {uploadedFiles[type.id] && uploadedFiles[type.id].length > 0 && (
-                    <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-blue-500 rounded-full">
-                      {uploadedFiles[type.id].length}
-                    </span>
-                  )}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            <div className="overflow-x-auto -mx-1 px-1 pb-2">
+              <TabsList className="inline-flex h-auto min-w-full sm:grid sm:w-full gap-1 p-1" style={{ gridTemplateColumns: mediaTypes.length > 0 ? `repeat(${mediaTypes.length}, minmax(0, 1fr))` : undefined }}>
+                {mediaTypes.map((type) => (
+                  <TabsTrigger 
+                    key={type.id} 
+                    value={type.id}
+                    className="whitespace-nowrap px-3 py-2 text-xs sm:text-sm"
+                  >
+                    {type.name}
+                    {uploadedFiles[type.id] && uploadedFiles[type.id].length > 0 && (
+                      <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 text-[10px] sm:text-xs font-semibold text-white bg-blue-500 rounded-full">
+                        {uploadedFiles[type.id].length}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
 
             {mediaTypes.map((type) => (
               <TabsContent key={type.id} value={type.id} className="space-y-4">
                 <div
-                  className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                  className={`border-2 border-dashed rounded-lg p-4 sm:p-8 text-center transition-colors ${
                     isDragging
                       ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
                       : "border-gray-300 dark:border-gray-700"
@@ -372,11 +362,11 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, type.id)}
                 >
-                  <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <p className="text-lg font-medium mb-2">
+                  <Upload className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 text-gray-400" />
+                  <p className="text-base sm:text-lg font-medium mb-2">
                     Drop {type.name} files here, or click to browse
                   </p>
-                  <p className="text-sm text-gray-500 mb-4">
+                  <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
                     Supported formats: PDF, JPG, PNG, DOCX, XLSX
                   </p>
                   <input
@@ -390,6 +380,7 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
                     type="button"
                     variant="outline"
                     onClick={() => document.getElementById(`file-input-${type.id}`)?.click()}
+                    className="w-full sm:w-auto"
                   >
                     Browse Files
                   </Button>
@@ -398,40 +389,48 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
                 {/* Existing Files Section */}
                 {existingFiles.filter((f) => f.mediaType.id === type.id).length > 0 && (
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">
+                    <h3 className="text-base sm:text-lg font-semibold">
                       Uploaded Files ({existingFiles.filter((f) => f.mediaType.id === type.id).length})
                     </h3>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {existingFiles
                         .filter((f) => f.mediaType.id === type.id)
                         .map((file) => (
                           <div
                             key={file.id}
-                            className="flex items-center justify-between p-4 border rounded-lg dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+                            className="p-3 sm:p-4 border rounded-lg dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
                           >
-                            <div className="flex items-center space-x-4 flex-1 min-w-0">
-                              <div className="text-2xl">{getFileIcon(file.mimeType)}</div>
+                            {/* File info row */}
+                            <div className="flex items-start gap-3">
+                              <div className="text-xl sm:text-2xl flex-shrink-0">{getFileIcon(file.mimeType)}</div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate">{file.originalFilename}</p>
-                                <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                                <p className="text-sm font-medium break-words line-clamp-2">{file.originalFilename}</p>
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 mt-1">
                                   <span>{formatFileSize(file.fileSize)}</span>
-                                  <span>•</span>
-                                  <span>Uploaded by {file.uploadedBy.name}</span>
-                                  <span>•</span>
-                                  <span>{formatDate(file.createdAt)}</span>
+                                  <span className="hidden sm:inline">•</span>
+                                  <span className="hidden sm:inline">Uploaded by {file.uploadedBy.name}</span>
+                                  <span className="hidden sm:inline">•</span>
+                                  <span className="hidden sm:inline">{formatDate(file.createdAt)}</span>
+                                </div>
+                                {/* Mobile-only metadata */}
+                                <div className="sm:hidden text-xs text-gray-500 mt-1">
+                                  <span>By {file.uploadedBy.name}</span>
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center space-x-2">
+                            
+                            {/* Action buttons - separate row on mobile */}
+                            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 sm:mt-0 sm:pt-0 sm:border-t-0 sm:justify-end">
                               {(file.mimeType.startsWith("image/") || file.mimeType === "application/pdf") && (
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   onClick={() => handleView(file)}
                                   title="View file"
+                                  className="flex-1 sm:flex-none"
                                 >
-                                  <Eye className="h-4 w-4 mr-1" />
-                                  View
+                                  <Eye className="h-4 w-4 sm:mr-1" />
+                                  <span className="hidden sm:inline">View</span>
                                 </Button>
                               )}
                               <Button
@@ -439,9 +438,10 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
                                 variant="outline"
                                 onClick={() => handleDownload(file)}
                                 title="Download file"
+                                className="flex-1 sm:flex-none"
                               >
-                                <Download className="h-4 w-4 mr-1" />
-                                Download
+                                <Download className="h-4 w-4 sm:mr-1" />
+                                <span className="hidden sm:inline">Download</span>
                               </Button>
                               <Button
                                 size="sm"
@@ -462,30 +462,32 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
                 {/* New Files to Upload Section */}
                 {uploadedFiles[type.id] && uploadedFiles[type.id].length > 0 && (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <h3 className="text-base sm:text-lg font-semibold">
                         New Files to Upload ({uploadedFiles[type.id].length})
                       </h3>
                       <Button
                         onClick={() => handleUploadAll(type.id)}
                         disabled={uploadedFiles[type.id].every((f) => f.status === "success")}
-                        className="gi-bg-dark-green"
+                        className="gi-bg-dark-green w-full sm:w-auto"
                       >
                         <Upload className="h-4 w-4 mr-2" />
                         Upload All
                       </Button>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {uploadedFiles[type.id].map((uploadedFile, index) => (
                         <div
                           key={index}
-                          className="flex items-center justify-between p-4 border rounded-lg dark:border-gray-700"
+                          className="p-3 sm:p-4 border rounded-lg dark:border-gray-700"
                         >
-                          <div className="flex items-center space-x-3 flex-1">
-                            {getStatusIcon(uploadedFile.status)}
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 mt-0.5">
+                              {getStatusIcon(uploadedFile.status)}
+                            </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">
+                              <p className="text-sm font-medium break-words line-clamp-2">
                                 {uploadedFile.file.name}
                               </p>
                               <p className="text-xs text-gray-500">
@@ -496,14 +498,18 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2">
+                          
+                          {/* Action buttons */}
+                          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 sm:mt-0 sm:pt-0 sm:border-t-0 sm:justify-end">
                             {uploadedFile.status === "pending" && (
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => uploadFile(uploadedFile.file, type.id, index)}
+                                className="flex-1 sm:flex-none"
                               >
-                                Upload
+                                <Upload className="h-4 w-4 sm:mr-1" />
+                                <span className="sm:inline">Upload</span>
                               </Button>
                             )}
                             {uploadedFile.status === "error" && (
@@ -511,6 +517,7 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => uploadFile(uploadedFile.file, type.id, index)}
+                                className="flex-1 sm:flex-none"
                               >
                                 Retry
                               </Button>
@@ -520,6 +527,7 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleRemoveFile(type.id, index)}
+                                title="Remove file"
                               >
                                 <XCircle className="h-4 w-4" />
                               </Button>

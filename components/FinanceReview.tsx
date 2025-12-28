@@ -564,6 +564,9 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
 
   return (
     <div className="space-y-6">
+      {/* Spacer for fixed header on mobile/tablet */}
+      <div className="h-28 lg:h-0" />
+      
       <FinanceReviewHeader
         dealNumber={deal.dealNumber}
         project={dealOverview.project}

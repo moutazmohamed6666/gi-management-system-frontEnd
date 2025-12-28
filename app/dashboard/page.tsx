@@ -6,6 +6,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { DashboardAgent } from "@/components/DashboardAgent";
 import { DashboardFinance } from "@/components/DashboardFinance";
 import { DashboardCEO } from "@/components/DashboardCEO";
+import { DashboardSalesAdmin } from "@/components/DashboardSalesAdmin";
 
 type UserRole =
   | "agent"
@@ -28,8 +29,6 @@ export default function DashboardPage() {
       router.push("/login");
     } else if (role === "admin") {
       router.push("/users");
-    } else if (role === "SALES_ADMIN") {
-      router.push("/deals/new");
     } else if (role === "compliance") {
       router.push("/deals");
     } else {
@@ -48,6 +47,8 @@ export default function DashboardPage() {
         return <DashboardFinance />;
       case "ceo":
         return <DashboardCEO />;
+      case "SALES_ADMIN":
+        return <DashboardSalesAdmin />;
       case "admin":
         // Admin role only has access to user management, no dashboard view
         return (

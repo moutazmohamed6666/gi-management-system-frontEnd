@@ -176,9 +176,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     if (currentRole === "SALES_ADMIN") {
       navItems = [];
       navItems.push({
-        view: "/deals/new",
-        label: "Create Deal",
-        icon: FileText,
+        view: "/dashboard",
+        label: "Home",
+        icon: LayoutDashboard,
       });
     }
 

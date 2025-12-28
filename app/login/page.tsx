@@ -63,25 +63,13 @@ export default function LoginPage() {
       sessionStorage.removeItem("userCommissionType");
     }
 
-    if (
-      userData.commissionValue !== undefined &&
-      userData.commissionValue !== null
-    ) {
-      sessionStorage.setItem(
-        "userCommissionValue",
-        String(userData.commissionValue)
-      );
-    } else {
-      sessionStorage.removeItem("userCommissionValue");
-    }
-
     // Token is already stored by Login component via setAuthToken
 
     // Redirect based on role
     if (role === "admin") {
       router.push("/users");
     } else if (role === "SALES_ADMIN") {
-      router.push("/deals/new");
+      router.push("/dashboard");
     } else if (role === "compliance") {
       router.push("/deals");
     } else {

@@ -22,7 +22,12 @@ export default function NewDealPage() {
   }, [router]);
 
   const handleBack = () => {
-    router.push("/deals");
+    const role = sessionStorage.getItem("userRole");
+    if (role === "SALES_ADMIN") {
+      router.push("/dashboard");
+    } else {
+      router.push("/deals");
+    }
   };
 
   const handleSave = (createdDealId?: string) => {

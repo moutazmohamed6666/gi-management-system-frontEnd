@@ -55,21 +55,22 @@ export function ReportsFilters({
 }: ReportsFiltersProps) {
   return (
     <Card className="border-0 shadow-lg">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+      <CardHeader className="pb-4 px-4 sm:px-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Title */}
+          <div className="flex items-center gap-2 shrink-0">
             <Filter className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-            <CardTitle>Report Filters</CardTitle>
+            <CardTitle className="text-base sm:text-lg">Report Filters</CardTitle>
           </div>
 
           {/* Quick Period Filters */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {(["today", "week", "month", "quarter", "year"] as const).map(
               (period) => (
                 <button
                   key={period}
                   onClick={() => onPeriodChange(period)}
-                  className={`px-3 py-1.5 text-sm rounded-lg transition-all ${
+                  className={`px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm rounded-lg transition-all ${
                     selectedPeriod === period
                       ? "bg-green-600 text-white shadow"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow dark:bg-gray-700 dark:text-gray-300"
@@ -82,12 +83,12 @@ export function ReportsFilters({
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <CardContent className="px-4 sm:px-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
           <div>
-            <Label htmlFor="developer">Developer</Label>
+            <Label htmlFor="developer" className="text-xs sm:text-sm">Developer</Label>
             <Select value={selectedDeveloper} onValueChange={onDeveloperChange}>
-              <SelectTrigger className="w-full mt-1">
+              <SelectTrigger className="w-full mt-1 h-9 sm:h-10 text-xs sm:text-sm">
                 <SelectValue placeholder="Select developer" />
               </SelectTrigger>
               <SelectContent>
@@ -101,9 +102,9 @@ export function ReportsFilters({
             </Select>
           </div>
           <div>
-            <Label htmlFor="agent">Agent</Label>
+            <Label htmlFor="agent" className="text-xs sm:text-sm">Agent</Label>
             <Select value={selectedAgent} onValueChange={onAgentChange}>
-              <SelectTrigger className="w-full mt-1">
+              <SelectTrigger className="w-full mt-1 h-9 sm:h-10 text-xs sm:text-sm">
                 <SelectValue placeholder="Select agent" />
               </SelectTrigger>
               <SelectContent>
@@ -117,12 +118,12 @@ export function ReportsFilters({
             </Select>
           </div>
           <div>
-            <Label htmlFor="purchaseStatus">Purchase Status</Label>
+            <Label htmlFor="purchaseStatus" className="text-xs sm:text-sm">Purchase Status</Label>
             <Select
               value={selectedPurchaseStatus}
               onValueChange={onPurchaseStatusChange}
             >
-              <SelectTrigger className="w-full mt-1">
+              <SelectTrigger className="w-full mt-1 h-9 sm:h-10 text-xs sm:text-sm">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>

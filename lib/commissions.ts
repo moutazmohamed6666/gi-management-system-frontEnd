@@ -135,6 +135,8 @@ export interface TransferCommissionRequest {
   toAccount: string; // Destination account name
   toUserId: string; // User ID (agent/manager) to transfer to
   amount: number;
+  transferTypeId: string; // UUID of the transfer type from collection-types
+  comment?: string; // Optional comment for the transfer
 }
 
 export interface TransferCommissionResponse {
@@ -255,6 +257,8 @@ export const commissionsApi = {
         toAccount: data.toAccount,
         toUserId: data.toUserId,
         amount: data.amount,
+        transferTypeId: data.transferTypeId,
+        comment: data.comment,
       }),
     });
   },

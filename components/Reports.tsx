@@ -68,9 +68,15 @@ export function Reports() {
     try {
       let response: AnalyticsResponse;
 
-      // Use comprehensive endpoint for finance and CEO roles (no filters supported)
+      // Use comprehensive endpoint for finance and CEO roles
       if (userRole === "finance" || userRole === "ceo") {
-        const compData = await financeApi.getComprehensiveData();
+        const compData = await financeApi.getComprehensiveData({
+          from_date: startDate || undefined,
+          to_date: endDate || undefined,
+          developer_id:
+            selectedDeveloper !== "all" ? selectedDeveloper : undefined,
+          agent_id: selectedAgent !== "all" ? selectedAgent : undefined,
+        });
 
         // Type for monthly revenue items (all optional since API shape varies)
         interface MonthlyRevenueItem {
@@ -241,6 +247,11 @@ export function Reports() {
         report_type: reportType,
         from_date: startDate || undefined,
         to_date: endDate || undefined,
+        developer_id:
+          selectedDeveloper !== "all" ? selectedDeveloper : undefined,
+        agent_id: selectedAgent !== "all" ? selectedAgent : undefined,
+        purchase_status_id:
+          selectedPurchaseStatus !== "all" ? selectedPurchaseStatus : undefined,
       });
 
       toast.success("Export Complete", {

@@ -223,6 +223,9 @@ export function CEODealView({ dealId, onBack }: CEODealViewProps) {
 
   return (
     <div className="space-y-6">
+      {/* Spacer for fixed header on mobile/tablet */}
+      <div className="h-24 lg:h-0" />
+
       {/* Header */}
       <CEODealHeader
         dealNumber={deal.dealNumber}

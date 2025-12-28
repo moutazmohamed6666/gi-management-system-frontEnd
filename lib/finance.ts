@@ -268,6 +268,14 @@ export interface AdminMetricsResponse {
   };
 }
 
+// Comprehensive Finance Dashboard Parameters
+export interface GetComprehensiveDataParams {
+  from_date?: string; // YYYY-MM-DD format
+  to_date?: string; // YYYY-MM-DD format
+  developer_id?: string;
+  agent_id?: string;
+}
+
 // Comprehensive Finance Dashboard Response (for Reports)
 // Actual API response structure
 export interface ComprehensiveFinanceResponse {
@@ -621,10 +629,29 @@ export const financeApi = {
   },
 
   // Get comprehensive finance dashboard data (for Reports)
-  // Note: This endpoint does not accept any filter parameters
-  getComprehensiveData: async (): Promise<ComprehensiveFinanceResponse> => {
-    return apiClient<ComprehensiveFinanceResponse>(
-      "/api/finance-dashboard/comprehensive"
-    );
+  getComprehensiveData: async (
+    params?: GetComprehensiveDataParams
+  ): Promise<ComprehensiveFinanceResponse> => {
+    const queryParams = new URLSearchParams();
+
+    if (params?.from_date) {
+      queryParams.append("from_date", params.from_date);
+    }
+    if (params?.to_date) {
+      queryParams.append("to_date", params.to_date);
+    }
+    if (params?.developer_id) {
+      queryParams.append("developer_id", params.developer_id);
+    }
+    if (params?.agent_id) {
+      queryParams.append("agent_id", params.agent_id);
+    }
+
+    const queryString = queryParams.toString();
+    const endpoint = `/api/finance-dashboard/comprehensive${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    return apiClient<ComprehensiveFinanceResponse>(endpoint);
   },
 };

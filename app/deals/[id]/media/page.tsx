@@ -23,8 +23,8 @@ export default function DealMediaUploadPage() {
 
   const handleBack = () => {
     const role = sessionStorage.getItem("userRole");
-    if (role === "sales_admin") {
-      router.push("/deals/new");
+    if (role === "SALES_ADMIN") {
+      router.push("/dashboard");
     } else {
       router.push("/deals");
     }

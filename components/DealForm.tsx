@@ -178,14 +178,10 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        {currentRole !== "SALES_ADMIN" ? (
-          <Button variant="ghost" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Deals
-          </Button>
-        ) : (
-          <div /> // Empty div to maintain justify-between layout
-        )}
+        <Button variant="ghost" onClick={onBack}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          {currentRole === "SALES_ADMIN" ? "Back to Home" : "Back to Deals"}
+        </Button>
         {!isReadOnly ? (
           <Button
             type="submit"

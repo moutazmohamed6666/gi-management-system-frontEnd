@@ -96,22 +96,6 @@ export function useDealFormDefaults({
   }, [currentRole, isEditMode, watchedBookingDate, purchaseStatuses, setValue]);
 
   // Load defaults from sessionStorage for agents
-  useEffect(() => {
-    if (!isEditMode && currentRole === "agent") {
-      const defaultCommType = sessionStorage.getItem("userCommissionType");
-      const defaultCommValue = sessionStorage.getItem("userCommissionValue");
-
-      if (defaultCommType) {
-        setValue("agentCommissionTypeId", defaultCommType, {
-          shouldValidate: false,
-        });
-      }
-
-      if (defaultCommValue) {
-        setValue("commRate", defaultCommValue, { shouldValidate: false });
-      }
-    }
-  }, [isEditMode, currentRole, setValue]);
 
   return {
     defaultStatusId,
