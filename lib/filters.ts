@@ -200,6 +200,18 @@ export const filtersApi = {
     const data = await apiClient<unknown>("/api/filters/media-types");
     return normalizeGenericOptions(data);
   },
+
+  // Get all areas
+  getAreas: async (): Promise<FilterOption[]> => {
+    const data = await apiClient<unknown>("/api/filters/areas");
+    return normalizeGenericOptions(data);
+  },
+
+  // Get all teams
+  getTeams: async (): Promise<FilterOption[]> => {
+    const data = await apiClient<unknown>("/api/filters/teams");
+    return normalizeGenericOptions(data);
+  },
 };
 
 // Hook-like utility to fetch all filters at once (optional)

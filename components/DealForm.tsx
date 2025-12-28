@@ -40,6 +40,8 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     purchaseStatuses,
     agents: allAgents,
     bedrooms,
+    areas,
+    teams,
     isLoading: filtersLoading,
     error: filtersError,
   } = useFilters();
@@ -259,6 +261,8 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                 dealTypes={dealTypes}
                 statuses={statuses}
                 purchaseStatuses={purchaseStatuses}
+                areas={areas}
+                teams={teams}
                 filtersLoading={filtersLoading}
                 isValidUuid={isValidUuid}
               />

@@ -100,6 +100,8 @@ export function useDealSubmission({
           : new Date().toISOString(),
         dealTypeId: data.dealTypeId,
         statusId: finalStatusId,
+        areaId: data.areaId || undefined,
+        teamId: data.teamId || undefined,
         propertyName: data.propertyName || "",
         propertyTypeId: data.propertyTypeId,
         unitNumber: data.unitNumber,
@@ -183,6 +185,7 @@ export function useDealSubmission({
                     }
               )
             : undefined,
+        topUp: data.topUp ? parseFloat(data.topUp) : undefined,
       };
 
       const payload: CreateDealRequest = isAgentCreating

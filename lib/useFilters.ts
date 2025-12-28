@@ -19,6 +19,8 @@ interface UseFiltersReturn {
   roles: FilterOption[];
   bedrooms: FilterOption[];
   mediaTypes: FilterOption[];
+  areas: FilterOption[];
+  teams: FilterOption[];
   isLoading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -42,6 +44,8 @@ export function useFilters(): UseFiltersReturn {
     roles: [],
     bedrooms: [],
     mediaTypes: [],
+    areas: [],
+    teams: [],
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +70,8 @@ export function useFilters(): UseFiltersReturn {
         roles,
         bedrooms,
         mediaTypes,
+        areas,
+        teams,
       ] = await Promise.all([
         filtersApi.getDevelopers(),
         filtersApi.getAgents(),
@@ -81,6 +87,8 @@ export function useFilters(): UseFiltersReturn {
         filtersApi.getRoles(),
         filtersApi.getBedrooms(),
         filtersApi.getMediaTypes(),
+        filtersApi.getAreas(),
+        filtersApi.getTeams(),
       ]);
 
       setFilters({
@@ -98,6 +106,8 @@ export function useFilters(): UseFiltersReturn {
         roles,
         bedrooms,
         mediaTypes,
+        areas,
+        teams,
       });
     } catch (err: unknown) {
       const message =

@@ -30,6 +30,8 @@ export type DealFormData = {
   purchaseStatusId: string;
   downpayment: string; // New field in API
   agentId: string; // New field for sales_admin
+  areaId: string; // Area selection for secondary deals
+  teamId: string; // Team selection
 
   // Property Details
   developerId: string;
@@ -63,6 +65,7 @@ export type DealFormData = {
   totalCommissionValue: string;
   additionalAgents: AdditionalAgent[];
 
+  topUp: string; // Top up optional field
   notes: string;
 };
 
@@ -76,6 +79,8 @@ const defaultFormValues: DealFormData = {
   purchaseStatusId: "",
   downpayment: "",
   agentId: "",
+  areaId: "",
+  teamId: "",
 
   // Property Details
   developerId: "",
@@ -109,6 +114,7 @@ const defaultFormValues: DealFormData = {
   totalCommissionValue: "",
   additionalAgents: [],
 
+  topUp: "",
   notes: "",
 };
 

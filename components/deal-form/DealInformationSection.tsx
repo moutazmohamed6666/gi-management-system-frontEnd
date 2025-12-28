@@ -6,6 +6,7 @@ import {
   FieldErrors,
   UseFormRegister,
   UseFormSetValue,
+  useWatch,
 } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Label } from "../ui/label";
@@ -37,6 +38,8 @@ interface DealInformationSectionProps {
   dealTypes: Array<{ id: string; name: string }>;
   statuses: Array<{ id: string; name: string }>;
   purchaseStatuses: Array<{ id: string; name: string }>;
+  areas: Array<{ id: string; name: string }>;
+  teams: Array<{ id: string; name: string }>;
   filtersLoading: boolean;
   isValidUuid: (value: string) => boolean;
 }
@@ -52,9 +55,18 @@ export function DealInformationSection({
   dealTypes,
   statuses,
   purchaseStatuses,
+  areas,
+  teams,
   filtersLoading,
   isValidUuid,
 }: DealInformationSectionProps) {
+  // Watch deal type to conditionally show area dropdown
+  const watchedDealTypeId = useWatch({ control, name: "dealTypeId" });
+  const selectedDealType = dealTypes.find(
+    (type) => type.id === watchedDealTypeId
+  );
+  const isSecondaryDeal = selectedDealType?.name?.toLowerCase() === "secondary";
+
   return (
     <Card>
       <CardHeader>
@@ -135,35 +147,65 @@ export function DealInformationSection({
             </div>
           )}
 
-          <div>
-            <Label htmlFor="dealTypeId">Deal Type</Label>
-            <Controller
-              name="dealTypeId"
-              control={control}
-              rules={{ required: "Deal type is required" }}
-              render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  disabled={filtersLoading}
-                >
-                  <SelectTrigger className="w-full mt-1">
-                    <SelectValue placeholder="Select deal type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {dealTypes.map((type) => (
-                      <SelectItem key={type.id} value={type.id}>
-                        {type.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="dealTypeId">Deal Type</Label>
+              <Controller
+                name="dealTypeId"
+                control={control}
+                rules={{ required: "Deal type is required" }}
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={filtersLoading}
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder="Select deal type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {dealTypes.map((type) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.dealTypeId && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.dealTypeId.message}
+                </p>
               )}
-            />
-            {errors.dealTypeId && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.dealTypeId.message}
-              </p>
+            </div>
+
+            {isSecondaryDeal && (
+              <div>
+                <Label htmlFor="areaId">Area</Label>
+                <Controller
+                  name="areaId"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={filtersLoading}
+                    >
+                      <SelectTrigger className="w-full mt-1">
+                        <SelectValue placeholder="Select area" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {areas.map((area) => (
+                          <SelectItem key={area.id} value={area.id}>
+                            {area.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
             )}
           </div>
 
@@ -259,6 +301,32 @@ export function DealInformationSection({
                 className="mt-1"
               />
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="teamId">Team</Label>
+            <Controller
+              name="teamId"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  disabled={filtersLoading}
+                >
+                  <SelectTrigger className="w-full mt-1">
+                    <SelectValue placeholder="Select team" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {teams.map((team) => (
+                      <SelectItem key={team.id} value={team.id}>
+                        {team.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
         </div>
       </CardContent>

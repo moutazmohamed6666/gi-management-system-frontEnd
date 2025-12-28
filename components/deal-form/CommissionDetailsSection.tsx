@@ -93,37 +93,62 @@ export function CommissionDetailsSection({
         <CardTitle>Commission Details</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className="space-y-4 ">
           {/* Sales Value */}
-          <div>
-            <Label htmlFor="salesValue">
-              Sales Value (AED) <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="salesValue"
-              type="text"
-              {...register("salesValue", {
-                required: "Sales value is required",
-                onChange: (e) => {
-                  let numericValue = e.target.value.replace(/[^0-9.]/g, "");
-                  const parts = numericValue.split(".");
-                  if (parts.length > 2) {
-                    numericValue = parts[0] + "." + parts.slice(1).join("");
-                  }
-                  setValue("salesValue", numericValue, {
-                    shouldValidate: true,
-                  });
-                },
-              })}
-              placeholder="Enter sales value"
-              className={`mt-1 ${errors.salesValue ? "border-red-500" : ""}`}
-            />
-            {errors.salesValue && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.salesValue.message}
-              </p>
-            )}
+          <div className="flex flex-row w-full space-x-4">
+            <div className="flex-1 ">
+              <Label htmlFor="salesValue">
+                Sales Value (AED) <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="salesValue"
+                type="text"
+                {...register("salesValue", {
+                  required: "Sales value is required",
+                  onChange: (e) => {
+                    let numericValue = e.target.value.replace(/[^0-9.]/g, "");
+                    const parts = numericValue.split(".");
+                    if (parts.length > 2) {
+                      numericValue = parts[0] + "." + parts.slice(1).join("");
+                    }
+                    setValue("salesValue", numericValue, {
+                      shouldValidate: true,
+                    });
+                  },
+                })}
+                placeholder="Enter sales value"
+                className={`mt-1 ${errors.salesValue ? "border-red-500" : ""}`}
+              />
+              {errors.salesValue && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.salesValue.message}
+                </p>
+              )}
+            </div>
+            <div className="flex-1">
+              <Label htmlFor="topUp">Top Up (Optional)</Label>
+              <Input
+                id="topUp"
+                type="text"
+                {...register("topUp", {
+                  onChange: (e) => {
+                    let numericValue = e.target.value.replace(/[^0-9.]/g, "");
+                    const parts = numericValue.split(".");
+                    if (parts.length > 2) {
+                      numericValue = parts[0] + "." + parts.slice(1).join("");
+                    }
+                    setValue("topUp", numericValue, {
+                      shouldValidate: true,
+                    });
+                  },
+                })}
+                placeholder="Enter top up amount"
+                className="mt-1"
+              />
+            </div>
           </div>
+
+          {/* Top Up Field */}
 
           {/* Total Deal Commission Section */}
           <div

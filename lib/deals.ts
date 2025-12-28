@@ -369,6 +369,8 @@ export interface CreateDealRequest {
   cfExpiry: string; // ISO date string
   closeDate?: string; // ISO date string - optional for agents
   dealTypeId: string;
+  areaId?: string; // Area selection for secondary deals
+  teamId?: string; // Team selection
   propertyName: string;
   propertyTypeId: string;
   unitNumber: string;
@@ -387,6 +389,7 @@ export interface CreateDealRequest {
   additionalAgents?: AdditionalAgent[]; // Now supports multiple external agents
   statusId?: string;
   purchaseStatusId?: string;
+  topUp?: number; // Top up optional field
 }
 
 // Create Deal Response
