@@ -3,7 +3,13 @@
 import { useRouter } from "next/navigation";
 import { Login } from "@/components/Login";
 
-type UserRole = "agent" | "finance" | "ceo" | "admin" | "SALES_ADMIN";
+type UserRole =
+  | "agent"
+  | "finance"
+  | "ceo"
+  | "admin"
+  | "SALES_ADMIN"
+  | "compliance";
 
 interface UserData {
   id: string;
@@ -76,6 +82,8 @@ export default function LoginPage() {
       router.push("/users");
     } else if (role === "SALES_ADMIN") {
       router.push("/deals/new");
+    } else if (role === "compliance") {
+      router.push("/deals");
     } else {
       router.push("/dashboard");
     }

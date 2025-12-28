@@ -2,7 +2,13 @@
 
 import { useForm, useWatch } from "react-hook-form";
 
-export type UserRole = "agent" | "finance" | "ceo" | "admin" | "SALES_ADMIN";
+export type UserRole =
+  | "agent"
+  | "finance"
+  | "ceo"
+  | "admin"
+  | "SALES_ADMIN"
+  | "compliance";
 
 // Additional agent type
 export type AdditionalAgent = {

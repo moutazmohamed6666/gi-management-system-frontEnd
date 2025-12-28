@@ -30,7 +30,13 @@ interface CommissionDetailsSectionProps {
   commissionTypes: Array<{ id: string; name: string }>;
   allAgents: Array<{ id: string; name: string }>;
   watchedAdditionalAgents: AdditionalAgent[];
-  currentRole: "agent" | "finance" | "ceo" | "admin" | "SALES_ADMIN";
+  currentRole:
+    | "agent"
+    | "finance"
+    | "ceo"
+    | "admin"
+    | "SALES_ADMIN"
+    | "compliance";
   filtersLoading: boolean;
 }
 

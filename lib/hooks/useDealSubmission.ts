@@ -29,7 +29,8 @@ export function useDealSubmission({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isEditMode = Boolean(dealId);
-  const isReadOnly = isEditMode && currentRole === "agent";
+  const isReadOnly =
+    isEditMode && (currentRole === "agent" || currentRole === "compliance");
 
   // Form submission handler - shows preview for new deals
   const handleFormSubmit = async (data: DealFormData) => {
@@ -38,7 +39,18 @@ export function useDealSubmission({
         description:
           currentRole === "agent"
             ? "Agents can create deals, but cannot edit an existing deal."
+            : currentRole === "compliance"
+            ? "Compliance users can view deals and upload media, but cannot edit deal data."
             : "This deal is approved and cannot be edited.",
+      });
+      return;
+    }
+
+    // Prevent COMPLIANCE role from creating new deals
+    if (!dealId && currentRole === "compliance") {
+      toast.error("Permission denied", {
+        description:
+          "Compliance users can view deals and upload media, but cannot create new deals.",
       });
       return;
     }

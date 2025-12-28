@@ -36,7 +36,8 @@ export function useDealFormHelpers({
             | "finance"
             | "ceo"
             | "admin"
-            | "SALES_ADMIN")
+            | "SALES_ADMIN"
+            | "compliance")
         : "agent") || "agent"
     );
   };

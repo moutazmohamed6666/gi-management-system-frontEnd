@@ -7,7 +7,13 @@ import { DashboardAgent } from "@/components/DashboardAgent";
 import { DashboardFinance } from "@/components/DashboardFinance";
 import { DashboardCEO } from "@/components/DashboardCEO";
 
-type UserRole = "agent" | "finance" | "ceo" | "admin" | "SALES_ADMIN";
+type UserRole =
+  | "agent"
+  | "finance"
+  | "ceo"
+  | "admin"
+  | "SALES_ADMIN"
+  | "compliance";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -24,6 +30,8 @@ export default function DashboardPage() {
       router.push("/users");
     } else if (role === "SALES_ADMIN") {
       router.push("/deals/new");
+    } else if (role === "compliance") {
+      router.push("/deals");
     } else {
       setTimeout(() => setCurrentRole(role), 0);
       setTimeout(() => setIsLoading(false), 0);

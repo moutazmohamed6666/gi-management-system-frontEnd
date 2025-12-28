@@ -1,32 +1,35 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { AppLayout } from "@/components/AppLayout";
-import { Reports } from "@/components/Reports";
+import { ComplianceDealView } from "@/components/ComplianceDealView";
 
-type UserRole = "agent" | "finance" | "ceo" | "admin" | "sales_admin" | "compliance";
-
-export default function ReportsPage() {
+export default function ComplianceDealViewPage() {
   const router = useRouter();
-  const [currentRole, setCurrentRole] = useState<UserRole | null>(null);
+  const params = useParams();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const auth = sessionStorage.getItem("isAuthenticated");
-    const role = sessionStorage.getItem("userRole") as UserRole;
+    const role = sessionStorage.getItem("userRole");
 
-    if (auth !== "true" || !role) {
+    if (auth !== "true") {
       router.push("/login");
     } else if (role === "sales_admin") {
       router.push("/deals/new");
-    } else if (role !== "finance" && role !== "ceo" && role !== "admin") {
+    } else if (role !== "compliance") {
       router.push("/dashboard");
     } else {
-      setCurrentRole(role);
       setIsLoading(false);
     }
   }, [router]);
+
+  const dealId = params?.id as string;
+
+  const handleBack = () => {
+    router.push("/deals");
+  };
 
   if (isLoading) {
     return (
@@ -40,8 +43,7 @@ export default function ReportsPage() {
 
   return (
     <AppLayout>
-      <Reports />
+      <ComplianceDealView dealId={dealId} onBack={handleBack} />
     </AppLayout>
   );
 }
-

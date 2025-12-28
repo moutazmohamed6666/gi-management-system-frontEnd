@@ -22,7 +22,13 @@ import {
 import Link from "next/link";
 import { getAuthToken, removeAuthToken } from "@/lib/api";
 
-type UserRole = "agent" | "finance" | "ceo" | "admin" | "SALES_ADMIN";
+type UserRole =
+  | "agent"
+  | "finance"
+  | "ceo"
+  | "admin"
+  | "SALES_ADMIN"
+  | "compliance";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -90,6 +96,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         return "Admin";
       case "SALES_ADMIN":
         return "Sales Admin";
+      case "compliance":
+        return "Compliance";
       default:
         return "";
     }
@@ -134,7 +142,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     let navItems: { view: string; label: string; icon: React.ElementType }[] =
       [];
 
-    if (currentRole !== "SALES_ADMIN") {
+    if (currentRole !== "SALES_ADMIN" && currentRole !== "compliance") {
       navItems.push({
         view: "/dashboard",
         label: "Dashboard",
@@ -146,7 +154,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       currentRole === "agent" ||
       currentRole === "finance" ||
       currentRole === "admin" ||
-      currentRole === "ceo"
+      currentRole === "ceo" ||
+      currentRole === "compliance"
     ) {
       navItems.push({ view: "/deals", label: "Deals", icon: FileText });
     }
@@ -218,7 +227,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 transition-colors">
         <div className="px-6 py-3 flex items-center justify-between">
           <Link
-            href={currentRole === "admin" ? "/users" : "/dashboard"}
+            href={
+              currentRole === "admin"
+                ? "/users"
+                : currentRole === "compliance"
+                ? "/deals"
+                : "/dashboard"
+            }
             className="flex items-center gap-4"
           >
             <Image

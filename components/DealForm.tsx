@@ -213,9 +213,21 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
       {isReadOnly && (
         <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 dark:border-amber-900/30 dark:bg-amber-950/30 dark:text-amber-100">
           <div className="text-sm">
-            You can <span className="font-medium">create</span> deals, but
-            existing deals are <span className="font-medium">view-only</span>{" "}
-            for Agents.
+            {currentRole === "agent" ? (
+              <>
+                You can <span className="font-medium">create</span> deals, but
+                existing deals are{" "}
+                <span className="font-medium">view-only</span> for Agents.
+              </>
+            ) : currentRole === "compliance" ? (
+              <>
+                Compliance users can <span className="font-medium">view</span>{" "}
+                deals and <span className="font-medium">upload media</span>, but
+                cannot <span className="font-medium">edit</span> deal data.
+              </>
+            ) : (
+              "This deal is read-only."
+            )}
           </div>
         </div>
       )}
@@ -240,6 +252,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                     | "ceo"
                     | "admin"
                     | "SALES_ADMIN"
+                    | "compliance"
                 }
                 isEditMode={isEditMode}
                 defaultStatusId={defaultStatusId}
@@ -296,7 +309,6 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
               commissionTypes={commissionTypes}
               allAgents={allAgents}
               watchedAdditionalAgents={watchedFields.additionalAgents || []}
-              watchedSalesValue={watchedFields.salesValue}
               currentRole={currentRole}
               filtersLoading={filtersLoading}
             />

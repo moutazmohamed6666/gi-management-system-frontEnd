@@ -25,7 +25,13 @@ interface DealInformationSectionProps {
   errors: FieldErrors<DealFormData>;
   register: UseFormRegister<DealFormData>;
   setValue: UseFormSetValue<DealFormData>;
-  currentRole: "agent" | "finance" | "ceo" | "admin" | "SALES_ADMIN";
+  currentRole:
+    | "agent"
+    | "finance"
+    | "ceo"
+    | "admin"
+    | "SALES_ADMIN"
+    | "compliance";
   isEditMode: boolean;
   defaultStatusId: string;
   dealTypes: Array<{ id: string; name: string }>;

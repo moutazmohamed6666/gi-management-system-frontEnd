@@ -15,6 +15,8 @@ export default function Home() {
       // Admin role should navigate to /users instead of /dashboard
       if (role === "admin") {
         router.push("/users");
+      } else if (role === "compliance") {
+        router.push("/deals");
       } else {
         router.push("/dashboard");
       }

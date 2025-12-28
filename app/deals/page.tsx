@@ -6,7 +6,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { DealsList } from "@/components/DealsList";
 import { CEODealsList } from "@/components/CEODealsList";
 
-type UserRole = "agent" | "finance" | "ceo" | "admin" | "sales_admin";
+type UserRole = "agent" | "finance" | "ceo" | "admin" | "sales_admin" | "compliance";
 
 export default function DealsPage() {
   const router = useRouter();
@@ -34,6 +34,8 @@ export default function DealsPage() {
     } else if (currentRole === "ceo") {
       setSelectedDealId(dealId);
       router.push(`/deals/ceo/${dealId}`);
+    } else if (currentRole === "compliance") {
+      router.push(`/deals/compliance/${dealId}`);
     } else {
       router.push(`/deals/${dealId}`);
     }

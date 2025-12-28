@@ -13,15 +13,18 @@ export default function DealDetailPage() {
   useEffect(() => {
     const auth = sessionStorage.getItem("isAuthenticated");
     const role = sessionStorage.getItem("userRole");
-    
+
     if (auth !== "true") {
       router.push("/login");
     } else if (role === "sales_admin") {
       router.push("/deals/new");
+    } else if (role === "compliance") {
+      // COMPLIANCE has their own dedicated view, redirect them there
+      router.push(`/deals/compliance/${params?.id}`);
     } else {
       setIsLoading(false);
     }
-  }, [router]);
+  }, [router, params?.id]);
 
   const dealId = params?.id as string;
 
