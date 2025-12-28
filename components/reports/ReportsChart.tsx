@@ -78,11 +78,7 @@ export function ReportsChart({ reportType, chartData }: ReportsChartProps) {
       ? typedChartData.some((item) => (item.count || 0) > 0)
       : typedChartData.some((item) => {
           const value =
-            item.value ||
-            item.commission ||
-            item.revenue ||
-            item.count ||
-            0;
+            item.value || item.commission || item.revenue || item.count || 0;
           return value > 0;
         }));
 
@@ -153,16 +149,8 @@ export function ReportsChart({ reportType, chartData }: ReportsChartProps) {
                   x2="0"
                   y2="1"
                 >
-                  <stop
-                    offset="5%"
-                    stopColor="#8b5cf6"
-                    stopOpacity={0.3}
-                  />
-                  <stop
-                    offset="95%"
-                    stopColor="#8b5cf6"
-                    stopOpacity={0}
-                  />
+                  <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient
                   id="colorGrossRevenue"
@@ -189,22 +177,11 @@ export function ReportsChart({ reportType, chartData }: ReportsChartProps) {
                   x2="0"
                   y2="1"
                 >
-                  <stop
-                    offset="5%"
-                    stopColor="#14b8a6"
-                    stopOpacity={0.3}
-                  />
-                  <stop
-                    offset="95%"
-                    stopColor="#14b8a6"
-                    stopOpacity={0}
-                  />
+                  <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#14b8a6" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="#f0f0f0"
-              />
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis
                 dataKey="month"
                 axisLine={false}
@@ -215,7 +192,7 @@ export function ReportsChart({ reportType, chartData }: ReportsChartProps) {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: "#6b7280", fontSize: 12 }}
-                tickFormatter={(value) => `${value / 1000}K`}
+                tickFormatter={(value) => `${value}`}
               />
               <Tooltip
                 contentStyle={{
@@ -224,9 +201,7 @@ export function ReportsChart({ reportType, chartData }: ReportsChartProps) {
                   borderRadius: "8px",
                   boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                 }}
-                formatter={(value: number) => [
-                  `AED ${value.toLocaleString()}`,
-                ]}
+                formatter={(value: number) => [`AED ${value.toLocaleString()}`]}
               />
               <Line
                 type="monotone"
@@ -278,7 +253,7 @@ export function ReportsChart({ reportType, chartData }: ReportsChartProps) {
                 dataKey="count"
                 nameKey="stage"
                 label={({ name, percent }) =>
-                  `${name ?? ""} ${((percent ?? 0) * 100).toFixed(0)}%`
+                  `${name ?? ""} ${(percent ?? 0) * 100}%`
                 }
               >
                 {chartData.map((_, index) => (
@@ -295,13 +270,7 @@ export function ReportsChart({ reportType, chartData }: ReportsChartProps) {
           ) : (
             <BarChart data={chartData}>
               <defs>
-                <linearGradient
-                  id="colorBarReport"
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
+                <linearGradient id="colorBarReport" x1="0" y1="0" x2="0" y2="1">
                   <stop
                     offset="5%"
                     stopColor="var(--gi-dark-green)"
@@ -314,15 +283,10 @@ export function ReportsChart({ reportType, chartData }: ReportsChartProps) {
                   />
                 </linearGradient>
               </defs>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="#f0f0f0"
-              />
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis
                 dataKey={
-                  reportType === "agent_performance"
-                    ? "agent_name"
-                    : "category"
+                  reportType === "agent_performance" ? "agent_name" : "category"
                 }
                 axisLine={false}
                 tickLine={false}
@@ -332,9 +296,7 @@ export function ReportsChart({ reportType, chartData }: ReportsChartProps) {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: "#6b7280", fontSize: 12 }}
-                tickFormatter={(value) =>
-                  value >= 1000 ? `${value / 1000}K` : value
-                }
+                tickFormatter={(value) => (value >= 1000 ? `${value}` : value)}
               />
               <Tooltip
                 contentStyle={{
@@ -344,12 +306,8 @@ export function ReportsChart({ reportType, chartData }: ReportsChartProps) {
                   boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                 }}
                 formatter={(value: number) => [
-                  value >= 1000
-                    ? `AED ${value.toLocaleString()}`
-                    : value,
-                  reportType === "agent_performance"
-                    ? "Commission"
-                    : "Amount",
+                  value >= 1000 ? `AED ${value.toLocaleString()}` : value,
+                  reportType === "agent_performance" ? "Commission" : "Amount",
                 ]}
               />
               <Bar
@@ -370,4 +328,3 @@ export function ReportsChart({ reportType, chartData }: ReportsChartProps) {
     </Card>
   );
 }
-

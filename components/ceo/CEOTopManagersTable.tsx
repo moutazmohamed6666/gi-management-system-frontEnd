@@ -58,14 +58,12 @@ export function CEOTopManagersTable({
                       <div className="text-gray-900 font-medium">
                         {manager.name}
                       </div>
-                      <div className="text-sm text-gray-600">
-                        Top performer
-                      </div>
+                      <div className="text-sm text-gray-600">Top performer</div>
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-lg text-gray-900 font-semibold">
-                      AED {(manager.commission / 1000).toFixed(0)}K
+                      AED {manager.commission}
                     </div>
                     <div className="text-sm text-gray-600">Revenue</div>
                   </div>
@@ -78,4 +76,3 @@ export function CEOTopManagersTable({
     </Card>
   );
 }
-

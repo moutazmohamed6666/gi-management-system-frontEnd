@@ -162,6 +162,7 @@ export interface AgentMonthlyPerformanceResponse {
 
 // Agent Metrics Parameters
 export interface GetAgentMetricsParams {
+  agent_id?: string; // Agent ID
   from_date?: string; // YYYY-MM-DD format
   to_date?: string; // YYYY-MM-DD format
 }
@@ -530,6 +531,9 @@ export const financeApi = {
   ): Promise<AgentMetricsResponse> => {
     const queryParams = new URLSearchParams();
 
+    if (params?.agent_id) {
+      queryParams.append("agent_id", params.agent_id);
+    }
     if (params?.from_date) {
       queryParams.append("from_date", params.from_date);
     }

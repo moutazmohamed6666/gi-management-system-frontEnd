@@ -43,7 +43,7 @@ export function CommissionBreakdown({ kpis }: CommissionBreakdownProps) {
               Agent Commission
             </div>
             <div className="text-2xl text-gray-900 dark:text-white font-semibold">
-              AED {(commissionBreakdown.agent / 1000).toFixed(0)}K
+              AED {commissionBreakdown.agent}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
               {agentPercentage}% of total
@@ -54,7 +54,7 @@ export function CommissionBreakdown({ kpis }: CommissionBreakdownProps) {
               Manager Commission
             </div>
             <div className="text-2xl text-gray-900 dark:text-white font-semibold">
-              AED {(commissionBreakdown.manager / 1000).toFixed(0)}K
+              AED {commissionBreakdown.manager}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
               {managerPercentage}% of total
@@ -65,7 +65,7 @@ export function CommissionBreakdown({ kpis }: CommissionBreakdownProps) {
               Company Retention
             </div>
             <div className="text-2xl text-gray-900 dark:text-white font-semibold">
-              AED {(commissionBreakdown.company / 1000).toFixed(0)}K
+              AED {commissionBreakdown.company}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
               {companyPercentage}% of total

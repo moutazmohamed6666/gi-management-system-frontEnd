@@ -50,7 +50,7 @@ export function CEOAgentLeaderboard({
                 </div>
                 <div className="text-right">
                   <div className="text-lg text-gray-900 font-semibold">
-                    AED {(agent.commission / 1000).toFixed(0)}K
+                    AED {agent.commission}
                   </div>
                   <div className="text-sm text-gray-600">Commission</div>
                 </div>
@@ -62,4 +62,3 @@ export function CEOAgentLeaderboard({
     </Card>
   );
 }
-

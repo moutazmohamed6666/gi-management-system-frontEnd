@@ -94,7 +94,7 @@ export function MonthlyTrendsChart({
               axisLine={false}
               tickLine={false}
               tick={{ fill: "#6b7280", fontSize: 12 }}
-              tickFormatter={(value) => `${value / 1000}K`}
+              tickFormatter={(value) => `${value}`}
             />
             <Tooltip
               contentStyle={{

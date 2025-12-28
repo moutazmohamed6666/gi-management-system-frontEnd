@@ -16,9 +16,7 @@ export function ReportsCommissionBreakdown({
   metrics,
 }: ReportsCommissionBreakdownProps) {
   const formatCurrency = (value: number) => {
-    return value >= 1000
-      ? `${(value / 1000).toFixed(0)}K`
-      : value.toLocaleString();
+    return value.toLocaleString();
   };
 
   return (

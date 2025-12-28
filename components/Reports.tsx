@@ -15,7 +15,6 @@ import { toast } from "sonner";
 import { ReportsHeader } from "./reports/ReportsHeader";
 import { ReportsFilters } from "./reports/ReportsFilters";
 import { ReportsSummaryCards } from "./reports/ReportsSummaryCards";
-import { ReportsCollectionDeals } from "./reports/ReportsCollectionDeals";
 import { ReportsCommissionBreakdown } from "./reports/ReportsCommissionBreakdown";
 import { ReportsCommissionOverview } from "./reports/ReportsCommissionOverview";
 import { ReportsChart } from "./reports/ReportsChart";
@@ -323,6 +322,7 @@ export function Reports() {
         <>
           <ReportsSummaryCards
             metrics={{
+              dealsClosed: summaryMetrics.dealClosed,
               totalCommission: summaryMetrics.totalCommission,
               grossRevenue: summaryMetrics.grossRevenue,
               netRevenue: summaryMetrics.netRevenue,
@@ -333,23 +333,14 @@ export function Reports() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="border-0 shadow-lg">
               <CardContent>
-                <div className="space-y-4">
-                  <ReportsCollectionDeals
-                    metrics={{
-                      commissionCollected: summaryMetrics.commissionCollected,
-                      pendingCommission: summaryMetrics.pendingCommission,
-                      dealClosed: summaryMetrics.dealClosed,
-                    }}
-                  />
-                  <ReportsCommissionBreakdown
-                    metrics={{
-                      agentCommission: summaryMetrics.agentCommission,
-                      externalAgentCommissions:
-                        summaryMetrics.externalAgentCommissions,
-                      managerCommission: summaryMetrics.managerCommission,
-                    }}
-                  />
-                </div>
+                <ReportsCommissionBreakdown
+                  metrics={{
+                    agentCommission: summaryMetrics.agentCommission,
+                    externalAgentCommissions:
+                      summaryMetrics.externalAgentCommissions,
+                    managerCommission: summaryMetrics.managerCommission,
+                  }}
+                />
               </CardContent>
             </Card>
             <ReportsCommissionOverview analyticsData={analyticsData} />

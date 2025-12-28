@@ -34,7 +34,9 @@ export function CEOMetricsCards({
       {/* Total Pipeline */}
       <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-linear-to-br from-blue-50 to-white">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <CardTitle className="text-sm text-gray-700">Total Pipeline</CardTitle>
+          <CardTitle className="text-sm text-gray-700">
+            Total Pipeline
+          </CardTitle>
           <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
             <TrendingUp className="h-5 w-5 text-blue-600" />
           </div>
@@ -42,8 +44,7 @@ export function CEOMetricsCards({
         <CardContent>
           <div className="flex items-baseline gap-2">
             <div className="text-2xl text-gray-900">
-              {ceoMetrics?.total_pipeline?.currency || "AED"}{" "}
-              {(totalPipeline / 1000000).toFixed(1)}M
+              {ceoMetrics?.total_pipeline?.currency || "AED"} {totalPipeline}
             </div>
             {ceoMetrics?.total_pipeline?.trend !== undefined && (
               <div className="flex items-center gap-1 text-green-600 text-sm">
@@ -86,9 +87,7 @@ export function CEOMetricsCards({
         </CardHeader>
         <CardContent>
           <div className="flex items-baseline gap-2">
-            <div className="text-2xl text-gray-900">
-              AED {(totalRevenue / 1000).toFixed(0)}K
-            </div>
+            <div className="text-2xl text-gray-900">AED {totalRevenue}</div>
           </div>
           <p className="text-sm text-gray-600 mt-1">Commission earned</p>
         </CardContent>
@@ -104,9 +103,7 @@ export function CEOMetricsCards({
         </CardHeader>
         <CardContent>
           <div className="flex items-baseline gap-2">
-            <div className="text-2xl text-gray-900">
-              AED {(avgDealSize / 1000000).toFixed(2)}M
-            </div>
+            <div className="text-2xl text-gray-900">AED {avgDealSize}</div>
           </div>
           <p className="text-sm text-gray-600 mt-1">Per transaction</p>
         </CardContent>
@@ -146,4 +143,3 @@ export function CEOMetricsCards({
     </div>
   );
 }
-

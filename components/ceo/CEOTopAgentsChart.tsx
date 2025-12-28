@@ -46,19 +46,9 @@ export function CEOTopAgentsChart({
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={agentPerformance} layout="vertical">
               <defs>
-                <linearGradient
-                  id="colorAgents"
-                  x1="0"
-                  y1="0"
-                  x2="1"
-                  y2="0"
-                >
+                <linearGradient id="colorAgents" x1="0" y1="0" x2="1" y2="0">
                   <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.9} />
-                  <stop
-                    offset="95%"
-                    stopColor="#3b82f6"
-                    stopOpacity={0.6}
-                  />
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.6} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -67,7 +57,7 @@ export function CEOTopAgentsChart({
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: "#6b7280", fontSize: 12 }}
-                tickFormatter={(value) => `${value / 1000}K`}
+                tickFormatter={(value) => `${value}`}
               />
               <YAxis
                 dataKey="name"
@@ -102,4 +92,3 @@ export function CEOTopAgentsChart({
     </Card>
   );
 }
-

@@ -58,7 +58,7 @@ export function TopPerformance({ topPerformance }: TopPerformanceProps) {
                     </div>
                   </div>
                   <div className="text-sm text-gray-900 dark:text-white font-semibold">
-                    AED {(dev.revenue / 1000).toFixed(0)}K
+                    AED {dev.revenue}
                   </div>
                 </div>
               ))}
@@ -96,7 +96,7 @@ export function TopPerformance({ topPerformance }: TopPerformanceProps) {
                     </div>
                   </div>
                   <div className="text-sm text-gray-900 dark:text-white font-semibold">
-                    AED {(agent.revenue / 1000).toFixed(0)}K
+                    AED {agent.revenue}
                   </div>
                 </div>
               ))}
@@ -134,7 +134,7 @@ export function TopPerformance({ topPerformance }: TopPerformanceProps) {
                     </div>
                   </div>
                   <div className="text-sm text-gray-900 dark:text-white font-semibold">
-                    AED {(manager.revenue / 1000).toFixed(0)}K
+                    AED {manager.revenue}
                   </div>
                 </div>
               ))}

@@ -45,7 +45,7 @@ export function CommissionTransfers({
                 </div>
               </div>
               <div className="text-2xl text-gray-900 dark:text-white font-semibold">
-                AED {(transferTracking.pendingAmount / 1000).toFixed(0)}K
+                AED {transferTracking.pendingAmount}
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                 Awaiting processing
@@ -65,7 +65,7 @@ export function CommissionTransfers({
                 </div>
               </div>
               <div className="text-2xl text-gray-900 dark:text-white font-semibold">
-                AED {(transferTracking.completedAmount / 1000).toFixed(0)}K
+                AED {transferTracking.completedAmount}
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                 Successfully transferred

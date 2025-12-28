@@ -26,7 +26,7 @@ export function ReceivablesForecast({ forecast }: ReceivablesForecastProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl text-gray-900 dark:text-white">
-            AED {(next30Days / 1000).toFixed(0)}K
+            AED {next30Days}
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
             Expected receivables
@@ -45,7 +45,7 @@ export function ReceivablesForecast({ forecast }: ReceivablesForecastProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl text-gray-900 dark:text-white">
-            AED {(next60Days / 1000).toFixed(0)}K
+            AED {next60Days}
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
             Expected receivables
@@ -64,7 +64,7 @@ export function ReceivablesForecast({ forecast }: ReceivablesForecastProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl text-gray-900 dark:text-white">
-            AED {(next90Days / 1000).toFixed(0)}K
+            AED {next90Days}
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
             Expected receivables

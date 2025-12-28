@@ -43,7 +43,7 @@ export function FinanceKPICards({
         <CardContent>
           <div className="flex items-baseline gap-2">
             <div className="text-2xl text-gray-900 dark:text-white">
-              AED {(collectedCommissions / 1000).toFixed(0)}K
+              AED {collectedCommissions}
             </div>
             {financeMetrics?.collection_rate.trend === "up" && (
               <div className="flex items-center gap-1 text-green-600 text-sm">
@@ -70,7 +70,7 @@ export function FinanceKPICards({
         <CardContent>
           <div className="flex items-baseline gap-2">
             <div className="text-2xl text-gray-900 dark:text-white">
-              AED {(totalExpectedCommission / 1000).toFixed(0)}K
+              AED {totalExpectedCommission}
             </div>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -92,7 +92,7 @@ export function FinanceKPICards({
         <CardContent>
           <div className="flex items-baseline gap-2">
             <div className="text-2xl text-gray-900 dark:text-white">
-              AED {(totalPaidCommission / 1000).toFixed(0)}K
+              AED {totalPaidCommission}
             </div>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -114,7 +114,7 @@ export function FinanceKPICards({
         <CardContent>
           <div className="flex items-baseline gap-2">
             <div className="text-2xl text-gray-900 dark:text-white">
-              AED {(pendingCommissionAmount / 1000).toFixed(0)}K
+              AED {pendingCommissionAmount}
             </div>
           </div>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
