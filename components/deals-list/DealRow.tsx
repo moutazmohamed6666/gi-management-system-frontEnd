@@ -53,35 +53,35 @@ export function DealRow({
       }`}
     >
       <td className="py-3 px-4">
-        <div className="text-gray-900 dark:text-gray-100 font-medium">
+        <div className="text-sm text-gray-900 dark:text-gray-100 font-medium">
           {deal.dealNumber}
         </div>
       </td>
       <td className="py-3 px-4">
-        <div className="text-gray-900 dark:text-gray-100">
+        <div className="text-sm text-gray-900 dark:text-gray-100">
           {deal.project?.name || "N/A"}
         </div>
-        <div className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="text-xs text-gray-600 dark:text-gray-400">
           {deal.developer?.name || "N/A"}
         </div>
       </td>
       <td className="py-3 px-4">
-        <div className="text-gray-900 dark:text-gray-100">
+        <div className="text-sm text-gray-900 dark:text-gray-100">
           {deal.buyer?.name || "N/A"}
         </div>
       </td>
       <td className="py-3 px-4">
-        <div className="text-gray-900 dark:text-gray-100">
+        <div className="text-sm text-gray-900 dark:text-gray-100">
           {deal.seller?.name || "N/A"}
         </div>
       </td>
       <td className="py-3 px-4">
-        <div className="text-gray-900 dark:text-gray-100">
+        <div className="text-sm text-gray-900 dark:text-gray-100">
           {deal.agent?.name || "N/A"}
         </div>
       </td>
       <td className="py-3 px-4">
-        <div className="text-gray-900 dark:text-gray-100">
+        <div className="text-sm text-gray-900 dark:text-gray-100">
           {formatDealValue(deal)}
         </div>
       </td>
@@ -109,9 +109,7 @@ export function DealRow({
           isEditing={isEditing}
           isUpdating={isUpdating}
           openPopoverId={openPopoverId}
-          onOpenPopoverChange={(isOpen) =>
-            onOpenPopoverChange(isOpen ? deal.id : null)
-          }
+          onOpenPopoverChange={onOpenPopoverChange}
           onEditClick={() => onEditClick(deal)}
           onCancelEdit={onCancelEdit}
           onViewDeal={onViewDeal}

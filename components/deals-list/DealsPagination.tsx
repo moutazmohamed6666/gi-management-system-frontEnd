@@ -32,7 +32,7 @@ export function DealsPagination({
 
   return (
     <div className="flex flex-col md:flex-row items-center justify-between gap-3 mt-6">
-      <div className="text-sm text-gray-600 dark:text-gray-400">
+      <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
         {total > 0 ? (
           <>
             Showing{" "}
@@ -53,13 +53,13 @@ export function DealsPagination({
         )}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap justify-center">
         <Select
           value={String(pageSize)}
           onValueChange={(v) => onPageSizeChange(Number(v))}
           disabled={isLoading}
         >
-          <SelectTrigger className="w-[140px] h-9">
+          <SelectTrigger className="w-[120px] sm:w-[140px] h-8 sm:h-9 text-xs sm:text-sm">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -74,10 +74,11 @@ export function DealsPagination({
           size="sm"
           onClick={() => onPageChange(Math.max(1, page - 1))}
           disabled={!canPrev || isLoading}
+          className="text-xs sm:text-sm h-8 sm:h-9"
         >
           Prev
         </Button>
-        <div className="text-sm text-gray-700 dark:text-gray-300 px-2">
+        <div className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 px-1 sm:px-2">
           Page <span className="font-medium">{page}</span> /{" "}
           <span className="font-medium">{totalPages}</span>
         </div>
@@ -86,6 +87,7 @@ export function DealsPagination({
           size="sm"
           onClick={() => onPageChange(Math.min(totalPages, page + 1))}
           disabled={!canNext || isLoading}
+          className="text-xs sm:text-sm h-8 sm:h-9"
         >
           Next
         </Button>

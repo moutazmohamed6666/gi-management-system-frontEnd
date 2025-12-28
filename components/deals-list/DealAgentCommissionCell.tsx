@@ -16,13 +16,13 @@ export function DealAgentCommissionCell({
     <div className="space-y-1">
       {/* Main Agent Commission */}
       {mainAgent && (
-        <div className="text-sm">
+        <div className="text-xs sm:text-sm">
           <div className="text-gray-900 dark:text-gray-100 font-medium">
             Main: AED {Number(mainAgent.expectedAmount || 0).toLocaleString()}
           </div>
           {mainAgent.status?.name && (
             <span
-              className={`text-white inline-block px-2 py-0.5 rounded text-xs ${
+              className={`text-white inline-block px-2 py-0.5 rounded text-xs mt-1 ${
                 mainAgent.status.name === "Paid"
                   ? "bg-green-600 dark:bg-green-500"
                   : mainAgent.status.name === "Partially Paid"

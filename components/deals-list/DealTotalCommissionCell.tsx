@@ -13,7 +13,7 @@ export function DealTotalCommissionCell({
 
   return (
     <div className="space-y-1">
-      <div className="text-gray-900 dark:text-gray-100">
+      <div className="text-sm text-gray-900 dark:text-gray-100">
         {totalCommission
           ? `AED ${Number(totalCommission).toLocaleString()}`
           : "-"}

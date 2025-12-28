@@ -8,6 +8,7 @@ import { filtersApi } from "@/lib/filters";
 import { Button } from "./ui/button";
 import { Eye, CheckCircle, XCircle, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { CEOMobileCard } from "./ceo/CEOMobileCard";
 
 // Type for API response structure (status as object, not string)
 type DealApiResponse = Deal & {
@@ -82,6 +83,7 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
   const [ceoRejectedStatusId, setCeoRejectedStatusId] = useState<string | null>(
     null
   );
+  const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
 
   // Fetch statuses to get CEO Approved and CEO Rejected IDs
   useEffect(() => {
@@ -288,312 +290,334 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
       {/* Deals Table */}
       <Card className="border-0 shadow-lg">
         <CardHeader className="pb-4">
-          <CardTitle>
+          <CardTitle className="text-base sm:text-lg">
             {allDeals.length} {allDeals.length === 1 ? "Deal" : "Deals"}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-              <span className="ml-3 text-gray-600 dark:text-gray-400">
+              <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-gray-400" />
+              <span className="ml-3 text-sm sm:text-base text-gray-600 dark:text-gray-400">
                 Loading deals...
               </span>
             </div>
           ) : error ? (
             <div className="flex items-center justify-center py-12">
-              <AlertCircle className="h-8 w-8 text-red-500" />
-              <span className="ml-3 text-red-600 dark:text-red-400">
+              <AlertCircle className="h-6 w-6 sm:h-8 sm:w-8 text-red-500" />
+              <span className="ml-3 text-sm sm:text-base text-red-600 dark:text-red-400">
                 {error}
               </span>
             </div>
           ) : allDeals.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                 No deals found.
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100 rounded-tl-lg">
-                      Deal ID
-                    </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
-                      Property
-                    </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
-                      Buyer
-                    </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
-                      Seller
-                    </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
-                      Agent
-                    </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
-                      Price
-                    </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
-                      Commission
-                    </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
-                      Agent Commission
-                    </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
-                      Status
-                    </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100 rounded-tr-lg">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allDeals.map((deal) => (
-                    <tr
-                      key={deal.id}
-                      className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                    >
-                      <td className="py-3 px-4">
-                        <div className="text-gray-900 dark:text-gray-100 font-medium">
-                          {deal.dealNumber}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="text-gray-900 dark:text-gray-100">
-                          {deal.project?.name || "N/A"}
-                        </div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                          {deal.developer?.name || "N/A"}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="text-gray-900 dark:text-gray-100">
-                          {deal.buyer?.name ||
-                            deal.buyerSellerDetails?.find(
-                              (d) => d.isBuyer === true
-                            )?.name ||
-                            "N/A"}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="text-gray-900 dark:text-gray-100">
-                          {deal.seller?.name ||
-                            deal.buyerSellerDetails?.find(
-                              (d) => d.isBuyer === false
-                            )?.name ||
-                            "N/A"}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="text-gray-900 dark:text-gray-100">
-                          {deal.agent?.name || "N/A"}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="text-gray-900 dark:text-gray-100">
-                          AED {Number(deal.dealValue).toLocaleString()}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="text-gray-900 dark:text-gray-100">
+            <>
+              {/* Mobile Card View - visible on small screens, hidden on lg+ */}
+              <div className="lg:hidden space-y-3">
+                {allDeals.map((deal) => (
+                  <CEOMobileCard
+                    key={deal.id}
+                    deal={deal}
+                    onViewDeal={onViewDeal}
+                    onApprove={handleApprove}
+                    onReject={handleReject}
+                    approvingDealId={approvingDealId}
+                    rejectingDealId={rejectingDealId}
+                    ceoApprovedStatusId={ceoApprovedStatusId}
+                    ceoRejectedStatusId={ceoRejectedStatusId}
+                    openPopoverId={openPopoverId}
+                    onOpenPopoverChange={setOpenPopoverId}
+                  />
+                ))}
+              </div>
+
+              {/* Desktop Table View - hidden on small screens, visible on lg+ */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-800">
+                    <tr>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-tl-lg">
+                        Deal ID
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Property
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Buyer
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Seller
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Agent
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Price
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Commission
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Agent Commission
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Status
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-tr-lg">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allDeals.map((deal) => (
+                      <tr
+                        key={deal.id}
+                        className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                      >
+                        <td className="py-3 px-4">
+                          <div className="text-sm text-gray-900 dark:text-gray-100 font-medium">
+                            {deal.dealNumber}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="text-sm text-gray-900 dark:text-gray-100">
+                            {deal.project?.name || "N/A"}
+                          </div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">
+                            {deal.developer?.name || "N/A"}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="text-sm text-gray-900 dark:text-gray-100">
+                            {deal.buyer?.name ||
+                              deal.buyerSellerDetails?.find(
+                                (d) => d.isBuyer === true
+                              )?.name ||
+                              "N/A"}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="text-sm text-gray-900 dark:text-gray-100">
+                            {deal.seller?.name ||
+                              deal.buyerSellerDetails?.find(
+                                (d) => d.isBuyer === false
+                              )?.name ||
+                              "N/A"}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="text-sm text-gray-900 dark:text-gray-100">
+                            {deal.agent?.name || "N/A"}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="text-sm text-gray-900 dark:text-gray-100">
+                            AED {Number(deal.dealValue).toLocaleString()}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="text-sm text-gray-900 dark:text-gray-100">
+                            {(() => {
+                              const dealApi = deal as DealApiResponse;
+                              const commissionValue =
+                                dealApi.totalCommission?.commissionValue ??
+                                dealApi.totalCommission?.value ??
+                                deal.commission?.total;
+                              return commissionValue
+                                ? `AED ${Number(
+                                    commissionValue
+                                  ).toLocaleString()}`
+                                : "-";
+                            })()}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
                           {(() => {
                             const dealApi = deal as DealApiResponse;
-                            const commissionValue =
-                              dealApi.totalCommission?.commissionValue ??
-                              dealApi.totalCommission?.value ??
-                              deal.commission?.total;
-                            return commissionValue
-                              ? `AED ${Number(
-                                  commissionValue
-                                ).toLocaleString()}`
-                              : "-";
-                          })()}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        {(() => {
-                          const dealApi = deal as DealApiResponse;
-                          const mainAgent = dealApi.agentCommissions?.mainAgent;
-                          const additionalAgents =
-                            dealApi.agentCommissions?.additionalAgents || [];
-                          const totalExpected =
-                            dealApi.agentCommissions?.totalExpected;
-                          const totalPaid =
-                            dealApi.agentCommissions?.totalPaid || 0;
-
-                          return (
-                            <div className="space-y-1">
-                              {/* Main Agent Commission */}
-                              {mainAgent && (
-                                <div className="text-sm">
-                                  <div className="text-gray-900 dark:text-gray-100 font-medium">
-                                    Main: AED{" "}
-                                    {Number(
-                                      mainAgent.expectedAmount || 0
-                                    ).toLocaleString()}
-                                  </div>
-                                  {mainAgent.status?.name && (
-                                    <span
-                                      className={`text-white inline-block px-2 py-0.5 rounded text-xs ${
-                                        mainAgent.status.name === "Paid"
-                                          ? "bg-green-600 dark:bg-green-500"
-                                          : mainAgent.status.name ===
-                                            "Partially Paid"
-                                          ? "bg-orange-600 dark:bg-orange-500"
-                                          : "bg-gray-600 dark:bg-gray-500"
-                                      }`}
-                                    >
-                                      {mainAgent.status.name}
-                                    </span>
-                                  )}
-                                </div>
-                              )}
-
-                              {/* Additional Agents */}
-                              {additionalAgents.length > 0 && (
-                                <div className="text-xs text-gray-600 dark:text-gray-400">
-                                  +{additionalAgents.length} additional agent
-                                  {additionalAgents.length > 1 ? "s" : ""}
-                                  {additionalAgents.map((addAgent, idx) => (
-                                    <div key={idx} className="ml-2">
-                                      • {addAgent.agent?.name || "External"}:{" "}
-                                      {addAgent.commissionType?.name ===
-                                      "Percentage"
-                                        ? `${addAgent.commissionValue}%`
-                                        : `AED ${Number(
-                                            addAgent.commissionValue
-                                          ).toLocaleString()}`}
-                                      {addAgent.isInternal !== undefined && (
-                                        <span className="ml-1 text-xs">
-                                          (
-                                          {addAgent.isInternal
-                                            ? "Internal"
-                                            : "External"}
-                                          )
-                                        </span>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-
-                              {/* Total Summary */}
-                              {totalExpected !== undefined && (
-                                <div className="text-xs text-gray-700 dark:text-gray-300 font-semibold pt-1 border-t border-gray-200 dark:border-gray-700">
-                                  Total: AED{" "}
-                                  {Number(totalExpected).toLocaleString()}
-                                  {totalPaid > 0 &&
-                                    ` (Paid: AED ${Number(
-                                      totalPaid
-                                    ).toLocaleString()})`}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })()}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`inline-block px-3 py-1 rounded-full text-white text-sm ${getStatusColor(
-                            deal as DealApiResponse
-                          )}`}
-                        >
-                          {(deal as DealApiResponse).status?.name ||
-                            (deal as DealApiResponse).agentCommissions
-                              ?.mainAgent?.status?.name ||
-                            deal.statusId ||
-                            "Pending"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onViewDeal(deal.id)}
-                            className="flex items-center gap-1 hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
-                          >
-                            <Eye className="h-4 w-4" />
-                            View
-                          </Button>
-                          {(() => {
-                            const dealApi = deal as DealApiResponse;
-                            const statusName =
-                              dealApi.status?.name || deal.statusId || "";
-                            const statusId =
-                              dealApi.status?.id || deal.statusId || "";
-                            const isAlreadyApproved =
-                              (ceoApprovedStatusId &&
-                                statusId === ceoApprovedStatusId) ||
-                              statusName.toLowerCase() === "ceo approved" ||
-                              statusName.toLowerCase() === "ceo approve";
-                            const isAlreadyRejected =
-                              (ceoRejectedStatusId &&
-                                statusId === ceoRejectedStatusId) ||
-                              statusName.toLowerCase() === "ceo rejected" ||
-                              statusName.toLowerCase() === "ceo reject";
+                            const mainAgent = dealApi.agentCommissions?.mainAgent;
+                            const additionalAgents =
+                              dealApi.agentCommissions?.additionalAgents || [];
+                            const totalExpected =
+                              dealApi.agentCommissions?.totalExpected;
+                            const totalPaid =
+                              dealApi.agentCommissions?.totalPaid || 0;
 
                             return (
-                              <>
-                                {!isAlreadyApproved && !isAlreadyRejected && (
-                                  <>
-                                    {approvingDealId === deal.id ? (
-                                      <Button
-                                        variant="default"
-                                        size="sm"
-                                        disabled
-                                        className="flex items-center gap-1 bg-green-600 hover:bg-green-700"
+                              <div className="space-y-1">
+                                {/* Main Agent Commission */}
+                                {mainAgent && (
+                                  <div className="text-xs sm:text-sm">
+                                    <div className="text-gray-900 dark:text-gray-100 font-medium">
+                                      Main: AED{" "}
+                                      {Number(
+                                        mainAgent.expectedAmount || 0
+                                      ).toLocaleString()}
+                                    </div>
+                                    {mainAgent.status?.name && (
+                                      <span
+                                        className={`text-white inline-block px-2 py-0.5 rounded text-xs ${
+                                          mainAgent.status.name === "Paid"
+                                            ? "bg-green-600 dark:bg-green-500"
+                                            : mainAgent.status.name ===
+                                              "Partially Paid"
+                                            ? "bg-orange-600 dark:bg-orange-500"
+                                            : "bg-gray-600 dark:bg-gray-500"
+                                        }`}
                                       >
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        Approving...
-                                      </Button>
-                                    ) : (
-                                      <Button
-                                        variant="default"
-                                        size="sm"
-                                        onClick={() => handleApprove(deal.id)}
-                                        className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white"
-                                      >
-                                        <CheckCircle className="h-4 w-4" />
-                                        Approve
-                                      </Button>
+                                        {mainAgent.status.name}
+                                      </span>
                                     )}
-                                    {rejectingDealId === deal.id ? (
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        disabled
-                                        className="flex items-center gap-1 border-red-600 text-red-600"
-                                      >
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        Rejecting...
-                                      </Button>
-                                    ) : (
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleReject(deal.id)}
-                                        className="flex items-center gap-1 border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                      >
-                                        <XCircle className="h-4 w-4" />
-                                        Reject
-                                      </Button>
-                                    )}
-                                  </>
+                                  </div>
                                 )}
-                              </>
+
+                                {/* Additional Agents */}
+                                {additionalAgents.length > 0 && (
+                                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                                    +{additionalAgents.length} additional agent
+                                    {additionalAgents.length > 1 ? "s" : ""}
+                                    {additionalAgents.map((addAgent, idx) => (
+                                      <div key={idx} className="ml-2">
+                                        • {addAgent.agent?.name || "External"}:{" "}
+                                        {addAgent.commissionType?.name ===
+                                        "Percentage"
+                                          ? `${addAgent.commissionValue}%`
+                                          : `AED ${Number(
+                                              addAgent.commissionValue
+                                            ).toLocaleString()}`}
+                                        {addAgent.isInternal !== undefined && (
+                                          <span className="ml-1 text-xs">
+                                            (
+                                            {addAgent.isInternal
+                                              ? "Internal"
+                                              : "External"}
+                                            )
+                                          </span>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                {/* Total Summary */}
+                                {totalExpected !== undefined && (
+                                  <div className="text-xs text-gray-700 dark:text-gray-300 font-semibold pt-1 border-t border-gray-200 dark:border-gray-700">
+                                    Total: AED{" "}
+                                    {Number(totalExpected).toLocaleString()}
+                                    {totalPaid > 0 &&
+                                      ` (Paid: AED ${Number(
+                                        totalPaid
+                                      ).toLocaleString()})`}
+                                  </div>
+                                )}
+                              </div>
                             );
                           })()}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`inline-block px-3 py-1 rounded-full text-white text-xs sm:text-sm ${getStatusColor(
+                              deal as DealApiResponse
+                            )}`}
+                          >
+                            {(deal as DealApiResponse).status?.name ||
+                              (deal as DealApiResponse).agentCommissions
+                                ?.mainAgent?.status?.name ||
+                              deal.statusId ||
+                              "Pending"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => onViewDeal(deal.id)}
+                              className="flex items-center gap-1 text-xs sm:text-sm hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
+                            >
+                              <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
+                              <span className="hidden sm:inline">View</span>
+                            </Button>
+                            {(() => {
+                              const dealApi = deal as DealApiResponse;
+                              const statusName =
+                                dealApi.status?.name || deal.statusId || "";
+                              const statusId =
+                                dealApi.status?.id || deal.statusId || "";
+                              const isAlreadyApproved =
+                                (ceoApprovedStatusId &&
+                                  statusId === ceoApprovedStatusId) ||
+                                statusName.toLowerCase() === "ceo approved" ||
+                                statusName.toLowerCase() === "ceo approve";
+                              const isAlreadyRejected =
+                                (ceoRejectedStatusId &&
+                                  statusId === ceoRejectedStatusId) ||
+                                statusName.toLowerCase() === "ceo rejected" ||
+                                statusName.toLowerCase() === "ceo reject";
+
+                              return (
+                                <>
+                                  {!isAlreadyApproved && !isAlreadyRejected && (
+                                    <>
+                                      {approvingDealId === deal.id ? (
+                                        <Button
+                                          variant="default"
+                                          size="sm"
+                                          disabled
+                                          className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-xs sm:text-sm h-8 sm:h-9"
+                                        >
+                                          <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                                          <span className="hidden sm:inline">Approving...</span>
+                                        </Button>
+                                      ) : (
+                                        <Button
+                                          variant="default"
+                                          size="sm"
+                                          onClick={() => handleApprove(deal.id)}
+                                          className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm h-8 sm:h-9"
+                                        >
+                                          <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                                          <span className="hidden sm:inline">Approve</span>
+                                        </Button>
+                                      )}
+                                      {rejectingDealId === deal.id ? (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          disabled
+                                          className="flex items-center gap-1 border-red-600 text-red-600 text-xs sm:text-sm h-8 sm:h-9"
+                                        >
+                                          <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                                          <span className="hidden sm:inline">Rejecting...</span>
+                                        </Button>
+                                      ) : (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleReject(deal.id)}
+                                          className="flex items-center gap-1 border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs sm:text-sm h-8 sm:h-9"
+                                        >
+                                          <XCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                                          <span className="hidden sm:inline">Reject</span>
+                                        </Button>
+                                      )}
+                                    </>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

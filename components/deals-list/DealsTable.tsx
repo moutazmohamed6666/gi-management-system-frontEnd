@@ -4,6 +4,7 @@ import type { Deal } from "@/lib/deals";
 import { DealRow } from "./DealRow";
 import { DealsPagination } from "./DealsPagination";
 import { useFilters } from "@/lib/useFilters";
+import { DealMobileCard } from "./DealMobileCard";
 
 interface DealsTableProps {
   deals: Deal[];
@@ -55,63 +56,90 @@ export function DealsTable({
   return (
     <Card className="border-0 shadow-lg">
       <CardHeader className="pb-4">
-        <CardTitle>{deals.length} Deals Found</CardTitle>
+        <CardTitle className="text-base sm:text-lg">
+          {deals.length} Deals Found
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-            <span className="ml-3 text-gray-600 dark:text-gray-400">
+            <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-gray-400" />
+            <span className="ml-3 text-sm sm:text-base text-gray-600 dark:text-gray-400">
               Loading deals...
             </span>
           </div>
         ) : error ? (
           <div className="flex items-center justify-center py-12">
-            <AlertCircle className="h-8 w-8 text-red-500" />
-            <span className="ml-3 text-red-600 dark:text-red-400">
+            <AlertCircle className="h-6 w-6 sm:h-8 sm:w-8 text-red-500" />
+            <span className="ml-3 text-sm sm:text-base text-red-600 dark:text-red-400">
               {error}
             </span>
           </div>
         ) : deals.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
               No deals found.
             </p>
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            {/* Mobile Card View - visible on small screens, hidden on lg+ */}
+            <div className="lg:hidden space-y-3">
+              {deals.map((deal) => (
+                <DealMobileCard
+                  key={deal.id}
+                  deal={deal}
+                  role={role}
+                  statuses={statuses}
+                  editingDealId={editingDealId}
+                  editingStatus={editingStatus}
+                  isUpdating={isUpdating}
+                  filtersLoading={filtersLoading}
+                  openPopoverId={openPopoverId}
+                  onEditClick={onEditClick}
+                  onCancelEdit={onCancelEdit}
+                  onStatusChange={onStatusChange}
+                  onViewDeal={onViewDeal}
+                  onCollectCommissionClick={onCollectCommissionClick}
+                  onTransferCommissionClick={onTransferCommissionClick}
+                  onOpenPopoverChange={onOpenPopoverChange}
+                />
+              ))}
+            </div>
+
+            {/* Desktop Table View - hidden on small screens, visible on lg+ */}
+            <div className="hidden lg:block overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100 rounded-tl-lg">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-tl-lg">
                       Deal ID
                     </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
                       Property
                     </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
                       Buyer
                     </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
                       Seller
                     </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
                       Agent
                     </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
                       Price
                     </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
                       Commission
                     </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
                       Agent Commission
                     </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
                       Status
                     </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100 rounded-tr-lg">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-tr-lg">
                       Actions
                     </th>
                   </tr>
@@ -156,4 +184,3 @@ export function DealsTable({
     </Card>
   );
 }
-

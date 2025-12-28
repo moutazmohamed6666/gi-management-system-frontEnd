@@ -43,7 +43,7 @@ export function DealStatusCell({
             onValueChange={onStatusChange}
             disabled={filtersLoading}
           >
-            <SelectTrigger className="w-[180px] h-8 text-sm">
+            <SelectTrigger className="w-full sm:w-[180px] h-8 text-xs sm:text-sm">
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
             <SelectContent>

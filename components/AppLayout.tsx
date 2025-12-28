@@ -287,7 +287,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main Content */}
-      <main className="p-6">{children}</main>
+      <main className="sm:p-6 p-2">{children}</main>
     </div>
   );
 }
