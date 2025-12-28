@@ -270,3 +270,4 @@ Before deploying to production:
 4. Add email validation in form
 5. Add email to buyer/seller search/autocomplete
 
+

@@ -166,22 +166,39 @@ export function CommissionDetailsSection({
                     name="totalCommissionTypeId"
                     control={control}
                     render={({ field }) => (
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        disabled={filtersLoading}
-                      >
-                        <SelectTrigger className="w-full mt-1">
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {commissionTypes.map((type) => (
-                            <SelectItem key={type.id} value={type.id}>
-                              {type.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="relative">
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          disabled={filtersLoading}
+                        >
+                          <SelectTrigger
+                            className={`w-full mt-1 ${
+                              field.value ? "pr-10" : ""
+                            }`}
+                          >
+                            <SelectValue placeholder="Select type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {commissionTypes.map((type) => (
+                              <SelectItem key={type.id} value={type.id}>
+                                {type.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {field.value && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            onClick={() => field.onChange("")}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     )}
                   />
                 </div>
@@ -235,22 +252,39 @@ export function CommissionDetailsSection({
                       required: "Agent selection is required for Sales Admin",
                     }}
                     render={({ field }) => (
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        disabled={filtersLoading}
-                      >
-                        <SelectTrigger className="w-full mt-1">
-                          <SelectValue placeholder="Select an agent" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {allAgents.map((agent) => (
-                            <SelectItem key={agent.id} value={agent.id}>
-                              {agent.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="relative">
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          disabled={filtersLoading}
+                        >
+                          <SelectTrigger
+                            className={`w-full mt-1 ${
+                              field.value ? "pr-10" : ""
+                            }`}
+                          >
+                            <SelectValue placeholder="Select an agent" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {allAgents.map((agent) => (
+                              <SelectItem key={agent.id} value={agent.id}>
+                                {agent.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {field.value && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            onClick={() => field.onChange("")}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     )}
                   />
                   {errors.agentId && (
@@ -275,27 +309,44 @@ export function CommissionDetailsSection({
                         : field.value;
 
                     return (
-                      <Select
-                        value={effectiveValue}
-                        onValueChange={(value) => {
-                          // Allow programmatic changes but prevent manual user changes for agents
-                          if (currentRole !== "agent") {
-                            field.onChange(value);
-                          }
-                        }}
-                        disabled={filtersLoading || currentRole === "agent"}
-                      >
-                        <SelectTrigger className="w-full mt-1">
-                          <SelectValue placeholder="Select commission type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {commissionTypes.map((type) => (
-                            <SelectItem key={type.id} value={type.id}>
-                              {type.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="relative">
+                        <Select
+                          value={effectiveValue}
+                          onValueChange={(value) => {
+                            // Allow programmatic changes but prevent manual user changes for agents
+                            if (currentRole !== "agent") {
+                              field.onChange(value);
+                            }
+                          }}
+                          disabled={filtersLoading || currentRole === "agent"}
+                        >
+                          <SelectTrigger
+                            className={`w-full mt-1 ${
+                              effectiveValue ? "pr-10" : ""
+                            }`}
+                          >
+                            <SelectValue placeholder="Select commission type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {commissionTypes.map((type) => (
+                              <SelectItem key={type.id} value={type.id}>
+                                {type.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {effectiveValue && currentRole !== "agent" && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            onClick={() => field.onChange("")}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     );
                   }}
                 />
@@ -435,24 +486,43 @@ export function CommissionDetailsSection({
                         <Label htmlFor={`additionalAgentId-${index}`}>
                           Select Agent
                         </Label>
-                        <Select
-                          value={agent.agentId}
-                          onValueChange={(value) =>
-                            updateAdditionalAgent(index, "agentId", value)
-                          }
-                          disabled={filtersLoading}
-                        >
-                          <SelectTrigger className="w-full mt-1">
-                            <SelectValue placeholder="Select internal agent" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {allAgents.map((a) => (
-                              <SelectItem key={a.id} value={a.id}>
-                                {a.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="relative">
+                          <Select
+                            value={agent.agentId}
+                            onValueChange={(value) =>
+                              updateAdditionalAgent(index, "agentId", value)
+                            }
+                            disabled={filtersLoading}
+                          >
+                            <SelectTrigger
+                              className={`w-full mt-1 ${
+                                agent.agentId ? "pr-10" : ""
+                              }`}
+                            >
+                              <SelectValue placeholder="Select internal agent" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {allAgents.map((a) => (
+                                <SelectItem key={a.id} value={a.id}>
+                                  {a.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {agent.agentId && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                              onClick={() =>
+                                updateAdditionalAgent(index, "agentId", "")
+                              }
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     )}
 
@@ -483,28 +553,51 @@ export function CommissionDetailsSection({
                       <Label htmlFor={`commissionTypeId-${index}`}>
                         Commission Type
                       </Label>
-                      <Select
-                        value={agent.commissionTypeId}
-                        onValueChange={(value) =>
-                          updateAdditionalAgent(
-                            index,
-                            "commissionTypeId",
-                            value
-                          )
-                        }
-                        disabled={filtersLoading}
-                      >
-                        <SelectTrigger className="w-full mt-1">
-                          <SelectValue placeholder="Select commission type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {commissionTypes.map((type) => (
-                            <SelectItem key={type.id} value={type.id}>
-                              {type.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="relative">
+                        <Select
+                          value={agent.commissionTypeId}
+                          onValueChange={(value) =>
+                            updateAdditionalAgent(
+                              index,
+                              "commissionTypeId",
+                              value
+                            )
+                          }
+                          disabled={filtersLoading}
+                        >
+                          <SelectTrigger
+                            className={`w-full mt-1 ${
+                              agent.commissionTypeId ? "pr-10" : ""
+                            }`}
+                          >
+                            <SelectValue placeholder="Select commission type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {commissionTypes.map((type) => (
+                              <SelectItem key={type.id} value={type.id}>
+                                {type.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {agent.commissionTypeId && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            onClick={() =>
+                              updateAdditionalAgent(
+                                index,
+                                "commissionTypeId",
+                                ""
+                              )
+                            }
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
 
                     {/* Commission Value */}

@@ -1,109 +1,15 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { useState, useEffect } from "react";
 import type { Deal } from "@/lib/deals";
 import { dealsApi } from "@/lib/deals";
-import { Button } from "./ui/button";
-import {
-  Plus,
-  Search,
-  Eye,
-  Edit2,
-  X,
-  Loader2,
-  DollarSign,
-  MoreVertical,
-  Send,
-  AlertCircle,
-} from "lucide-react";
-import { Input } from "./ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { toast } from "sonner";
 import { CollectCommissionModal } from "./CollectCommissionModal";
 import { TransferCommissionModal } from "./TransferCommissionModal";
 import { useFilters } from "@/lib/useFilters";
-
-// Type for API response structure (status as object, not string)
-type DealApiResponse = Deal & {
-  status?: {
-    id: string;
-    name: string;
-  };
-  totalCommission?: {
-    value: number | null;
-    commissionValue: number | null;
-    collectedAmount?: number | null;
-    status?: {
-      id: string;
-      name: string;
-    } | null;
-    type?: {
-      id: string;
-      name: string;
-    } | null;
-  };
-  agentCommissions?: {
-    mainAgent?: {
-      id: string;
-      agent?: {
-        id: string;
-        name: string;
-        email: string;
-      };
-      commissionType?: {
-        id: string;
-        name: string;
-      };
-      commissionValue?: number;
-      expectedAmount?: number;
-      paidAmount?: number;
-      status?: {
-        id: string;
-        name: string;
-      };
-      currency?: string;
-      dueDate?: string | null;
-      paidDate?: string | null;
-    };
-    additionalAgents?: Array<{
-      id: string;
-      agent?: {
-        id?: string;
-        name: string;
-        email?: string;
-        isInternal?: boolean;
-      };
-      commissionType?: {
-        id: string;
-        name: string;
-      };
-      commissionValue: number;
-      isInternal: boolean;
-    }>;
-    totalExpected?: number;
-    totalPaid?: number;
-  };
-  dealValue?: number | string; // Can be number or string in API
-  buyer?: {
-    id: string;
-    name: string;
-    phone?: string;
-  };
-  seller?: {
-    id: string;
-    name: string;
-    phone?: string;
-  };
-};
+import { DealsListHeader } from "./deals-list/DealsListHeader";
+import { DealsFilters } from "./deals-list/DealsFilters";
+import { DealsTable } from "./deals-list/DealsTable";
 
 interface DealsListProps {
   role: string;
@@ -112,7 +18,6 @@ interface DealsListProps {
 }
 
 export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
-  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusIdFilter, setStatusIdFilter] = useState<string>("all");
   const [agentFilter, setAgentFilter] = useState<string>("all");
@@ -135,23 +40,7 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const {
-    agents,
-    developers,
-    projects,
-    statuses,
-    isLoading: filtersLoading,
-  } = useFilters();
-
-  const filteredProjects = useMemo(() => {
-    if (developerFilter === "all") return projects;
-    type ProjectOption = { developerId?: string };
-    const byDev = projects.filter((p) => {
-      const devId = (p as unknown as ProjectOption).developerId;
-      return devId === developerFilter;
-    });
-    return byDev.length > 0 ? byDev : projects;
-  }, [projects, developerFilter]);
+  const { statuses } = useFilters();
 
   // Reset to first page on filter changes
   useEffect(() => {
@@ -173,10 +62,24 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
       try {
         // For agents, use the dedicated agent deals endpoint
         if (role === "agent") {
-          const response = await dealsApi.getAgentDeals({
+          const params: {
+            search?: string;
+            status_id?: string;
+            developer_id?: string;
+            project_id?: string;
+            page: number;
+            page_size: number;
+          } = {
+            search: searchTerm || undefined,
             page,
             page_size: pageSize,
-          });
+          };
+
+          if (statusIdFilter !== "all") params.status_id = statusIdFilter;
+          if (developerFilter !== "all") params.developer_id = developerFilter;
+          if (projectFilter !== "all") params.project_id = projectFilter;
+
+          const response = await dealsApi.getAgentDeals(params);
           setDeals(Array.isArray(response.data) ? response.data : []);
           setTotal(typeof response.total === "number" ? response.total : 0);
         } else {
@@ -240,42 +143,61 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
     statusIdFilter,
   ]);
 
-  const totalPages = Math.max(1, Math.ceil((total || 0) / pageSize));
-  const canPrev = page > 1;
-  const canNext = page < totalPages && deals.length === pageSize;
+  // Helper function to refresh deals list
+  const refreshDeals = async () => {
+    try {
+      if (role === "agent") {
+        const params: {
+          search?: string;
+          status_id?: string;
+          developer_id?: string;
+          project_id?: string;
+          page: number;
+          page_size: number;
+        } = {
+          search: searchTerm || undefined,
+          page,
+          page_size: pageSize,
+        };
 
-  const getStatusName = (deal: Deal | DealApiResponse): string => {
-    const dealApi = deal as DealApiResponse;
-    // Prefer status object name, fallback to statusId lookup, then "Unknown"
-    if (dealApi.status?.name) {
-      return dealApi.status.name;
-    }
-    if (deal.statusId) {
-      const status = statuses.find((s) => s.id === deal.statusId);
-      return status?.name || deal.statusId;
-    }
-    return "Unknown";
-  };
+        if (statusIdFilter !== "all") params.status_id = statusIdFilter;
+        if (developerFilter !== "all") params.developer_id = developerFilter;
+        if (projectFilter !== "all") params.project_id = projectFilter;
 
-  const getStatusColor = (status: string) => {
-    const statusLower = status.toLowerCase();
-    if (statusLower.includes("closed") || statusLower.includes("paid")) {
-      return "bg-green-600";
+        const response = await dealsApi.getAgentDeals(params);
+        setDeals(Array.isArray(response.data) ? response.data : []);
+        setTotal(typeof response.total === "number" ? response.total : 0);
+      } else {
+        const params: {
+          search?: string;
+          agent_id?: string;
+          developer_id?: string;
+          project_id?: string;
+          status_id?: string;
+          page: number;
+          page_size: number;
+        } = {
+          search: searchTerm || undefined,
+          page,
+          page_size: pageSize,
+        };
+
+        if (agentFilter !== "all") {
+          params.agent_id = agentFilter;
+        }
+
+        if (developerFilter !== "all") params.developer_id = developerFilter;
+        if (projectFilter !== "all") params.project_id = projectFilter;
+        if (statusIdFilter !== "all") params.status_id = statusIdFilter;
+
+        const response = await dealsApi.getDeals(params);
+        setDeals(Array.isArray(response.data) ? response.data : []);
+        setTotal(typeof response.total === "number" ? response.total : 0);
+      }
+    } catch (err) {
+      // Silently fail - user can manually refresh if needed
+      console.error("Failed to refresh deals:", err);
     }
-    if (
-      statusLower.includes("transferred") ||
-      statusLower.includes("received") ||
-      statusLower.includes("approved")
-    ) {
-      return "bg-blue-600";
-    }
-    if (statusLower.includes("finance") || statusLower.includes("partially")) {
-      return "bg-orange-600";
-    }
-    if (statusLower.includes("submitted")) {
-      return "bg-yellow-600";
-    }
-    return "bg-gray-600";
   };
 
   const handleEditClick = (deal: Deal) => {
@@ -309,40 +231,7 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
         statuses.find((s) => s.id === newStatusId)?.name || "Unknown";
 
       // Refresh deals list to get updated data
-      if (role === "agent") {
-        const response = await dealsApi.getAgentDeals({
-          page,
-          page_size: pageSize,
-        });
-        setDeals(Array.isArray(response.data) ? response.data : []);
-        setTotal(typeof response.total === "number" ? response.total : 0);
-      } else {
-        const params: {
-          search?: string;
-          agent_id?: string;
-          developer_id?: string;
-          project_id?: string;
-          status_id?: string;
-          page: number;
-          page_size: number;
-        } = {
-          search: searchTerm || undefined,
-          page,
-          page_size: pageSize,
-        };
-
-        if (agentFilter !== "all") {
-          params.agent_id = agentFilter;
-        }
-
-        if (developerFilter !== "all") params.developer_id = developerFilter;
-        if (projectFilter !== "all") params.project_id = projectFilter;
-        if (statusIdFilter !== "all") params.status_id = statusIdFilter;
-
-        const response = await dealsApi.getDeals(params);
-        setDeals(Array.isArray(response.data) ? response.data : []);
-        setTotal(typeof response.total === "number" ? response.total : 0);
-      }
+      await refreshDeals();
 
       setIsUpdating(false);
       setEditingDealId(null);
@@ -376,7 +265,7 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
     setSelectedDealForCollection(null);
   };
 
-  const handleCollectSuccess = (_collection: unknown) => {
+  const handleCollectSuccess = () => {
     // Close modal
     handleCollectModalClose();
 
@@ -387,52 +276,7 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
     });
 
     // Refresh deals list
-    if (role === "agent") {
-      dealsApi
-        .getAgentDeals({
-          page,
-          page_size: pageSize,
-        })
-        .then((response) => {
-          setDeals(Array.isArray(response.data) ? response.data : []);
-          setTotal(typeof response.total === "number" ? response.total : 0);
-        })
-        .catch(() => {
-          // Silently fail - user can manually refresh if needed
-        });
-    } else {
-      const params: {
-        search?: string;
-        agent_id?: string;
-        developer_id?: string;
-        project_id?: string;
-        status_id?: string;
-        page: number;
-        page_size: number;
-      } = {
-        search: searchTerm || undefined,
-        page,
-        page_size: pageSize,
-      };
-
-      if (agentFilter !== "all") {
-        params.agent_id = agentFilter;
-      }
-
-      if (developerFilter !== "all") params.developer_id = developerFilter;
-      if (projectFilter !== "all") params.project_id = projectFilter;
-      if (statusIdFilter !== "all") params.status_id = statusIdFilter;
-
-      dealsApi
-        .getDeals(params)
-        .then((response) => {
-          setDeals(Array.isArray(response.data) ? response.data : []);
-          setTotal(typeof response.total === "number" ? response.total : 0);
-        })
-        .catch(() => {
-          // Silently fail - user can manually refresh if needed
-        });
-    }
+    refreshDeals();
   };
 
   const handleTransferCommissionClick = (deal: Deal) => {
@@ -446,7 +290,7 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
     setSelectedDealForTransfer(null);
   };
 
-  const handleTransferSuccess = (_transfer: unknown) => {
+  const handleTransferSuccess = () => {
     // Close modal
     handleTransferModalClose();
 
@@ -457,643 +301,49 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
     });
 
     // Refresh deals list
-    if (role === "agent") {
-      dealsApi
-        .getAgentDeals({
-          page,
-          page_size: pageSize,
-        })
-        .then((response) => {
-          setDeals(Array.isArray(response.data) ? response.data : []);
-          setTotal(typeof response.total === "number" ? response.total : 0);
-        })
-        .catch(() => {
-          // Silently fail - user can manually refresh if needed
-        });
-    } else {
-      const params: {
-        search?: string;
-        agent_id?: string;
-        developer_id?: string;
-        project_id?: string;
-        status_id?: string;
-        page: number;
-        page_size: number;
-      } = {
-        search: searchTerm || undefined,
-        page,
-        page_size: pageSize,
-      };
-
-      if (agentFilter !== "all") {
-        params.agent_id = agentFilter;
-      }
-
-      if (developerFilter !== "all") params.developer_id = developerFilter;
-      if (projectFilter !== "all") params.project_id = projectFilter;
-      if (statusIdFilter !== "all") params.status_id = statusIdFilter;
-
-      dealsApi
-        .getDeals(params)
-        .then((response) => {
-          setDeals(Array.isArray(response.data) ? response.data : []);
-          setTotal(typeof response.total === "number" ? response.total : 0);
-        })
-        .catch(() => {
-          // Silently fail - user can manually refresh if needed
-        });
-    }
+    refreshDeals();
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-gray-900">Deals Management</h2>
-          <p className="text-gray-600">View and manage all real estate deals</p>
-        </div>
-        {(role === "agent" || role === "admin") && (
-          <Button
-            onClick={onNewDeal}
-            className="flex items-center gap-2 gi-bg-dark-green"
-          >
-            <Plus className="h-4 w-4" />
-            New Deal
-          </Button>
-        )}
-      </div>
+      <DealsListHeader role={role} onNewDeal={onNewDeal} />
 
-      {/* Filters */}
-      <Card className="border-0 shadow-lg">
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search by ID, buyer, project, or developer..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+      <DealsFilters
+        role={role}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        agentFilter={agentFilter}
+        onAgentFilterChange={setAgentFilter}
+        developerFilter={developerFilter}
+        onDeveloperFilterChange={setDeveloperFilter}
+        projectFilter={projectFilter}
+        onProjectFilterChange={setProjectFilter}
+        statusIdFilter={statusIdFilter}
+        onStatusIdFilterChange={setStatusIdFilter}
+      />
 
-            {role !== "agent" && (
-              <Select
-                value={agentFilter}
-                onValueChange={setAgentFilter}
-                disabled={filtersLoading}
-              >
-                <SelectTrigger className="w-full md:w-[200px]">
-                  <SelectValue placeholder="All Agents" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Agents</SelectItem>
-                  {agents.map((agent) => (
-                    <SelectItem key={agent.id} value={agent.id}>
-                      {agent.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-
-            <Select
-              value={developerFilter}
-              onValueChange={(v) => {
-                setDeveloperFilter(v);
-                setProjectFilter("all");
-              }}
-              disabled={filtersLoading}
-            >
-              <SelectTrigger className="w-full md:w-[220px]">
-                <SelectValue placeholder="All Developers" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Developers</SelectItem>
-                {developers.map((dev) => (
-                  <SelectItem key={dev.id} value={dev.id}>
-                    {dev.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={projectFilter}
-              onValueChange={setProjectFilter}
-              disabled={filtersLoading}
-            >
-              <SelectTrigger className="w-full md:w-[240px]">
-                <SelectValue placeholder="All Projects" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Projects</SelectItem>
-                {filteredProjects.length === 0 ? (
-                  <SelectItem value="__no_projects__" disabled>
-                    No projects available
-                  </SelectItem>
-                ) : (
-                  filteredProjects.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={statusIdFilter}
-              onValueChange={setStatusIdFilter}
-              disabled={filtersLoading}
-            >
-              <SelectTrigger className="w-full md:w-[200px]">
-                <SelectValue placeholder="All Deal Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Deal Statuses</SelectItem>
-                {statuses.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Deals Table */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="pb-4">
-          <CardTitle>{deals.length} Deals Found</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-              <span className="ml-3 text-gray-600 dark:text-gray-400">
-                Loading deals...
-              </span>
-            </div>
-          ) : error ? (
-            <div className="flex items-center justify-center py-12">
-              <AlertCircle className="h-8 w-8 text-red-500" />
-              <span className="ml-3 text-red-600 dark:text-red-400">
-                {error}
-              </span>
-            </div>
-          ) : deals.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-600 dark:text-gray-400">
-                No deals found.
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100 rounded-tl-lg">
-                      Deal ID
-                    </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
-                      Property
-                    </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
-                      Buyer
-                    </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
-                      Seller
-                    </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
-                      Agent
-                    </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
-                      Price
-                    </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
-                      Commission
-                    </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
-                      Agent Commission
-                    </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">
-                      Status
-                    </th>
-                    <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100 rounded-tr-lg">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {deals.map((deal) => (
-                    <tr
-                      key={deal.id}
-                      className={`border-t border-gray-100 dark:border-gray-700 transition-colors ${
-                        editingDealId === deal.id
-                          ? "bg-blue-50 dark:bg-blue-900/20"
-                          : "hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                      }`}
-                    >
-                      <td className="py-3 px-4">
-                        <div className="text-gray-900 dark:text-gray-100 font-medium">
-                          {deal.dealNumber}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="text-gray-900 dark:text-gray-100">
-                          {deal.project?.name || "N/A"}
-                        </div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                          {deal.developer?.name || "N/A"}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="text-gray-900 dark:text-gray-100">
-                          {deal.buyer?.name || "N/A"}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="text-gray-900 dark:text-gray-100">
-                          {deal.seller?.name || "N/A"}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="text-gray-900 dark:text-gray-100">
-                          {deal.agent?.name || "N/A"}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="text-gray-900 dark:text-gray-100">
-                          {(() => {
-                            const dealApi = deal as DealApiResponse;
-                            const value =
-                              typeof dealApi.dealValue === "number"
-                                ? dealApi.dealValue
-                                : typeof deal.dealValue === "string"
-                                ? parseFloat(deal.dealValue)
-                                : 0;
-                            return `AED ${value.toLocaleString()}`;
-                          })()}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        {(() => {
-                          const dealApi = deal as DealApiResponse;
-                          // Use totalCommission.commissionValue for total deal commission
-                          const totalCommission =
-                            dealApi.totalCommission?.commissionValue ?? null;
-                          const commissionStatus =
-                            dealApi.totalCommission?.status?.name;
-                          const collectedAmount =
-                            dealApi.totalCommission?.collectedAmount ?? 0;
-
-                          return (
-                            <div className="space-y-1">
-                              <div className="text-gray-900 dark:text-gray-100">
-                                {totalCommission
-                                  ? `AED ${Number(
-                                      totalCommission
-                                    ).toLocaleString()}`
-                                  : "-"}
-                              </div>
-                              {commissionStatus && (
-                                <div className="flex flex-col gap-0.5">
-                                  <span
-                                    className={`text-white inline-block px-2 py-0.5 rounded text-xs w-fit ${
-                                      commissionStatus === "Paid"
-                                        ? "bg-green-600 dark:bg-green-500"
-                                        : commissionStatus === "Partially Paid"
-                                        ? "bg-orange-600 dark:bg-orange-500"
-                                        : commissionStatus === "Pending"
-                                        ? "bg-gray-600 dark:bg-gray-500"
-                                        : "bg-blue-600 dark:bg-blue-500"
-                                    }`}
-                                  >
-                                    {commissionStatus}
-                                  </span>
-                                  {collectedAmount > 0 && (
-                                    <span className="text-xs text-gray-600 dark:text-gray-400">
-                                      Collected: AED{" "}
-                                      {Number(collectedAmount).toLocaleString()}
-                                    </span>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })()}
-                      </td>
-                      <td className="py-3 px-4">
-                        {(() => {
-                          const dealApi = deal as DealApiResponse;
-                          const mainAgent = dealApi.agentCommissions?.mainAgent;
-                          const additionalAgents =
-                            dealApi.agentCommissions?.additionalAgents || [];
-                          const totalExpected =
-                            dealApi.agentCommissions?.totalExpected;
-                          const totalPaid =
-                            dealApi.agentCommissions?.totalPaid || 0;
-
-                          return (
-                            <div className="space-y-1">
-                              {/* Main Agent Commission */}
-                              {mainAgent && (
-                                <div className="text-sm">
-                                  <div className="text-gray-900 dark:text-gray-100 font-medium">
-                                    Main: AED{" "}
-                                    {Number(
-                                      mainAgent.expectedAmount || 0
-                                    ).toLocaleString()}
-                                  </div>
-                                  {mainAgent.status?.name && (
-                                    <span
-                                      className={`text-white inline-block px-2 py-0.5 rounded text-xs ${
-                                        mainAgent.status.name === "Paid"
-                                          ? "bg-green-600 dark:bg-green-500"
-                                          : mainAgent.status.name ===
-                                            "Partially Paid"
-                                          ? "bg-orange-600 dark:bg-orange-500"
-                                          : "bg-gray-600 dark:bg-gray-500"
-                                      }`}
-                                    >
-                                      {mainAgent.status.name}
-                                    </span>
-                                  )}
-                                </div>
-                              )}
-
-                              {/* Additional Agents */}
-                              {additionalAgents.length > 0 && (
-                                <div className="text-xs text-gray-600 dark:text-gray-400">
-                                  +{additionalAgents.length} additional agent
-                                  {additionalAgents.length > 1 ? "s" : ""}
-                                  {additionalAgents.map((addAgent, idx) => (
-                                    <div key={idx} className="ml-2">
-                                      • {addAgent.agent?.name || "External"}:
-                                      AED{" "}
-                                      {Number(
-                                        addAgent.commissionValue
-                                      ).toLocaleString()}
-                                      {addAgent.isInternal !== undefined && (
-                                        <span className="ml-1 text-xs">
-                                          (
-                                          {addAgent.isInternal
-                                            ? "Internal"
-                                            : "External"}
-                                          )
-                                        </span>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-
-                              {/* Total Summary */}
-                              {totalExpected !== undefined && (
-                                <div className="text-xs text-gray-700 dark:text-gray-300 font-semibold pt-1 border-t border-gray-200 dark:border-gray-700">
-                                  Total: AED{" "}
-                                  {Number(totalExpected).toLocaleString()}
-                                  {totalPaid > 0 &&
-                                    ` (Paid: AED ${Number(
-                                      totalPaid
-                                    ).toLocaleString()})`}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })()}
-                      </td>
-                      <td className="py-3 px-4">
-                        {editingDealId === deal.id ? (
-                          <div className="flex items-center gap-2">
-                            {isUpdating ? (
-                              <div className="flex items-center gap-2 text-blue-600">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                <span className="text-sm">Updating...</span>
-                              </div>
-                            ) : (
-                              <Select
-                                value={editingStatus}
-                                onValueChange={handleStatusChange}
-                                disabled={filtersLoading}
-                              >
-                                <SelectTrigger className="w-[180px] h-8 text-sm">
-                                  <SelectValue placeholder="Select status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {statuses.length === 0 ? (
-                                    <SelectItem value="" disabled>
-                                      Loading statuses...
-                                    </SelectItem>
-                                  ) : (
-                                    statuses.map((status) => (
-                                      <SelectItem
-                                        key={status.id}
-                                        value={status.id}
-                                      >
-                                        {status.name}
-                                      </SelectItem>
-                                    ))
-                                  )}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          </div>
-                        ) : (
-                          <span
-                            className={`inline-block px-3 py-1 rounded-full text-white text-sm ${getStatusColor(
-                              getStatusName(deal)
-                            )}`}
-                          >
-                            {getStatusName(deal)}
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          {/* Finance role: Show Edit Status inline when editing */}
-                          {role === "finance" &&
-                            editingDealId === deal.id &&
-                            !isUpdating && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleCancelEdit}
-                                className="flex items-center gap-1 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/20"
-                              >
-                                <X className="h-4 w-4" />
-                                Cancel
-                              </Button>
-                            )}
-
-                          {/* Finance role: Show three-dot menu when not editing */}
-                          {role === "finance" &&
-                            editingDealId !== deal.id &&
-                            !isUpdating && (
-                              <Popover
-                                open={openPopoverId === deal.id}
-                                onOpenChange={(isOpen) =>
-                                  setOpenPopoverId(isOpen ? deal.id : null)
-                                }
-                              >
-                                <PopoverTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                  >
-                                    <MoreVertical className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent
-                                  className="w-56 p-2"
-                                  align="end"
-                                >
-                                  <div className="flex flex-col gap-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleEditClick(deal)}
-                                      className="justify-start hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
-                                    >
-                                      <Edit2 className="h-4 w-4 mr-2" />
-                                      Edit Status
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => onViewDeal(deal.id)}
-                                      className="justify-start hover:bg-green-100 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400"
-                                    >
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      View Details
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => {
-                                        setOpenPopoverId(null);
-                                        router.push(`/deals/${deal.id}`);
-                                      }}
-                                      className="justify-start hover:bg-amber-100 hover:text-amber-600 dark:hover:bg-amber-900/20 dark:hover:text-amber-400"
-                                    >
-                                      <Edit2 className="h-4 w-4 mr-2" />
-                                      Edit Deal
-                                    </Button>
-                                    {/* Finance: show all commission actions regardless of current status (TEMP) */}
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() =>
-                                        handleCollectCommissionClick(deal)
-                                      }
-                                      className="justify-start hover:bg-green-100 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400"
-                                    >
-                                      <DollarSign className="h-4 w-4 mr-2" />
-                                      Collect Commission
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() =>
-                                        handleTransferCommissionClick(deal)
-                                      }
-                                      className="justify-start hover:bg-purple-100 hover:text-purple-600 dark:hover:bg-purple-900/20 dark:hover:text-purple-400"
-                                    >
-                                      <Send className="h-4 w-4 mr-2" />
-                                      Transfer Commission
-                                    </Button>
-                                  </div>
-                                </PopoverContent>
-                              </Popover>
-                            )}
-
-                          {/* View button for all roles */}
-                          {editingDealId !== deal.id && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => onViewDeal(deal.id)}
-                              className="flex items-center gap-1 hover:bg-green-100 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400"
-                            >
-                              <Eye className="h-4 w-4" />
-                              View
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Pagination */}
-          <div className="flex flex-col md:flex-row items-center justify-between gap-3 mt-6">
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              {total > 0 ? (
-                <>
-                  Showing{" "}
-                  <span className="font-medium text-gray-900 dark:text-gray-100">
-                    {(page - 1) * pageSize + Math.min(deals.length, 1)}
-                  </span>
-                  {" - "}
-                  <span className="font-medium text-gray-900 dark:text-gray-100">
-                    {(page - 1) * pageSize + deals.length}
-                  </span>{" "}
-                  of{" "}
-                  <span className="font-medium text-gray-900 dark:text-gray-100">
-                    {total}
-                  </span>
-                </>
-              ) : (
-                "Showing 0 results"
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Select
-                value={String(pageSize)}
-                onValueChange={(v) => setPageSize(Number(v))}
-                disabled={isLoading}
-              >
-                <SelectTrigger className="w-[140px] h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10 / page</SelectItem>
-                  <SelectItem value="20">20 / page</SelectItem>
-                  <SelectItem value="50">50 / page</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={!canPrev || isLoading}
-              >
-                Prev
-              </Button>
-              <div className="text-sm text-gray-700 dark:text-gray-300 px-2">
-                Page <span className="font-medium">{page}</span> /{" "}
-                <span className="font-medium">{totalPages}</span>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={!canNext || isLoading}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <DealsTable
+        deals={deals}
+        role={role}
+        total={total}
+        page={page}
+        pageSize={pageSize}
+        isLoading={isLoading}
+        error={error}
+        editingDealId={editingDealId}
+        editingStatus={editingStatus}
+        isUpdating={isUpdating}
+        openPopoverId={openPopoverId}
+        onEditClick={handleEditClick}
+        onCancelEdit={handleCancelEdit}
+        onStatusChange={handleStatusChange}
+        onViewDeal={onViewDeal}
+        onCollectCommissionClick={handleCollectCommissionClick}
+        onTransferCommissionClick={handleTransferCommissionClick}
+        onOpenPopoverChange={setOpenPopoverId}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
 
       {/* Collect Commission Modal */}
       {isCollectModalOpen && selectedDealForCollection && (

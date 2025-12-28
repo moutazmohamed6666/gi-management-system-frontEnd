@@ -120,23 +120,19 @@ export function DashboardAgent() {
     const fetchDeals = async () => {
       setIsLoading(true);
       try {
-        const userId = sessionStorage.getItem("userId");
-        const response = await dealsApi.getDeals({
-          agent_id: userId || undefined,
-        });
-        let deals = Array.isArray(response.data) ? response.data : [];
+        const params: {
+          start_date?: string;
+          end_date?: string;
+        } = {};
 
-        // Apply date filter if dates are selected
+        // Add date range parameters if dates are selected
         if (startDate && endDate) {
-          deals = deals.filter((deal) => {
-            if (!deal.closeDate) return false;
-            const dealDate = new Date(deal.closeDate);
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            return dealDate >= start && dealDate <= end;
-          });
+          params.start_date = startDate;
+          params.end_date = endDate;
         }
 
+        const response = await dealsApi.getAgentDeals(params);
+        const deals = Array.isArray(response.data) ? response.data : [];
         setAgentDeals(deals);
       } catch (err) {
         console.error("Failed to fetch agent deals:", err);
@@ -316,18 +312,6 @@ export function DashboardAgent() {
               <h2 className="text-white mb-1">{currentUser || "Agent"}</h2>
               <p className="text-white/70">Real Estate Agent</p>
             </div>
-            {/* <div className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/20">
-              <p className="text-white/80 text-sm">
-                {agentMetrics.total_commission.period}
-              </p>
-              <div className="flex items-center gap-2 mt-1">
-                <TrendingUp className="h-5 w-5 text-white" />
-                <span className="text-white">
-                  {agentMetrics.total_commission.trend >= 0 ? "+" : ""}
-                  {agentMetrics.total_commission.trend}%
-                </span>
-              </div>
-            </div> */}
           </div>
         </div>
       </div>

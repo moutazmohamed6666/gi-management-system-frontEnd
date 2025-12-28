@@ -19,6 +19,8 @@ import {
   SelectValue,
 } from "../ui/select";
 import { StyledDatePicker } from "../StyledDatePicker";
+import { Button } from "../ui/button";
+import { X } from "lucide-react";
 import { DealFormData } from "@/lib/hooks/useDealFormData";
 
 interface DealInformationSectionProps {
@@ -155,22 +157,37 @@ export function DealInformationSection({
                 control={control}
                 rules={{ required: "Deal type is required" }}
                 render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    disabled={filtersLoading}
-                  >
-                    <SelectTrigger className="w-full mt-1">
-                      <SelectValue placeholder="Select deal type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {dealTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.id}>
-                          {type.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="relative">
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={filtersLoading}
+                    >
+                      <SelectTrigger
+                        className={`w-full mt-1 ${field.value ? "pr-10" : ""}`}
+                      >
+                        <SelectValue placeholder="Select deal type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {dealTypes.map((type) => (
+                          <SelectItem key={type.id} value={type.id}>
+                            {type.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {field.value && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => field.onChange("")}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 )}
               />
               {errors.dealTypeId && (
@@ -187,22 +204,39 @@ export function DealInformationSection({
                   name="areaId"
                   control={control}
                   render={({ field }) => (
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      disabled={filtersLoading}
-                    >
-                      <SelectTrigger className="w-full mt-1">
-                        <SelectValue placeholder="Select area" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {areas.map((area) => (
-                          <SelectItem key={area.id} value={area.id}>
-                            {area.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="relative">
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={filtersLoading}
+                      >
+                        <SelectTrigger
+                          className={`w-full mt-1 ${
+                            field.value ? "pr-10" : ""
+                          }`}
+                        >
+                          <SelectValue placeholder="Select area" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {areas.map((area) => (
+                            <SelectItem key={area.id} value={area.id}>
+                              {area.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {field.value && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          onClick={() => field.onChange("")}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   )}
                 />
               </div>
@@ -231,22 +265,39 @@ export function DealInformationSection({
                   },
                 }}
                 render={({ field }) => (
-                  <Select
-                    value={field.value || defaultStatusId}
-                    onValueChange={field.onChange}
-                    disabled={filtersLoading}
-                  >
-                    <SelectTrigger className="w-full mt-1">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statuses.map((status) => (
-                        <SelectItem key={status.id} value={status.id}>
-                          {status.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="relative">
+                    <Select
+                      value={field.value || defaultStatusId}
+                      onValueChange={field.onChange}
+                      disabled={filtersLoading}
+                    >
+                      <SelectTrigger
+                        className={`w-full mt-1 ${
+                          field.value || defaultStatusId ? "pr-10" : ""
+                        }`}
+                      >
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statuses.map((status) => (
+                          <SelectItem key={status.id} value={status.id}>
+                            {status.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {(field.value || defaultStatusId) && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => field.onChange("")}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 )}
               />
               {errors.statusId && (
@@ -264,22 +315,37 @@ export function DealInformationSection({
                 name="purchaseStatusId"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    disabled={filtersLoading}
-                  >
-                    <SelectTrigger className="w-full mt-1">
-                      <SelectValue placeholder="Select purchase status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {purchaseStatuses.map((status) => (
-                        <SelectItem key={status.id} value={status.id}>
-                          {status.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="relative">
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={filtersLoading}
+                    >
+                      <SelectTrigger
+                        className={`w-full mt-1 ${field.value ? "pr-10" : ""}`}
+                      >
+                        <SelectValue placeholder="Select purchase status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {purchaseStatuses.map((status) => (
+                          <SelectItem key={status.id} value={status.id}>
+                            {status.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {field.value && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => field.onChange("")}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 )}
               />
             </div>
@@ -309,22 +375,37 @@ export function DealInformationSection({
               name="teamId"
               control={control}
               render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  disabled={filtersLoading}
-                >
-                  <SelectTrigger className="w-full mt-1">
-                    <SelectValue placeholder="Select team" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {teams.map((team) => (
-                      <SelectItem key={team.id} value={team.id}>
-                        {team.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="relative">
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={filtersLoading}
+                  >
+                    <SelectTrigger
+                      className={`w-full mt-1 ${field.value ? "pr-10" : ""}`}
+                    >
+                      <SelectValue placeholder="Select team" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {teams.map((team) => (
+                        <SelectItem key={team.id} value={team.id}>
+                          {team.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {field.value && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => field.onChange("")}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               )}
             />
           </div>

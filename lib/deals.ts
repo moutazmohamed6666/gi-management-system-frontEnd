@@ -321,6 +321,9 @@ export interface GetDealsParams {
   project_id?: string;
   page?: number;
   page_size?: number;
+  // Date range filters
+  start_date?: string; // ISO date string for filtering by closeDate
+  end_date?: string; // ISO date string for filtering by closeDate
 }
 
 export interface GetDealsResponse {
@@ -334,6 +337,14 @@ export interface GetDealsResponse {
 export interface GetAgentDealsParams {
   page?: number;
   page_size?: number;
+  // Date range filters
+  start_date?: string; // ISO date string for filtering by closeDate
+  end_date?: string; // ISO date string for filtering by closeDate
+  // Additional filters for agent deals
+  search?: string;
+  status_id?: string;
+  developer_id?: string;
+  project_id?: string;
 }
 
 export interface GetAgentDealsResponse {
@@ -531,6 +542,12 @@ export const dealsApi = {
     if (params?.page_size) {
       queryParams.append("page_size", params.page_size.toString());
     }
+    if (params?.start_date) {
+      queryParams.append("start_date", params.start_date);
+    }
+    if (params?.end_date) {
+      queryParams.append("end_date", params.end_date);
+    }
 
     const queryString = queryParams.toString();
     const endpoint = `/api/deals${queryString ? `?${queryString}` : ""}`;
@@ -549,6 +566,24 @@ export const dealsApi = {
     }
     if (params?.page_size) {
       queryParams.append("page_size", params.page_size.toString());
+    }
+    if (params?.start_date) {
+      queryParams.append("start_date", params.start_date);
+    }
+    if (params?.end_date) {
+      queryParams.append("end_date", params.end_date);
+    }
+    if (params?.search) {
+      queryParams.append("search", params.search);
+    }
+    if (params?.status_id) {
+      queryParams.append("status_id", params.status_id);
+    }
+    if (params?.developer_id) {
+      queryParams.append("developer_id", params.developer_id);
+    }
+    if (params?.project_id) {
+      queryParams.append("project_id", params.project_id);
     }
 
     const queryString = queryParams.toString();

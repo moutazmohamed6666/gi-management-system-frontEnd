@@ -1,7 +1,7 @@
 // API Configuration and Client Utilities
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "https://dev.shaheen-env.work";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://89.233.104.64:5000";
 
 export interface LoginRequest {
   username: string;

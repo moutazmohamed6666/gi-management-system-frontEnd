@@ -264,3 +264,4 @@ className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950
 4. **No Direct File Access** - All operations through API
 5. **Audit Trail** - Backend logs deletion events
 
+

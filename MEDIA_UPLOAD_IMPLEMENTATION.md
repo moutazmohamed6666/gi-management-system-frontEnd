@@ -146,3 +146,4 @@ Potential improvements for future iterations:
 - [ ] Authentication is required
 - [ ] File size is displayed correctly
 - [ ] Status icons update correctly
+

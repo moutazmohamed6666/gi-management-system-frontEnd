@@ -16,6 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { Button } from "../ui/button";
+import { X } from "lucide-react";
 import { DealFormData } from "@/lib/hooks/useDealFormData";
 
 interface PropertyDetailsSectionProps {
@@ -55,26 +57,45 @@ export function PropertyDetailsSection({
               control={control}
               rules={{ required: "Developer is required" }}
               render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    // Reset project when developer changes
-                    setValue("projectId", "");
-                  }}
-                  disabled={filtersLoading}
-                >
-                  <SelectTrigger className="w-full mt-1">
-                    <SelectValue placeholder="Select developer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {developers.map((dev) => (
-                      <SelectItem key={dev.id} value={dev.id}>
-                        {dev.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="relative">
+                  <Select
+                    value={field.value}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      // Reset project when developer changes
+                      setValue("projectId", "");
+                    }}
+                    disabled={filtersLoading}
+                  >
+                    <SelectTrigger
+                      className={`w-full mt-1 ${field.value ? "pr-10" : ""}`}
+                    >
+                      <SelectValue placeholder="Select developer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {developers.map((dev) => (
+                        <SelectItem key={dev.id} value={dev.id}>
+                          {dev.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {field.value && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => {
+                        field.onChange("");
+                        // Reset project when developer is cleared
+                        setValue("projectId", "");
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               )}
             />
             {errors.developerId && (
@@ -93,30 +114,45 @@ export function PropertyDetailsSection({
               control={control}
               rules={{ required: "Project is required" }}
               render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  disabled={filtersLoading || !watchedDeveloperId}
-                >
-                  <SelectTrigger className="w-full mt-1">
-                    <SelectValue placeholder="Select project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredProjects.length === 0 ? (
-                      <SelectItem value="__no_projects__" disabled>
-                        {watchedDeveloperId
-                          ? "No projects available"
-                          : "Select developer first"}
-                      </SelectItem>
-                    ) : (
-                      filteredProjects.map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.name}
+                <div className="relative">
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={filtersLoading || !watchedDeveloperId}
+                  >
+                    <SelectTrigger
+                      className={`w-full mt-1 ${field.value ? "pr-10" : ""}`}
+                    >
+                      <SelectValue placeholder="Select project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredProjects.length === 0 ? (
+                        <SelectItem value="__no_projects__" disabled>
+                          {watchedDeveloperId
+                            ? "No projects available"
+                            : "Select developer first"}
                         </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                      ) : (
+                        filteredProjects.map((project) => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {field.value && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => field.onChange("")}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               )}
             />
             {errors.projectId && (
@@ -149,22 +185,37 @@ export function PropertyDetailsSection({
               control={control}
               rules={{ required: "Property type is required" }}
               render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  disabled={filtersLoading}
-                >
-                  <SelectTrigger className="w-full mt-1">
-                    <SelectValue placeholder="Select property type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {propertyTypes.map((type) => (
-                      <SelectItem key={type.id} value={type.id}>
-                        {type.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="relative">
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={filtersLoading}
+                  >
+                    <SelectTrigger
+                      className={`w-full mt-1 ${field.value ? "pr-10" : ""}`}
+                    >
+                      <SelectValue placeholder="Select property type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {propertyTypes.map((type) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {field.value && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => field.onChange("")}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               )}
             />
             {errors.propertyTypeId && (

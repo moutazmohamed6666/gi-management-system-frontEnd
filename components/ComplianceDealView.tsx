@@ -427,3 +427,4 @@ export function ComplianceDealView({ dealId, onBack }: ComplianceDealViewProps) 
     </div>
   );
 }
+

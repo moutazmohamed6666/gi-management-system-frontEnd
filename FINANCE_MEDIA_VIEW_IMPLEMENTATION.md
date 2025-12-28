@@ -231,3 +231,4 @@ Potential improvements for future iterations:
 - Screen reader friendly file information
 - Clear visual hierarchy
 
+
