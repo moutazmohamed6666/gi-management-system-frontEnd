@@ -49,12 +49,10 @@ export function BuyerSellerSection({
         <CardContent>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="sellerName">Name</Label>
+              <Label htmlFor="sellerName">Name (Optional)</Label>
               <Input
                 id="sellerName"
-                {...register("sellerName", {
-                  required: "Seller name is required",
-                })}
+                {...register("sellerName")}
                 placeholder="Enter seller name"
                 className={`mt-1 ${errors.sellerName ? "border-red-500" : ""}`}
               />
@@ -66,12 +64,11 @@ export function BuyerSellerSection({
             </div>
 
             <div>
-              <Label htmlFor="sellerPhone">Phone</Label>
+              <Label htmlFor="sellerPhone">Phone (Optional)</Label>
               <Input
                 id="sellerPhone"
                 type="tel"
                 {...register("sellerPhone", {
-                  required: "Seller phone is required",
                   validate: (value) =>
                     !value ||
                     validatePhone(value) ||
@@ -169,12 +166,10 @@ export function BuyerSellerSection({
         <CardContent>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="buyerName">Name</Label>
+              <Label htmlFor="buyerName">Name (Optional)</Label>
               <Input
                 id="buyerName"
-                {...register("buyerName", {
-                  required: "Buyer name is required",
-                })}
+                {...register("buyerName")}
                 placeholder="Enter buyer name"
                 className={`mt-1 ${errors.buyerName ? "border-red-500" : ""}`}
               />
@@ -186,12 +181,11 @@ export function BuyerSellerSection({
             </div>
 
             <div>
-              <Label htmlFor="buyerPhone">Phone</Label>
+              <Label htmlFor="buyerPhone">Phone (Optional)</Label>
               <Input
                 id="buyerPhone"
                 type="tel"
                 {...register("buyerPhone", {
-                  required: "Buyer phone is required",
                   validate: (value) =>
                     !value ||
                     validatePhone(value) ||

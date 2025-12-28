@@ -577,7 +577,7 @@ export const dealsApi = {
       queryParams.append("search", params.search);
     }
     if (params?.status_id) {
-      queryParams.append("status_id", params.status_id);
+      queryParams.append("statusId", params.status_id);
     }
     if (params?.developer_id) {
       queryParams.append("developer_id", params.developer_id);

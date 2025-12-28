@@ -45,7 +45,7 @@ export function DashboardFinance() {
   const [developerFilter, setDeveloperFilter] = useState("all");
   const [agentFilter, setAgentFilter] = useState("all");
   const [projectFilter, setProjectFilter] = useState("all");
-  const [commissionTypeFilter, setCommissionTypeFilter] = useState("all");
+  const [commissionTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateRange, setDateRange] = useState<{
     fromDate: string;
@@ -66,7 +66,9 @@ export function DashboardFinance() {
   const [financeMetrics, setFinanceMetrics] =
     useState<FinanceMetricsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [sectionErrors, setSectionErrors] = useState<DashboardSectionErrors>({});
+  const [sectionErrors, setSectionErrors] = useState<DashboardSectionErrors>(
+    {}
+  );
 
   const getErrorMessage = (err: unknown, fallback: string) =>
     err instanceof Error ? err.message : fallback;
@@ -102,7 +104,6 @@ export function DashboardFinance() {
     developers,
     agents,
     projects,
-    commissionTypes,
     statuses,
     isLoading: filtersLoading,
   } = useFilters();
@@ -178,7 +179,10 @@ export function DashboardFinance() {
       if (kpisRes.status === "fulfilled") {
         setKpis(kpisRes.value);
       } else {
-        nextErrors.kpis = getErrorMessage(kpisRes.reason, "Failed to load KPIs");
+        nextErrors.kpis = getErrorMessage(
+          kpisRes.reason,
+          "Failed to load KPIs"
+        );
         setKpis(null);
         console.error("Error fetching KPIs:", kpisRes.reason);
       }
@@ -213,7 +217,10 @@ export function DashboardFinance() {
           "Failed to load top performance"
         );
         setTopPerformance(null);
-        console.error("Error fetching top performance:", topPerformanceRes.reason);
+        console.error(
+          "Error fetching top performance:",
+          topPerformanceRes.reason
+        );
       }
 
       if (receivablesForecastRes.status === "fulfilled") {
@@ -249,7 +256,10 @@ export function DashboardFinance() {
           "Failed to load finance metrics"
         );
         setFinanceMetrics(null);
-        console.error("Error fetching finance metrics:", financeMetricsRes.reason);
+        console.error(
+          "Error fetching finance metrics:",
+          financeMetricsRes.reason
+        );
       }
 
       setSectionErrors(nextErrors);
@@ -399,25 +409,6 @@ export function DashboardFinance() {
                 ))}
               </SelectContent>
             </Select>
-
-            {/* Commission Type Filter */}
-            <Select
-              value={commissionTypeFilter}
-              onValueChange={setCommissionTypeFilter}
-              disabled={filtersLoading}
-            >
-              <SelectTrigger className="h-[38px]">
-                <SelectValue placeholder="All Types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {commissionTypes.map((type) => (
-                  <SelectItem key={type.id} value={type.id}>
-                    {type.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
       </Card>
@@ -464,7 +455,6 @@ export function DashboardFinance() {
           <CommissionTransfers commissionTransfers={commissionTransfers} />
         )}
       </div>
-
 
       {/* Top Performance Mini-Tables */}
       {sectionErrors.topPerformance ? (

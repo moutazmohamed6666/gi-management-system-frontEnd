@@ -51,14 +51,18 @@ export function CommissionDetailsSection({
   currentRole,
   filtersLoading,
 }: CommissionDetailsSectionProps) {
-  console.log("currentRole", currentRole);
   const addAdditionalAgent = () => {
+    // Find percentage commission type
+    const percentageType = commissionTypes.find((type) =>
+      type.name.toLowerCase().includes("percentage")
+    );
+
     const newAgent: AdditionalAgent = {
       type: "external",
       agentId: "",
       agencyName: "",
       commissionValue: "",
-      commissionTypeId: "",
+      commissionTypeId: percentageType?.id || "",
     };
     setValue("additionalAgents", [...watchedAdditionalAgents, newAgent], {
       shouldValidate: true,
@@ -352,47 +356,71 @@ export function CommissionDetailsSection({
                 />
               </div>
               <div>
-                <Label htmlFor="commRate">Agent Commission Rate/Value</Label>
-                <Input
-                  id="commRate"
-                  type="text"
-                  {...register("commRate", {
-                    onChange: (e) => {
-                      let numericValue = e.target.value.replace(/[^0-9.]/g, "");
-                      const parts = numericValue.split(".");
-                      if (parts.length > 2) {
-                        numericValue = parts[0] + "." + parts.slice(1).join("");
-                      }
-                      setValue("commRate", numericValue, {
-                        shouldValidate: true,
-                      });
+                <Label htmlFor="commRate">Agent Commission Rate</Label>
+                <Controller
+                  name="commRate"
+                  control={control}
+                  render={({ field }) => {
+                    // Find percentage commission type
+                    const percentageType = commissionTypes.find((type) =>
+                      type.name.toLowerCase().includes("percentage")
+                    );
 
-                      if (
-                        numericValue &&
-                        numericValue.trim() !== "" &&
-                        commissionTypes.length > 0 &&
-                        currentRole === "agent"
-                      ) {
-                        const overrideType = commissionTypes.find((type) =>
-                          type.name.toLowerCase().includes("override")
-                        );
-
-                        console.log("Setting override type:", overrideType);
-                        if (overrideType) {
-                          setValue("agentCommissionTypeId", overrideType.id, {
-                            shouldValidate: true,
-                            shouldDirty: true,
-                          });
-                          console.log(
-                            "Override type ID set to:",
-                            overrideType.id
-                          );
-                        }
-                      }
-                    },
-                  })}
-                  placeholder="Enter agent commission rate (%) or fixed amount"
-                  className="mt-1"
+                    return (
+                      <div className="relative">
+                        <Select
+                          value={field.value || ""}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            // Automatically set commission type to percentage when a percentage is selected
+                            if (value && percentageType) {
+                              setValue(
+                                "agentCommissionTypeId",
+                                percentageType.id,
+                                {
+                                  shouldValidate: true,
+                                  shouldDirty: true,
+                                }
+                              );
+                            }
+                          }}
+                          disabled={filtersLoading}
+                        >
+                          <SelectTrigger
+                            className={`w-full mt-1 ${
+                              field.value ? "pr-10" : ""
+                            }`}
+                          >
+                            <SelectValue placeholder="Select commission rate" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="40">40%</SelectItem>
+                            <SelectItem value="45">45%</SelectItem>
+                            <SelectItem value="50">50%</SelectItem>
+                            <SelectItem value="55">55%</SelectItem>
+                            <SelectItem value="60">60%</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {field.value && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            onClick={() => {
+                              field.onChange("");
+                              setValue("agentCommissionTypeId", "", {
+                                shouldValidate: true,
+                                shouldDirty: true,
+                              });
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  }}
                 />
               </div>
             </div>
@@ -548,115 +576,105 @@ export function CommissionDetailsSection({
                       </div>
                     )}
 
-                    {/* Commission Type */}
+                    {/* Commission Type - Disabled, always percentage */}
                     <div>
                       <Label htmlFor={`commissionTypeId-${index}`}>
                         Commission Type
                       </Label>
-                      <div className="relative">
-                        <Select
-                          value={agent.commissionTypeId}
-                          onValueChange={(value) =>
-                            updateAdditionalAgent(
-                              index,
-                              "commissionTypeId",
-                              value
-                            )
-                          }
-                          disabled={filtersLoading}
-                        >
-                          <SelectTrigger
-                            className={`w-full mt-1 ${
-                              agent.commissionTypeId ? "pr-10" : ""
-                            }`}
-                          >
-                            <SelectValue placeholder="Select commission type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {commissionTypes.map((type) => (
-                              <SelectItem key={type.id} value={type.id}>
-                                {type.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {agent.commissionTypeId && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
-                            onClick={() =>
-                              updateAdditionalAgent(
-                                index,
-                                "commissionTypeId",
-                                ""
-                              )
-                            }
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
+                      <Input
+                        id={`commissionTypeId-${index}`}
+                        value={(() => {
+                          const percentageType = commissionTypes.find((type) =>
+                            type.name.toLowerCase().includes("percentage")
+                          );
+                          return percentageType?.name || "Percentage";
+                        })()}
+                        disabled={true}
+                        className="mt-1 bg-gray-50 dark:bg-gray-800 cursor-not-allowed"
+                      />
                     </div>
 
                     {/* Commission Value */}
                     <div>
                       <Label htmlFor={`commissionValue-${index}`}>
-                        Commission Value
+                        Commission Rate
                       </Label>
-                      <Input
-                        id={`commissionValue-${index}`}
-                        type="text"
-                        value={agent.commissionValue}
-                        onChange={(e) => {
-                          let numericValue = e.target.value.replace(
-                            /[^0-9.]/g,
-                            ""
-                          );
-                          const parts = numericValue.split(".");
-                          if (parts.length > 2) {
-                            numericValue =
-                              parts[0] + "." + parts.slice(1).join("");
-                          }
-                          updateAdditionalAgent(
-                            index,
-                            "commissionValue",
-                            numericValue
-                          );
-                        }}
-                        placeholder="Enter commission value"
-                        className="mt-1"
-                      />
+                      <div className="relative">
+                        <Select
+                          value={agent.commissionValue || ""}
+                          onValueChange={(value) => {
+                            // Find percentage commission type
+                            const percentageType = commissionTypes.find(
+                              (type) =>
+                                type.name.toLowerCase().includes("percentage")
+                            );
+
+                            const percentageTypeId = percentageType?.id || "";
+
+                            // Always set commission type to percentage for additional agents
+                            const updated = [...watchedAdditionalAgents];
+                            updated[index] = {
+                              ...updated[index],
+                              commissionValue: value,
+                              commissionTypeId: percentageTypeId,
+                            };
+                            setValue("additionalAgents", updated, {
+                              shouldValidate: true,
+                              shouldDirty: true,
+                            });
+                          }}
+                          disabled={filtersLoading}
+                        >
+                          <SelectTrigger
+                            className={`w-full mt-1 ${
+                              agent.commissionValue ? "pr-10" : ""
+                            }`}
+                          >
+                            <SelectValue placeholder="Select commission rate" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="40">40%</SelectItem>
+                            <SelectItem value="45">45%</SelectItem>
+                            <SelectItem value="50">50%</SelectItem>
+                            <SelectItem value="55">55%</SelectItem>
+                            <SelectItem value="60">60%</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {agent.commissionValue && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            onClick={() => {
+                              // Find percentage commission type
+                              const percentageType = commissionTypes.find(
+                                (type) =>
+                                  type.name.toLowerCase().includes("percentage")
+                              );
+                              const percentageTypeId = percentageType?.id || "";
+
+                              // Clear commission value but keep percentage type
+                              const updated = [...watchedAdditionalAgents];
+                              updated[index] = {
+                                ...updated[index],
+                                commissionValue: "",
+                                commissionTypeId: percentageTypeId,
+                              };
+                              setValue("additionalAgents", updated, {
+                                shouldValidate: true,
+                                shouldDirty: true,
+                              });
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                       {agent.commissionValue && agent.commissionTypeId && (
                         <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded text-sm">
                           <p className="text-blue-900 dark:text-blue-100 font-semibold">
-                            Commission:{" "}
-                            {(() => {
-                              const commType = commissionTypes.find(
-                                (t) => t.id === agent.commissionTypeId
-                              );
-                              const typeName =
-                                commType?.name.toLowerCase() || "";
-                              const value = parseFloat(agent.commissionValue);
-
-                              if (typeName.includes("percentage")) {
-                                return `${value.toLocaleString("en-US", {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}%`;
-                              } else if (typeName.includes("fixed")) {
-                                return `AED ${value.toLocaleString("en-US", {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}`;
-                              } else {
-                                return value.toLocaleString("en-US", {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                });
-                              }
-                            })()}
+                            Commission: {agent.commissionValue}%
                           </p>
                         </div>
                       )}

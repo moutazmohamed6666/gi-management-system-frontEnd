@@ -62,11 +62,22 @@ export function DashboardAgent() {
         setMetricsLoading(true);
         setMetricsError(null);
 
+        // Build date filter parameters
+        const dateParams: {
+          from_date?: string;
+          to_date?: string;
+        } = {};
+
+        if (startDate && endDate) {
+          dateParams.from_date = startDate;
+          dateParams.to_date = endDate;
+        }
+
         // Fetch all three endpoints in parallel, but handle individual failures gracefully
         const results = await Promise.allSettled([
-          financeApi.getAgentMetrics(),
-          financeApi.getAgentMyPerformance(),
-          financeApi.getAgentMonthlyPerformance(),
+          financeApi.getAgentMetrics(dateParams),
+          financeApi.getAgentMyPerformance(dateParams),
+          financeApi.getAgentMonthlyPerformance(dateParams),
         ]);
 
         // Set metrics if successful
@@ -113,7 +124,7 @@ export function DashboardAgent() {
     };
 
     fetchAgentMetrics();
-  }, []);
+  }, [startDate, endDate]);
 
   // Fetch deals for current agent
   useEffect(() => {

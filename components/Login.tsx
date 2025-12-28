@@ -17,7 +17,13 @@ import { ThemeToggle } from "./ThemeToggle";
 import { User, Lock, AlertCircle, Building2 } from "lucide-react";
 import { authApi, setAuthToken } from "@/lib/api";
 
-type UserRole = "agent" | "finance" | "ceo" | "admin" | "SALES_ADMIN" | "compliance";
+type UserRole =
+  | "agent"
+  | "finance"
+  | "ceo"
+  | "admin"
+  | "SALES_ADMIN"
+  | "compliance";
 
 interface LoginProps {
   onLogin: (
@@ -49,7 +55,7 @@ export function Login({ onLogin }: LoginProps) {
       const roleMap: Record<string, UserRole> = {
         Agent: "agent",
         Finance: "finance",
-        CEO: "ceo",
+        "Top Management": "ceo",
         Admin: "admin",
         SALES_ADMIN: "SALES_ADMIN",
         COMPLIANCE: "compliance",

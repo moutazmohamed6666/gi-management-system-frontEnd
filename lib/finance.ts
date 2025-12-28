@@ -153,6 +153,12 @@ export interface AgentMonthlyPerformanceResponse {
   currency: string;
 }
 
+// Agent Metrics Parameters
+export interface GetAgentMetricsParams {
+  from_date?: string; // YYYY-MM-DD format
+  to_date?: string; // YYYY-MM-DD format
+}
+
 // Finance Metrics Response
 export interface FinanceMetricsResponse {
   collection_rate: {
@@ -504,26 +510,67 @@ export const financeApi = {
   },
 
   // Get agent-specific dashboard metrics
-  getAgentMetrics: async (): Promise<AgentMetricsResponse> => {
-    return apiClient<AgentMetricsResponse>(
-      "/api/finance-dashboard/agent-metrics"
-    );
+  getAgentMetrics: async (
+    params?: GetAgentMetricsParams
+  ): Promise<AgentMetricsResponse> => {
+    const queryParams = new URLSearchParams();
+
+    if (params?.from_date) {
+      queryParams.append("from_date", params.from_date);
+    }
+    if (params?.to_date) {
+      queryParams.append("to_date", params.to_date);
+    }
+
+    const queryString = queryParams.toString();
+    const endpoint = `/api/finance-dashboard/agent-metrics${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    return apiClient<AgentMetricsResponse>(endpoint);
   },
 
   // Get agent my performance metrics
-  getAgentMyPerformance: async (): Promise<AgentMyPerformanceResponse> => {
-    return apiClient<AgentMyPerformanceResponse>(
-      "/api/finance-dashboard/agent-metrics/my-performance"
-    );
+  getAgentMyPerformance: async (
+    params?: GetAgentMetricsParams
+  ): Promise<AgentMyPerformanceResponse> => {
+    const queryParams = new URLSearchParams();
+
+    if (params?.from_date) {
+      queryParams.append("from_date", params.from_date);
+    }
+    if (params?.to_date) {
+      queryParams.append("to_date", params.to_date);
+    }
+
+    const queryString = queryParams.toString();
+    const endpoint = `/api/finance-dashboard/agent-metrics/my-performance${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    return apiClient<AgentMyPerformanceResponse>(endpoint);
   },
 
   // Get agent monthly performance metrics
-  getAgentMonthlyPerformance:
-    async (): Promise<AgentMonthlyPerformanceResponse> => {
-      return apiClient<AgentMonthlyPerformanceResponse>(
-        "/api/finance-dashboard/agent-metrics/monthly-performance"
-      );
-    },
+  getAgentMonthlyPerformance: async (
+    params?: GetAgentMetricsParams
+  ): Promise<AgentMonthlyPerformanceResponse> => {
+    const queryParams = new URLSearchParams();
+
+    if (params?.from_date) {
+      queryParams.append("from_date", params.from_date);
+    }
+    if (params?.to_date) {
+      queryParams.append("to_date", params.to_date);
+    }
+
+    const queryString = queryParams.toString();
+    const endpoint = `/api/finance-dashboard/agent-metrics/monthly-performance${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    return apiClient<AgentMonthlyPerformanceResponse>(endpoint);
+  },
 
   // Get finance dashboard metrics
   getFinanceMetrics: async (

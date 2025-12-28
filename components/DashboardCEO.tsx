@@ -38,9 +38,21 @@ export function DashboardCEO() {
       try {
         setMetricsLoading(true);
         setMetricsError(null);
+
+        // Build date parameters for getTopPerformance
+        const topPerfParams: { from_date?: string; to_date?: string } = {};
+        if (startDate) {
+          topPerfParams.from_date = startDate;
+        }
+        if (endDate) {
+          topPerfParams.to_date = endDate;
+        }
+
         const [metricsData, topPerfData] = await Promise.all([
           financeApi.getCEOMetrics(),
-          financeApi.getTopPerformance(),
+          financeApi.getTopPerformance(
+            Object.keys(topPerfParams).length > 0 ? topPerfParams : undefined
+          ),
         ]);
         setCeoMetrics(metricsData);
         setTopPerformance(topPerfData);
@@ -55,26 +67,25 @@ export function DashboardCEO() {
     };
 
     fetchCEOMetrics();
-  }, []);
+  }, [startDate, endDate]);
 
   // Fetch all deals
   useEffect(() => {
     const fetchDeals = async () => {
       try {
-        const response = await dealsApi.getDeals();
-        let deals = Array.isArray(response.data) ? response.data : [];
-
-        // Apply date filter if dates are selected
-        if (startDate && endDate) {
-          deals = deals.filter((deal) => {
-            if (!deal.closeDate) return false;
-            const dealDate = new Date(deal.closeDate);
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            return dealDate >= start && dealDate <= end;
-          });
+        // Build date parameters for getDeals API
+        const dealParams: { start_date?: string; end_date?: string } = {};
+        if (startDate) {
+          dealParams.start_date = startDate;
+        }
+        if (endDate) {
+          dealParams.end_date = endDate;
         }
 
+        const response = await dealsApi.getDeals(
+          Object.keys(dealParams).length > 0 ? dealParams : undefined
+        );
+        const deals = Array.isArray(response.data) ? response.data : [];
         setFilteredDeals(deals);
       } catch (err) {
         console.error("Failed to fetch deals:", err);
