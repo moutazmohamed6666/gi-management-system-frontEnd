@@ -46,6 +46,11 @@ export function DashboardFinance() {
   const [agentFilter, setAgentFilter] = useState("all");
   const [projectFilter, setProjectFilter] = useState("all");
   const [commissionTypeFilter, setCommissionTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [dateRange, setDateRange] = useState<{
+    fromDate: string;
+    toDate: string;
+  }>({ fromDate: "", toDate: "" });
 
   // API Data States
   const [kpis, setKpis] = useState<KPIsResponse | null>(null);
@@ -98,6 +103,7 @@ export function DashboardFinance() {
     agents,
     projects,
     commissionTypes,
+    statuses,
     isLoading: filtersLoading,
   } = useFilters();
 
@@ -107,14 +113,54 @@ export function DashboardFinance() {
       setIsLoading(true);
       setSectionErrors({});
 
+      // Build filter params (shared by finance metrics and recent finance notes)
+      const filterParams: {
+        from_date?: string;
+        to_date?: string;
+        developer_id?: string;
+        agent_id?: string;
+        project_id?: string;
+        status?: string;
+        commission_type?: string;
+      } = {};
+
+      if (dateRange.fromDate) {
+        filterParams.from_date = dateRange.fromDate;
+      }
+      if (dateRange.toDate) {
+        filterParams.to_date = dateRange.toDate;
+      }
+      if (developerFilter && developerFilter !== "all") {
+        filterParams.developer_id = developerFilter;
+      }
+      if (agentFilter && agentFilter !== "all") {
+        filterParams.agent_id = agentFilter;
+      }
+      if (projectFilter && projectFilter !== "all") {
+        filterParams.project_id = projectFilter;
+      }
+      if (statusFilter && statusFilter !== "all") {
+        filterParams.status = statusFilter;
+      }
+      if (commissionTypeFilter && commissionTypeFilter !== "all") {
+        filterParams.commission_type = commissionTypeFilter;
+      }
+
       const results = await Promise.allSettled([
-        financeApi.getKPIs(),
+        financeApi.getKPIs(filterParams),
         financeApi.getDealsByStage(),
-        financeApi.getCommissionTransfers(),
-        financeApi.getTopPerformance(),
-        financeApi.getReceivablesForecast(),
-        financeApi.getRecentFinanceNotes(),
-        financeApi.getFinanceMetrics(),
+        financeApi.getCommissionTransfers(filterParams),
+        financeApi.getTopPerformance({
+          ...filterParams,
+          limit: 3, // Default limit for top performance
+        }),
+        financeApi.getReceivablesForecast(filterParams),
+        financeApi.getRecentFinanceNotes({
+          ...filterParams,
+          page: 1,
+          page_size: 10,
+        }),
+        financeApi.getFinanceMetrics(filterParams),
       ]);
 
       const [
@@ -211,10 +257,18 @@ export function DashboardFinance() {
     };
 
     fetchData();
-  }, []);
+  }, [
+    dateRange.fromDate,
+    dateRange.toDate,
+    developerFilter,
+    agentFilter,
+    projectFilter,
+    statusFilter,
+    commissionTypeFilter,
+  ]);
 
-  const handleDateChange = (_start: string, _end: string) => {
-    // Date filtering can be implemented when API supports it
+  const handleDateChange = (start: string, end: string) => {
+    setDateRange({ fromDate: start, toDate: end });
   };
 
   const collectionRate = financeMetrics?.collection_rate.value || 0;
@@ -269,7 +323,7 @@ export function DashboardFinance() {
           <div className="border-t border-gray-200 dark:border-gray-700"></div>
 
           {/* Other Filters */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Developer Filter */}
             <Select
               value={developerFilter}
@@ -322,6 +376,25 @@ export function DashboardFinance() {
                 {projects.map((project) => (
                   <SelectItem key={project.id} value={project.id}>
                     {project.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Status Filter */}
+            <Select
+              value={statusFilter}
+              onValueChange={setStatusFilter}
+              disabled={filtersLoading}
+            >
+              <SelectTrigger className="h-[38px]">
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                {statuses.map((status) => (
+                  <SelectItem key={status.id} value={status.id}>
+                    {status.name}
                   </SelectItem>
                 ))}
               </SelectContent>

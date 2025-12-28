@@ -103,6 +103,19 @@ export interface RecentFinanceNotesResponse {
   };
 }
 
+// Recent Finance Notes Parameters
+export interface GetRecentFinanceNotesParams {
+  page?: number; // Default: 1
+  page_size?: number; // Default: 10
+  from_date?: string; // YYYY-MM-DD format
+  to_date?: string; // YYYY-MM-DD format
+  developer_id?: string;
+  agent_id?: string;
+  project_id?: string;
+  status?: string; // Deal status
+  commission_type?: string; // "FIXED", "PERCENTAGE", "OVERRIDE"
+}
+
 // Agent Metrics Response
 export interface AgentMetricsResponse {
   units_sold: {
@@ -157,6 +170,62 @@ export interface FinanceMetricsResponse {
     currency: string;
   };
   monthly_breakdown: Record<string, number>;
+}
+
+// Finance Metrics Parameters
+export interface GetFinanceMetricsParams {
+  from_date?: string; // YYYY-MM-DD format
+  to_date?: string; // YYYY-MM-DD format
+  developer_id?: string;
+  agent_id?: string;
+  project_id?: string;
+  status?: string; // Deal status
+  commission_type?: string; // "FIXED", "PERCENTAGE", "OVERRIDE"
+}
+
+// KPIs Parameters
+export interface GetKPIsParams {
+  from_date?: string; // YYYY-MM-DD format
+  to_date?: string; // YYYY-MM-DD format
+  developer_id?: string;
+  agent_id?: string;
+  project_id?: string;
+  status?: string; // Deal status
+  commission_type?: string; // "FIXED", "PERCENTAGE", "OVERRIDE"
+}
+
+// Commission Transfers Parameters
+export interface GetCommissionTransfersParams {
+  from_date?: string; // YYYY-MM-DD format
+  to_date?: string; // YYYY-MM-DD format
+  developer_id?: string;
+  agent_id?: string;
+  project_id?: string;
+  status?: string; // Deal status
+  commission_type?: string; // "FIXED", "PERCENTAGE", "OVERRIDE"
+}
+
+// Top Performance Parameters
+export interface GetTopPerformanceParams {
+  limit?: number; // Number of top performers to return (default: 3)
+  from_date?: string; // YYYY-MM-DD format
+  to_date?: string; // YYYY-MM-DD format
+  developer_id?: string;
+  agent_id?: string;
+  project_id?: string;
+  status?: string; // Deal status
+  commission_type?: string; // "FIXED", "PERCENTAGE", "OVERRIDE"
+}
+
+// Receivables Forecast Parameters
+export interface GetReceivablesForecastParams {
+  from_date?: string; // YYYY-MM-DD format
+  to_date?: string; // YYYY-MM-DD format
+  developer_id?: string;
+  agent_id?: string;
+  project_id?: string;
+  status?: string; // Deal status
+  commission_type?: string; // "FIXED", "PERCENTAGE", "OVERRIDE"
 }
 
 // CEO Metrics Response
@@ -231,8 +300,37 @@ export interface ComprehensiveFinanceResponse {
 
 export const financeApi = {
   // Get all KPI metrics
-  getKPIs: async (): Promise<KPIsResponse> => {
-    return apiClient<KPIsResponse>("/api/finance-dashboard/kpis");
+  getKPIs: async (params?: GetKPIsParams): Promise<KPIsResponse> => {
+    const queryParams = new URLSearchParams();
+
+    if (params?.from_date) {
+      queryParams.append("from_date", params.from_date);
+    }
+    if (params?.to_date) {
+      queryParams.append("to_date", params.to_date);
+    }
+    if (params?.developer_id) {
+      queryParams.append("developer_id", params.developer_id);
+    }
+    if (params?.agent_id) {
+      queryParams.append("agent_id", params.agent_id);
+    }
+    if (params?.project_id) {
+      queryParams.append("project_id", params.project_id);
+    }
+    if (params?.status) {
+      queryParams.append("status", params.status);
+    }
+    if (params?.commission_type) {
+      queryParams.append("commission_type", params.commission_type);
+    }
+
+    const queryString = queryParams.toString();
+    const endpoint = `/api/finance-dashboard/kpis${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    return apiClient<KPIsResponse>(endpoint);
   },
 
   // Get deals breakdown by stage
@@ -253,31 +351,156 @@ export const financeApi = {
   },
 
   // Get commission transfers metrics
-  getCommissionTransfers: async (): Promise<CommissionTransfersResponse> => {
-    return apiClient<CommissionTransfersResponse>(
-      "/api/finance-dashboard/commission-transfers"
-    );
+  getCommissionTransfers: async (
+    params?: GetCommissionTransfersParams
+  ): Promise<CommissionTransfersResponse> => {
+    const queryParams = new URLSearchParams();
+
+    if (params?.from_date) {
+      queryParams.append("from_date", params.from_date);
+    }
+    if (params?.to_date) {
+      queryParams.append("to_date", params.to_date);
+    }
+    if (params?.developer_id) {
+      queryParams.append("developer_id", params.developer_id);
+    }
+    if (params?.agent_id) {
+      queryParams.append("agent_id", params.agent_id);
+    }
+    if (params?.project_id) {
+      queryParams.append("project_id", params.project_id);
+    }
+    if (params?.status) {
+      queryParams.append("status", params.status);
+    }
+    if (params?.commission_type) {
+      queryParams.append("commission_type", params.commission_type);
+    }
+
+    const queryString = queryParams.toString();
+    const endpoint = `/api/finance-dashboard/commission-transfers${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    return apiClient<CommissionTransfersResponse>(endpoint);
   },
 
   // Get top performance by role
-  getTopPerformance: async (): Promise<TopPerformanceResponse> => {
-    return apiClient<TopPerformanceResponse>(
-      "/api/finance-dashboard/top-performance"
-    );
+  getTopPerformance: async (
+    params?: GetTopPerformanceParams
+  ): Promise<TopPerformanceResponse> => {
+    const queryParams = new URLSearchParams();
+
+    if (params?.limit) {
+      queryParams.append("limit", params.limit.toString());
+    }
+    if (params?.from_date) {
+      queryParams.append("from_date", params.from_date);
+    }
+    if (params?.to_date) {
+      queryParams.append("to_date", params.to_date);
+    }
+    if (params?.developer_id) {
+      queryParams.append("developer_id", params.developer_id);
+    }
+    if (params?.agent_id) {
+      queryParams.append("agent_id", params.agent_id);
+    }
+    if (params?.project_id) {
+      queryParams.append("project_id", params.project_id);
+    }
+    if (params?.status) {
+      queryParams.append("status", params.status);
+    }
+    if (params?.commission_type) {
+      queryParams.append("commission_type", params.commission_type);
+    }
+
+    const queryString = queryParams.toString();
+    const endpoint = `/api/finance-dashboard/top-performance${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    return apiClient<TopPerformanceResponse>(endpoint);
   },
 
   // Get receivables forecast
-  getReceivablesForecast: async (): Promise<ReceivablesForecastResponse> => {
-    return apiClient<ReceivablesForecastResponse>(
-      "/api/finance-dashboard/receivables-forecast"
-    );
+  getReceivablesForecast: async (
+    params?: GetReceivablesForecastParams
+  ): Promise<ReceivablesForecastResponse> => {
+    const queryParams = new URLSearchParams();
+
+    if (params?.from_date) {
+      queryParams.append("from_date", params.from_date);
+    }
+    if (params?.to_date) {
+      queryParams.append("to_date", params.to_date);
+    }
+    if (params?.developer_id) {
+      queryParams.append("developer_id", params.developer_id);
+    }
+    if (params?.agent_id) {
+      queryParams.append("agent_id", params.agent_id);
+    }
+    if (params?.project_id) {
+      queryParams.append("project_id", params.project_id);
+    }
+    if (params?.status) {
+      queryParams.append("status", params.status);
+    }
+    if (params?.commission_type) {
+      queryParams.append("commission_type", params.commission_type);
+    }
+
+    const queryString = queryParams.toString();
+    const endpoint = `/api/finance-dashboard/receivables-forecast${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    return apiClient<ReceivablesForecastResponse>(endpoint);
   },
 
   // Get recent finance notes
-  getRecentFinanceNotes: async (): Promise<RecentFinanceNotesResponse> => {
-    return apiClient<RecentFinanceNotesResponse>(
-      "/api/finance-dashboard/recent-finance-notes"
-    );
+  getRecentFinanceNotes: async (
+    params?: GetRecentFinanceNotesParams
+  ): Promise<RecentFinanceNotesResponse> => {
+    const queryParams = new URLSearchParams();
+
+    if (params?.page) {
+      queryParams.append("page", params.page.toString());
+    }
+    if (params?.page_size) {
+      queryParams.append("page_size", params.page_size.toString());
+    }
+    if (params?.from_date) {
+      queryParams.append("from_date", params.from_date);
+    }
+    if (params?.to_date) {
+      queryParams.append("to_date", params.to_date);
+    }
+    if (params?.developer_id) {
+      queryParams.append("developer_id", params.developer_id);
+    }
+    if (params?.agent_id) {
+      queryParams.append("agent_id", params.agent_id);
+    }
+    if (params?.project_id) {
+      queryParams.append("project_id", params.project_id);
+    }
+    if (params?.status) {
+      queryParams.append("status", params.status);
+    }
+    if (params?.commission_type) {
+      queryParams.append("commission_type", params.commission_type);
+    }
+
+    const queryString = queryParams.toString();
+    const endpoint = `/api/finance-dashboard/recent-finance-notes${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    return apiClient<RecentFinanceNotesResponse>(endpoint);
   },
 
   // Get agent-specific dashboard metrics
@@ -303,10 +526,39 @@ export const financeApi = {
     },
 
   // Get finance dashboard metrics
-  getFinanceMetrics: async (): Promise<FinanceMetricsResponse> => {
-    return apiClient<FinanceMetricsResponse>(
-      "/api/finance-dashboard/finance-metrics"
-    );
+  getFinanceMetrics: async (
+    params?: GetFinanceMetricsParams
+  ): Promise<FinanceMetricsResponse> => {
+    const queryParams = new URLSearchParams();
+
+    if (params?.from_date) {
+      queryParams.append("from_date", params.from_date);
+    }
+    if (params?.to_date) {
+      queryParams.append("to_date", params.to_date);
+    }
+    if (params?.developer_id) {
+      queryParams.append("developer_id", params.developer_id);
+    }
+    if (params?.agent_id) {
+      queryParams.append("agent_id", params.agent_id);
+    }
+    if (params?.project_id) {
+      queryParams.append("project_id", params.project_id);
+    }
+    if (params?.status) {
+      queryParams.append("status", params.status);
+    }
+    if (params?.commission_type) {
+      queryParams.append("commission_type", params.commission_type);
+    }
+
+    const queryString = queryParams.toString();
+    const endpoint = `/api/finance-dashboard/finance-metrics${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    return apiClient<FinanceMetricsResponse>(endpoint);
   },
 
   // Get CEO dashboard metrics
