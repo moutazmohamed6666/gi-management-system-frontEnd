@@ -522,7 +522,7 @@ export const dealsApi = {
       queryParams.append("search", params.search);
     }
     const statusId = params?.status_id ?? params?.statusId;
-    if (statusId) queryParams.append("status_id", statusId);
+    if (statusId) queryParams.append("statusId", statusId);
 
     const stageId = params?.stage_id ?? params?.stageId;
     if (stageId) queryParams.append("stage_id", stageId);
