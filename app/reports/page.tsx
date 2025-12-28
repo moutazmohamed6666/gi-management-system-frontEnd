@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AppLayout } from "@/components/AppLayout";
 import { Reports } from "@/components/Reports";
 
-type UserRole = "agent" | "finance" | "ceo" | "admin";
+type UserRole = "agent" | "finance" | "ceo" | "admin" | "sales_admin";
 
 export default function ReportsPage() {
   const router = useRouter();
@@ -18,6 +18,8 @@ export default function ReportsPage() {
 
     if (auth !== "true" || !role) {
       router.push("/login");
+    } else if (role === "sales_admin") {
+      router.push("/deals/new");
     } else if (role !== "finance" && role !== "ceo" && role !== "admin") {
       router.push("/dashboard");
     } else {

@@ -22,7 +22,7 @@ import {
 import Link from "next/link";
 import { getAuthToken, removeAuthToken } from "@/lib/api";
 
-type UserRole = "agent" | "finance" | "ceo" | "admin";
+type UserRole = "agent" | "finance" | "ceo" | "admin" | "SALES_ADMIN";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -88,6 +88,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         return "CEO / Management";
       case "admin":
         return "Admin";
+      case "SALES_ADMIN":
+        return "Sales Admin";
       default:
         return "";
     }
@@ -132,11 +134,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     let navItems: { view: string; label: string; icon: React.ElementType }[] =
       [];
 
-    navItems.push({
-      view: "/dashboard",
-      label: "Dashboard",
-      icon: LayoutDashboard,
-    });
+    if (currentRole !== "SALES_ADMIN") {
+      navItems.push({
+        view: "/dashboard",
+        label: "Dashboard",
+        icon: LayoutDashboard,
+      });
+    }
 
     if (
       currentRole === "agent" ||
@@ -158,6 +162,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     if (currentRole === "admin") {
       navItems = [];
       navItems.push({ view: "/users", label: "User Management", icon: Users });
+    }
+
+    if (currentRole === "SALES_ADMIN") {
+      navItems = [];
+      navItems.push({
+        view: "/deals/new",
+        label: "Create Deal",
+        icon: FileText,
+      });
     }
 
     return (
@@ -204,7 +217,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Header */}
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 transition-colors">
         <div className="px-6 py-3 flex items-center justify-between">
-          <Link href={currentRole === "admin" ? "/users" : "/dashboard"} className="flex items-center gap-4">
+          <Link
+            href={currentRole === "admin" ? "/users" : "/dashboard"}
+            className="flex items-center gap-4"
+          >
             <Image
               src="/images/722778733878cdd4ce162bb6767c5c939386c373.png"
               alt="Gi Properties"

@@ -12,11 +12,15 @@ export default function UsersPage() {
   useEffect(() => {
     const auth = sessionStorage.getItem("isAuthenticated");
     const role = sessionStorage.getItem("userRole");
-    
-    if (auth !== "true" || role !== "admin") {
+
+    if (auth !== "true") {
       router.push("/login");
+    } else if (role === "sales_admin") {
+      router.push("/deals/new");
+    } else if (role !== "admin") {
+      router.push("/dashboard");
     } else {
-      setIsLoading(false);
+      setTimeout(() => setIsLoading(false), 0);
     }
   }, [router]);
 
@@ -36,4 +40,3 @@ export default function UsersPage() {
     </AppLayout>
   );
 }
-

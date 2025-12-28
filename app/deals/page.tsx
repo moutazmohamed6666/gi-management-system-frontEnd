@@ -6,7 +6,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { DealsList } from "@/components/DealsList";
 import { CEODealsList } from "@/components/CEODealsList";
 
-type UserRole = "agent" | "finance" | "ceo" | "admin";
+type UserRole = "agent" | "finance" | "ceo" | "admin" | "sales_admin";
 
 export default function DealsPage() {
   const router = useRouter();
@@ -20,6 +20,8 @@ export default function DealsPage() {
 
     if (auth !== "true" || !role) {
       router.push("/login");
+    } else if (role === "sales_admin") {
+      router.push("/deals/new");
     } else {
       setCurrentRole(role);
       setIsLoading(false);

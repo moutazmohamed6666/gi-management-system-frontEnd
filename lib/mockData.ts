@@ -52,7 +52,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: "agent" | "finance" | "ceo" | "admin";
+  role: "agent" | "finance" | "ceo" | "admin" | "sales_admin";
   manager?: string;
   status: "Active" | "Inactive";
   createdDate: string;
@@ -290,6 +290,14 @@ export const mockUsers: User[] = [
     role: "admin",
     status: "Active",
     createdDate: "2023-12-01",
+  },
+  {
+    id: "U006",
+    name: "Sales Admin",
+    email: "salesadmin@agency.com",
+    role: "sales_admin",
+    status: "Active",
+    createdDate: "2025-12-27",
   },
 ];
 

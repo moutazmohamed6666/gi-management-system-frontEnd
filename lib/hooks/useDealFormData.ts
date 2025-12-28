@@ -1,8 +1,8 @@
 "use client";
 
-import { useForm, useWatch, Control } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 
-export type UserRole = "agent" | "finance" | "ceo" | "admin";
+export type UserRole = "agent" | "finance" | "ceo" | "admin" | "SALES_ADMIN";
 
 // Additional agent type
 export type AdditionalAgent = {
@@ -23,6 +23,7 @@ export type DealFormData = {
   statusId: string;
   purchaseStatusId: string;
   downpayment: string; // New field in API
+  agentId: string; // New field for sales_admin
 
   // Property Details
   developerId: string;
@@ -68,6 +69,7 @@ const defaultFormValues: DealFormData = {
   statusId: "",
   purchaseStatusId: "",
   downpayment: "",
+  agentId: "",
 
   // Property Details
   developerId: "",

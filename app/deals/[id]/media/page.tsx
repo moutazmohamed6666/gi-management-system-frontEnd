@@ -17,12 +17,17 @@ export default function DealMediaUploadPage() {
     if (auth !== "true") {
       router.push("/login");
     } else {
-      setIsLoading(false);
+      setTimeout(() => setIsLoading(false), 0);
     }
   }, [router]);
 
   const handleBack = () => {
-    router.push("/deals");
+    const role = sessionStorage.getItem("userRole");
+    if (role === "sales_admin") {
+      router.push("/deals/new");
+    } else {
+      router.push("/deals");
+    }
   };
 
   if (isLoading) {

@@ -20,42 +20,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Plus, X } from "lucide-react";
-import { AdditionalAgent } from "@/lib/hooks/useDealFormData";
-
-type DealFormData = {
-  bookingDate: string;
-  cfExpiry: string;
-  closeDate: string;
-  dealTypeId: string;
-  statusId: string;
-  purchaseStatusId: string;
-  downpayment: string;
-  developerId: string;
-  projectId: string;
-  propertyName: string;
-  propertyTypeId: string;
-  unitNumber: string;
-  unitTypeId: string;
-  size: string;
-  bedroomId: string;
-  sellerName: string;
-  sellerPhone: string;
-  sellerEmail: string;
-  sellerNationalityId: string;
-  sellerSourceId: string;
-  buyerName: string;
-  buyerPhone: string;
-  buyerEmail: string;
-  buyerNationalityId: string;
-  buyerSourceId: string;
-  salesValue: string;
-  commRate: string;
-  agentCommissionTypeId: string;
-  totalCommissionTypeId: string;
-  totalCommissionValue: string;
-  additionalAgents: AdditionalAgent[];
-  notes: string;
-};
+import { AdditionalAgent, DealFormData } from "@/lib/hooks/useDealFormData";
 
 interface CommissionDetailsSectionProps {
   control: Control<DealFormData>;
@@ -65,8 +30,7 @@ interface CommissionDetailsSectionProps {
   commissionTypes: Array<{ id: string; name: string }>;
   allAgents: Array<{ id: string; name: string }>;
   watchedAdditionalAgents: AdditionalAgent[];
-  watchedSalesValue: string;
-  currentRole: "agent" | "finance" | "ceo" | "admin";
+  currentRole: "agent" | "finance" | "ceo" | "admin" | "SALES_ADMIN";
   filtersLoading: boolean;
 }
 
@@ -78,10 +42,10 @@ export function CommissionDetailsSection({
   commissionTypes,
   allAgents,
   watchedAdditionalAgents,
-  watchedSalesValue,
   currentRole,
   filtersLoading,
 }: CommissionDetailsSectionProps) {
+  console.log("currentRole", currentRole);
   const addAdditionalAgent = () => {
     const newAgent: AdditionalAgent = {
       type: "external",
@@ -228,6 +192,43 @@ export function CommissionDetailsSection({
               Agent Commission
             </h4>
             <div className="space-y-4 bg-blue-50 dark:bg-blue-900/10 p-4 rounded-lg">
+              {currentRole === "SALES_ADMIN" && (
+                <div>
+                  <Label htmlFor="agentId">
+                    Agent <span className="text-red-500">*</span>
+                  </Label>
+                  <Controller
+                    name="agentId"
+                    control={control}
+                    rules={{
+                      required: "Agent selection is required for Sales Admin",
+                    }}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={filtersLoading}
+                      >
+                        <SelectTrigger className="w-full mt-1">
+                          <SelectValue placeholder="Select an agent" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allAgents.map((agent) => (
+                            <SelectItem key={agent.id} value={agent.id}>
+                              {agent.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.agentId && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.agentId.message}
+                    </p>
+                  )}
+                </div>
+              )}
               <div>
                 <Label htmlFor="agentCommissionTypeId">Commission Type</Label>
                 <Controller

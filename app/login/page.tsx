@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Login } from "@/components/Login";
 
-type UserRole = "agent" | "finance" | "ceo" | "admin";
+type UserRole = "agent" | "finance" | "ceo" | "admin" | "SALES_ADMIN";
 
 interface UserData {
   id: string;
@@ -74,6 +74,8 @@ export default function LoginPage() {
     // Redirect based on role
     if (role === "admin") {
       router.push("/users");
+    } else if (role === "SALES_ADMIN") {
+      router.push("/deals/new");
     } else {
       router.push("/dashboard");
     }

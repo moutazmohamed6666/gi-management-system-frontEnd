@@ -25,7 +25,7 @@ interface DealInformationSectionProps {
   errors: FieldErrors<DealFormData>;
   register: UseFormRegister<DealFormData>;
   setValue: UseFormSetValue<DealFormData>;
-  currentRole: "agent" | "finance" | "ceo" | "admin";
+  currentRole: "agent" | "finance" | "ceo" | "admin" | "SALES_ADMIN";
   isEditMode: boolean;
   defaultStatusId: string;
   dealTypes: Array<{ id: string; name: string }>;
@@ -98,7 +98,10 @@ export function DealInformationSection({
             </div>
           </div>
 
-          {!(currentRole === "agent" && !isEditMode) && (
+          {!(
+            currentRole === "agent" ||
+            (currentRole === "SALES_ADMIN" && !isEditMode)
+          ) && (
             <div>
               <Label htmlFor="closeDate">Close Date</Label>
               <div className="mt-1">
@@ -158,7 +161,10 @@ export function DealInformationSection({
             )}
           </div>
 
-          {!(currentRole === "agent" && !isEditMode) && (
+          {!(
+            currentRole === "agent" ||
+            (currentRole === "SALES_ADMIN" && !isEditMode)
+          ) && (
             <div>
               <Label htmlFor="statusId">
                 Status <span className="text-red-500">*</span>

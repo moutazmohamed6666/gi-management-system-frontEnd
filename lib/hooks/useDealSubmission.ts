@@ -10,7 +10,7 @@ interface UseDealSubmissionProps {
   dealId: string | null;
   currentRole: UserRole;
   defaultStatusId: string;
-  originalCommissionValue: string | null;
+  originalCommissionValue?: string | null;
   purchaseStatuses: FilterOption[];
   onSave: (createdDealId?: string) => void;
 }
@@ -19,7 +19,6 @@ export function useDealSubmission({
   dealId,
   currentRole,
   defaultStatusId,
-  originalCommissionValue,
   purchaseStatuses,
   onSave,
 }: UseDealSubmissionProps) {
@@ -59,16 +58,23 @@ export function useDealSubmission({
   const submitDeal = async (data: DealFormData) => {
     setIsSubmitting(true);
     try {
-      const agentId = sessionStorage.getItem("userId");
+      const loggedInUserId = sessionStorage.getItem("userId");
+      const agentId =
+        currentRole === "SALES_ADMIN" ? data.agentId : loggedInUserId;
+
       if (!agentId) {
         toast.error("Authentication Error", {
-          description: "Agent ID not found. Please log in again.",
+          description:
+            currentRole === "SALES_ADMIN"
+              ? "Please select an agent."
+              : "Agent ID not found. Please log in again.",
         });
         return;
       }
 
       const finalStatusId = data.statusId || defaultStatusId;
-      const isAgentCreating = currentRole === "agent" && !dealId;
+      const isAgentCreating =
+        (currentRole === "agent" || currentRole === "SALES_ADMIN") && !dealId;
 
       // Prepare base payload
       const basePayload = {
@@ -131,7 +137,7 @@ export function useDealSubmission({
           : undefined,
         purchaseStatusId: (() => {
           if (
-            currentRole === "agent" &&
+            (currentRole === "agent" || currentRole === "SALES_ADMIN") &&
             !dealId &&
             data.bookingDate &&
             !data.purchaseStatusId

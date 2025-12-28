@@ -14,8 +14,12 @@ export default function CEODealViewPage() {
     const auth = sessionStorage.getItem("isAuthenticated");
     const role = sessionStorage.getItem("userRole");
 
-    if (auth !== "true" || role !== "ceo") {
+    if (auth !== "true") {
       router.push("/login");
+    } else if (role === "sales_admin") {
+      router.push("/deals/new");
+    } else if (role !== "ceo") {
+      router.push("/dashboard");
     } else {
       setIsLoading(false);
     }

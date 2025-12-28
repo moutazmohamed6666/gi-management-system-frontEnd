@@ -12,8 +12,12 @@ export default function DealDetailPage() {
 
   useEffect(() => {
     const auth = sessionStorage.getItem("isAuthenticated");
+    const role = sessionStorage.getItem("userRole");
+    
     if (auth !== "true") {
       router.push("/login");
+    } else if (role === "sales_admin") {
+      router.push("/deals/new");
     } else {
       setIsLoading(false);
     }

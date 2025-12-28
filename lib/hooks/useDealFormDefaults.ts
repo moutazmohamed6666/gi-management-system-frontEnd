@@ -35,8 +35,8 @@ export function useDealFormDefaults({
     if (isEditMode) return "";
     if (statuses.length === 0) return "";
 
-    // For agents, always use "submitted" status
-    if (currentRole === "agent") {
+    // For agents and sales admin, always use "submitted" status
+    if (currentRole === "agent" || currentRole === "SALES_ADMIN") {
       const submittedStatus =
         statuses.find((s) =>
           String(s.name).toLowerCase().includes("submitted")
@@ -51,9 +51,13 @@ export function useDealFormDefaults({
     return preferred?.id ?? "";
   }, [isEditMode, statuses, currentRole]);
 
-  // Set default statusId for agents when creating a deal
+  // Set default statusId for agents and sales admin when creating a deal
   useEffect(() => {
-    if (currentRole === "agent" && !isEditMode && defaultStatusId) {
+    if (
+      (currentRole === "agent" || currentRole === "SALES_ADMIN") &&
+      !isEditMode &&
+      defaultStatusId
+    ) {
       setValue("statusId", defaultStatusId, { shouldValidate: false });
     }
   }, [currentRole, isEditMode, defaultStatusId, setValue]);
@@ -70,10 +74,10 @@ export function useDealFormDefaults({
     }
   }, [currentRole, isEditMode, setValue]);
 
-  // Auto-set purchaseStatusId to "Booking" when bookingDate is set for agents
+  // Auto-set purchaseStatusId to "Booking" when bookingDate is set for agents and sales admin
   useEffect(() => {
     if (
-      currentRole === "agent" &&
+      (currentRole === "agent" || currentRole === "SALES_ADMIN") &&
       !isEditMode &&
       watchedBookingDate &&
       purchaseStatuses.length > 0

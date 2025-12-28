@@ -65,7 +65,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
   const isEditMode = Boolean(dealId);
 
   // Handle form defaults (status, commission, purchase status)
-  const { defaultStatusId, originalCommissionValue } = useDealFormDefaults({
+  const { defaultStatusId } = useDealFormDefaults({
     isEditMode,
     currentRole,
     statuses,
@@ -93,7 +93,6 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     dealId,
     currentRole,
     defaultStatusId,
-    originalCommissionValue,
     purchaseStatuses,
     onSave,
   });
@@ -177,10 +176,14 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Deals
-        </Button>
+        {currentRole !== "SALES_ADMIN" ? (
+          <Button variant="ghost" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Deals
+          </Button>
+        ) : (
+          <div /> // Empty div to maintain justify-between layout
+        )}
         {!isReadOnly ? (
           <Button
             type="submit"
@@ -230,7 +233,14 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
                 errors={errors}
                 register={register}
                 setValue={setValue}
-                currentRole={currentRole}
+                currentRole={
+                  currentRole as
+                    | "agent"
+                    | "finance"
+                    | "ceo"
+                    | "admin"
+                    | "SALES_ADMIN"
+                }
                 isEditMode={isEditMode}
                 defaultStatusId={defaultStatusId}
                 dealTypes={dealTypes}
