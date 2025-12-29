@@ -360,24 +360,27 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
       </div>
 
       <Card>
-        <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
-          <CardTitle className="text-lg sm:text-xl">
+        <CardHeader className="px-4 sm:px-6 md:px-8 py-4 sm:py-6">
+          <CardTitle className="text-lg sm:text-xl md:text-2xl">
             Upload Deal Media
           </CardTitle>
-          <CardDescription className="text-sm">
+          <CardDescription className="text-sm md:text-base">
             Upload documents and media files for this deal. Select a media type
             tab and drag & drop files or click to browse.
           </CardDescription>
         </CardHeader>
-        <CardContent className="px-4 sm:px-6">
+        <CardContent className="px-4 sm:px-6 md:px-8">
           <Tabs value={selectedMediaType} onValueChange={setSelectedMediaType}>
-            <div className="overflow-x-auto -mx-1 px-1 pb-2">
+            <div className="overflow-x-auto -mx-1 px-1 pb-2 md:overflow-x-visible md:mx-0 md:px-0">
               <TabsList
-                className="inline-flex h-auto min-w-full sm:grid sm:w-full gap-1 p-1"
+                className="inline-flex h-auto min-w-full md:grid md:w-full gap-1 p-1"
                 style={{
                   gridTemplateColumns:
                     mediaTypes.length > 0
-                      ? `repeat(${mediaTypes.length}, minmax(0, 1fr))`
+                      ? `repeat(${Math.min(
+                          mediaTypes.length,
+                          4
+                        )}, minmax(0, 1fr))`
                       : undefined,
                 }}
               >
@@ -385,7 +388,7 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
                   <TabsTrigger
                     key={type.id}
                     value={type.id}
-                    className="whitespace-nowrap px-3 py-2 text-xs sm:text-sm"
+                    className="whitespace-nowrap px-3 py-2 text-xs sm:text-sm md:px-4 md:py-2.5"
                   >
                     {type.name}
                     {uploadedFiles[type.id] &&
@@ -400,9 +403,13 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
             </div>
 
             {mediaTypes.map((type) => (
-              <TabsContent key={type.id} value={type.id} className="space-y-4">
+              <TabsContent
+                key={type.id}
+                value={type.id}
+                className="space-y-4 md:space-y-6"
+              >
                 <div
-                  className={`border-2 border-dashed rounded-lg p-4 sm:p-8 text-center transition-colors ${
+                  className={`border-2 border-dashed rounded-lg p-4 sm:p-6 md:p-10 text-center transition-colors ${
                     isDragging
                       ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
                       : "border-gray-300 dark:border-gray-700"
@@ -411,11 +418,11 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, type.id)}
                 >
-                  <Upload className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 text-gray-400" />
-                  <p className="text-base sm:text-lg font-medium mb-2">
+                  <Upload className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 mx-auto mb-3 sm:mb-4 text-gray-400" />
+                  <p className="text-base sm:text-lg md:text-xl font-medium mb-2">
                     Drop {type.name} files here, or click to browse
                   </p>
-                  <p className="text-xs sm:text-sm text-gray-500 mb-3 sm:mb-4">
+                  <p className="text-xs sm:text-sm md:text-base text-gray-500 mb-3 sm:mb-4">
                     Supported formats: PDF, JPG, PNG, DOCX, XLSX
                   </p>
                   <input
@@ -431,7 +438,7 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
                     onClick={() =>
                       document.getElementById(`file-input-${type.id}`)?.click()
                     }
-                    className="w-full sm:w-auto"
+                    className="w-full sm:w-auto md:px-6"
                   >
                     Browse Files
                   </Button>
@@ -441,7 +448,7 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
                 {existingFiles.filter((f) => f.mediaType.id === type.id)
                   .length > 0 && (
                   <div className="space-y-4">
-                    <h3 className="text-base sm:text-lg font-semibold">
+                    <h3 className="text-base sm:text-lg md:text-xl font-semibold">
                       Uploaded Files (
                       {
                         existingFiles.filter((f) => f.mediaType.id === type.id)
@@ -449,43 +456,43 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
                       }
                       )
                     </h3>
-                    <div className="space-y-3">
+                    <div className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0 lg:grid-cols-1 lg:gap-3">
                       {existingFiles
                         .filter((f) => f.mediaType.id === type.id)
                         .map((file) => (
                           <div
                             key={file.id}
-                            className="p-3 sm:p-4 border rounded-lg dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+                            className="p-3 sm:p-4 md:p-5 border rounded-lg dark:border-gray-700 bg-gray-50 dark:bg-gray-800 lg:flex lg:items-center lg:justify-between"
                           >
                             {/* File info row */}
-                            <div className="flex items-start gap-3">
-                              <div className="text-xl sm:text-2xl flex-shrink-0">
+                            <div className="flex items-start gap-3 lg:flex-1 lg:min-w-0">
+                              <div className="text-xl sm:text-2xl md:text-3xl flex-shrink-0">
                                 {getFileIcon(file.mimeType)}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium break-words line-clamp-2">
+                                <p className="text-sm md:text-base font-medium break-words line-clamp-2 lg:line-clamp-1">
                                   {file.originalFilename}
                                 </p>
-                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 mt-1">
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs md:text-sm text-gray-500 mt-1">
                                   <span>{formatFileSize(file.fileSize)}</span>
-                                  <span className="hidden sm:inline">•</span>
-                                  <span className="hidden sm:inline">
+                                  <span className="hidden md:inline">•</span>
+                                  <span className="hidden md:inline">
                                     Uploaded by {file.uploadedBy.name}
                                   </span>
-                                  <span className="hidden sm:inline">•</span>
-                                  <span className="hidden sm:inline">
+                                  <span className="hidden lg:inline">•</span>
+                                  <span className="hidden lg:inline">
                                     {formatDate(file.createdAt)}
                                   </span>
                                 </div>
-                                {/* Mobile-only metadata */}
-                                <div className="sm:hidden text-xs text-gray-500 mt-1">
+                                {/* Mobile/tablet-only metadata */}
+                                <div className="md:hidden text-xs text-gray-500 mt-1">
                                   <span>By {file.uploadedBy.name}</span>
                                 </div>
                               </div>
                             </div>
 
-                            {/* Action buttons - separate row on mobile */}
-                            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 sm:mt-0 sm:pt-0 sm:border-t-0 sm:justify-end">
+                            {/* Action buttons - separate row on mobile, inline on tablet+ */}
+                            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 md:mt-4 md:pt-4 lg:mt-0 lg:pt-0 lg:border-t-0 lg:ml-4 lg:flex-shrink-0">
                               {(file.mimeType.startsWith("image/") ||
                                 file.mimeType === "application/pdf") && (
                                 <Button
@@ -493,10 +500,10 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
                                   variant="outline"
                                   onClick={() => handleView(file)}
                                   title="View file"
-                                  className="flex-1 sm:flex-none"
+                                  className="flex-1 md:flex-none"
                                 >
-                                  <Eye className="h-4 w-4 sm:mr-1" />
-                                  <span className="hidden sm:inline">View</span>
+                                  <Eye className="h-4 w-4 md:mr-1" />
+                                  <span className="hidden md:inline">View</span>
                                 </Button>
                               )}
                               <Button
@@ -504,10 +511,10 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
                                 variant="outline"
                                 onClick={() => handleDownload(file)}
                                 title="Download file"
-                                className="flex-1 sm:flex-none"
+                                className="flex-1 md:flex-none"
                               >
-                                <Download className="h-4 w-4 sm:mr-1" />
-                                <span className="hidden sm:inline">
+                                <Download className="h-4 w-4 md:mr-1" />
+                                <span className="hidden md:inline">
                                   Download
                                 </span>
                               </Button>
@@ -532,7 +539,7 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
                   uploadedFiles[type.id].length > 0 && (
                     <div className="space-y-4">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <h3 className="text-base sm:text-lg font-semibold">
+                        <h3 className="text-base sm:text-lg md:text-xl font-semibold">
                           New Files to Upload ({uploadedFiles[type.id].length})
                         </h3>
                         <Button
@@ -540,32 +547,32 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
                           disabled={uploadedFiles[type.id].every(
                             (f) => f.status === "success"
                           )}
-                          className="gi-bg-dark-green w-full sm:w-auto"
+                          className="gi-bg-dark-green w-full sm:w-auto md:px-6"
                         >
                           <Upload className="h-4 w-4 mr-2" />
                           Upload All
                         </Button>
                       </div>
 
-                      <div className="space-y-3">
+                      <div className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0 lg:grid-cols-1 lg:gap-3">
                         {uploadedFiles[type.id].map((uploadedFile, index) => (
                           <div
                             key={index}
-                            className="p-3 sm:p-4 border rounded-lg dark:border-gray-700"
+                            className="p-3 sm:p-4 md:p-5 border rounded-lg dark:border-gray-700 lg:flex lg:items-center lg:justify-between"
                           >
-                            <div className="flex items-start gap-3">
+                            <div className="flex items-start gap-3 lg:flex-1 lg:min-w-0">
                               <div className="flex-shrink-0 mt-0.5">
                                 {getStatusIcon(uploadedFile.status)}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium break-words line-clamp-2">
+                                <p className="text-sm md:text-base font-medium break-words line-clamp-2 lg:line-clamp-1">
                                   {uploadedFile.file.name}
                                 </p>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs md:text-sm text-gray-500">
                                   {formatFileSize(uploadedFile.file.size)}
                                 </p>
                                 {uploadedFile.error && (
-                                  <p className="text-xs text-red-500 mt-1">
+                                  <p className="text-xs md:text-sm text-red-500 mt-1">
                                     {uploadedFile.error}
                                   </p>
                                 )}
@@ -573,7 +580,7 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
                             </div>
 
                             {/* Action buttons */}
-                            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 sm:mt-0 sm:pt-0 sm:border-t-0 sm:justify-end">
+                            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 md:mt-4 md:pt-4 lg:mt-0 lg:pt-0 lg:border-t-0 lg:ml-4 lg:flex-shrink-0">
                               {uploadedFile.status === "pending" && (
                                 <Button
                                   size="sm"
@@ -585,10 +592,10 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
                                       index
                                     )
                                   }
-                                  className="flex-1 sm:flex-none"
+                                  className="flex-1 md:flex-none"
                                 >
-                                  <Upload className="h-4 w-4 sm:mr-1" />
-                                  <span className="sm:inline">Upload</span>
+                                  <Upload className="h-4 w-4 md:mr-1" />
+                                  <span className="md:inline">Upload</span>
                                 </Button>
                               )}
                               {uploadedFile.status === "error" && (
@@ -602,7 +609,7 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
                                       index
                                     )
                                   }
-                                  className="flex-1 sm:flex-none"
+                                  className="flex-1 md:flex-none"
                                 >
                                   Retry
                                 </Button>
