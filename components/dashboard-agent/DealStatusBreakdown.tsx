@@ -1,13 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { BarChart3 } from "lucide-react";
 import { useIsMobile } from "../ui/use-mobile";
 
@@ -15,6 +9,7 @@ interface StatusDataItem {
   name: string;
   value: number;
   color: string;
+  [key: string]: unknown;
 }
 
 interface DealStatusBreakdownProps {
@@ -47,10 +42,7 @@ export function DealStatusBreakdown({
         ) : (
           <>
             <div className="flex items-center justify-center">
-              <ResponsiveContainer
-                width="100%"
-                height={isMobile ? 180 : 260}
-              >
+              <ResponsiveContainer width="100%" height={isMobile ? 180 : 260}>
                 <PieChart>
                   <defs>
                     <filter id="shadow" height="130%">
@@ -88,10 +80,7 @@ export function DealStatusBreakdown({
                       borderRadius: "8px",
                       boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                     }}
-                    formatter={(value: number, name: string) => [
-                      value,
-                      name,
-                    ]}
+                    formatter={(value: number, name: string) => [value, name]}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -125,4 +114,3 @@ export function DealStatusBreakdown({
     </Card>
   );
 }
-
