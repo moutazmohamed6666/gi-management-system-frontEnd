@@ -9,6 +9,7 @@ import { PropertyDetailsSection } from "./deal-form/PropertyDetailsSection";
 import { UnitDetailsSection } from "./deal-form/UnitDetailsSection";
 import { BuyerSellerSection } from "./deal-form/BuyerSellerSection";
 import { CommissionDetailsSection } from "./deal-form/CommissionDetailsSection";
+import { CommissionCollectionSummary } from "./CommissionCollectionSummary";
 import {
   useDealFormData,
   useDealFormDefaults,
@@ -77,7 +78,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
   });
 
   // Load deal data when editing
-  const { dealError, loadedDealId, retryLoadDeal } = useDealLoader({
+  const { dealError, loadedDealId, loadedDeal, retryLoadDeal } = useDealLoader({
     dealId,
     reset,
   });
@@ -312,6 +313,17 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
               currentRole={currentRole}
               filtersLoading={filtersLoading}
             />
+
+            {/* Commission Collection & Transfer Summary - Only show for existing deals in view mode */}
+            {isEditMode && loadedDeal && (
+              <CommissionCollectionSummary
+                dealId={loadedDeal.id}
+                collectedCommissions={parseFloat(loadedDeal.collected_commissions || "0")}
+                transferredCommissions={loadedDeal.agentCommissions?.totalPaid || 0}
+                showCollectionHistory={true}
+                showTransferHistory={true}
+              />
+            )}
           </div>
         </fieldset>
       </form>

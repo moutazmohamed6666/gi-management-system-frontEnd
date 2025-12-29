@@ -13,6 +13,7 @@ import { CEODealInfo } from "./ceo/CEODealInfo";
 import { CEOCommissionDetails } from "./ceo/CEOCommissionDetails";
 import { CEOPropertyDetails } from "./ceo/CEOPropertyDetails";
 import { DealMediaUpload } from "./DealMediaUpload";
+import { CommissionCollectionSummary } from "./CommissionCollectionSummary";
 
 interface ComplianceDealViewProps {
   dealId: string;
@@ -144,6 +145,15 @@ export function ComplianceDealView({ dealId, onBack }: ComplianceDealViewProps) 
 
           {/* Commission Details - Summary only (Breakdown hidden) */}
           <CEOCommissionDetails deal={deal} commissions={deal.commissions || []} />
+
+          {/* Commission Collection & Transfer Summary */}
+          <CommissionCollectionSummary
+            dealId={deal.id}
+            collectedCommissions={parseFloat(deal.collected_commissions || "0")}
+            transferredCommissions={deal.agentCommissions?.totalPaid || 0}
+            showCollectionHistory={true}
+            showTransferHistory={true}
+          />
 
           {/* Property Details */}
           <CEOPropertyDetails deal={deal} />

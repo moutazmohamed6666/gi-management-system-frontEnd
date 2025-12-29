@@ -19,6 +19,7 @@ import { CommissionSummaryCards } from "./finance/CommissionSummaryCards";
 import { CommissionActionsCard } from "./finance/CommissionActionsCard";
 import { DealOverviewSection } from "./finance/DealOverviewSection";
 import { DealMediaSection } from "./finance/DealMediaSection";
+import { CommissionCollectionSummary } from "./CommissionCollectionSummary";
 import type { DealOverview } from "./finance/DealOverviewForm";
 
 interface FinanceReviewProps {
@@ -610,6 +611,17 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
         dealOverview={dealOverview}
         onOverviewChange={handleOverviewChange}
       />
+
+      {/* Commission Collection & Transfer Summary */}
+      {deal && (
+        <CommissionCollectionSummary
+          dealId={deal.id}
+          collectedCommissions={parseFloat(deal.collected_commissions || "0")}
+          transferredCommissions={deal.agentCommissions?.totalPaid || 0}
+          showCollectionHistory={true}
+          showTransferHistory={true}
+        />
+      )}
 
       {/* Deal Media Files Section */}
       {deal && <DealMediaSection dealId={deal.id} />}

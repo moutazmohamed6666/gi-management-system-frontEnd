@@ -477,15 +477,6 @@ export function DashboardFinance() {
         ) : (
           <MonthlyTrendsChart financeMetrics={financeMetrics} />
         )}
-
-        {/* Developer Aging Report - Removed as it's not available in API */}
-        <Card className="border-0 shadow-lg">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
-              Developer Aging Report - Coming Soon
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Recent Finance Notes */}

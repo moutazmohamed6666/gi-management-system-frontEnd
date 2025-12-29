@@ -14,6 +14,7 @@ export function useDealLoader({ dealId, reset }: UseDealLoaderProps) {
   const [dealError, setDealError] = useState<string | null>(null);
   const [loadedDealId, setLoadedDealId] = useState<string | null>(null);
   const [dealFetchNonce, setDealFetchNonce] = useState(0);
+  const [loadedDeal, setLoadedDeal] = useState<Deal | null>(null);
 
   const isoToYmd = (value?: string) => {
     if (!value) return "";
@@ -243,6 +244,7 @@ export function useDealLoader({ dealId, reset }: UseDealLoaderProps) {
         });
 
         setLoadedDealId(dealId);
+        setLoadedDeal(deal);
       })
       .catch((err: unknown) => {
         const message =
@@ -265,6 +267,7 @@ export function useDealLoader({ dealId, reset }: UseDealLoaderProps) {
   return {
     dealError,
     loadedDealId,
+    loadedDeal,
     retryLoadDeal,
   };
 }
