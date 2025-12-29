@@ -246,11 +246,18 @@ export function CEODealView({ dealId, onBack }: CEODealViewProps) {
       {/* Commission Details - Summary only (Breakdown hidden) */}
       <CEOCommissionDetails deal={deal} commissions={deal.commissions || []} />
 
-      {/* Commission Collection & Transfer Summary */}
+      {/* Commission Summary */}
       <CommissionCollectionSummary
-        dealId={deal.id}
-        collectedCommissions={parseFloat(deal.collected_commissions || "0")}
-        transferredCommissions={deal.agentCommissions?.totalPaid || 0}
+        expectedCommissions={
+          deal.totalCommission?.commissionValue ||
+          deal.totalCommission?.value ||
+          deal.agentCommissions?.totalExpected ||
+          0
+        }
+        collectedCommissions={deal.collectedCommissions?.totalCollected || 0}
+        transferredCommissions={deal.transferredCommissions?.totalTransferred || 0}
+        collections={deal.collectedCommissions?.collections || []}
+        transfers={deal.transferredCommissions?.transfers || []}
         showCollectionHistory={true}
         showTransferHistory={true}
       />

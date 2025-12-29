@@ -163,38 +163,6 @@ export interface CompleteTransferResponse {
   message?: string;
 }
 
-// Get transfers for a deal
-export interface DealTransfer {
-  id: string;
-  dealId: string;
-  amount: string;
-  transferDate: string;
-  transferTypeId: string;
-  recipientId: string | null;
-  recipientName?: string;
-  notes: string | null;
-  status: "pending" | "completed";
-  createdAt: string;
-  updatedAt: string;
-  // Nested objects from API
-  recipient?: {
-    id: string;
-    name: string;
-    email?: string;
-  };
-  transferType?: {
-    id: string;
-    name: string;
-  };
-}
-
-// API Response structure for transfers
-export interface GetDealTransfersApiResponse {
-  transfers: DealTransfer[];
-  totalTransferred: string;
-}
-
-export type GetDealTransfersResponse = DealTransfer[];
 
 // ============================================================================
 // Commission Summary (computed from collections/transfers)
@@ -311,27 +279,6 @@ export const commissionsApi = {
         }),
       }
     );
-  },
-
-  // Get all transfers for a deal
-  getDealTransfers: async (
-    dealId: string
-  ): Promise<GetDealTransfersResponse> => {
-    try {
-      const response = await apiClient<GetDealTransfersApiResponse>(
-        `/api/commissions/transfers/deal/${dealId}`
-      );
-
-      // Map API response to DealTransfer format
-      return response.transfers.map((transfer) => ({
-        ...transfer,
-        recipientName: transfer.recipient?.name || "",
-      }));
-    } catch {
-      // If the endpoint doesn't exist yet, return empty array
-      console.warn("getDealTransfers endpoint may not be available yet");
-      return [];
-    }
   },
 
   // Helper: Calculate commission summary for a deal

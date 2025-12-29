@@ -314,12 +314,19 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
               filtersLoading={filtersLoading}
             />
 
-            {/* Commission Collection & Transfer Summary - Only show for existing deals in view mode */}
+            {/* Commission Summary - Only show for existing deals in view mode */}
             {isEditMode && loadedDeal && (
               <CommissionCollectionSummary
-                dealId={loadedDeal.id}
-                collectedCommissions={parseFloat(loadedDeal.collected_commissions || "0")}
-                transferredCommissions={loadedDeal.agentCommissions?.totalPaid || 0}
+                expectedCommissions={
+                  loadedDeal.totalCommission?.commissionValue ||
+                  loadedDeal.totalCommission?.value ||
+                  loadedDeal.agentCommissions?.totalExpected ||
+                  0
+                }
+                collectedCommissions={loadedDeal.collectedCommissions?.totalCollected || 0}
+                transferredCommissions={loadedDeal.transferredCommissions?.totalTransferred || 0}
+                collections={loadedDeal.collectedCommissions?.collections || []}
+                transfers={loadedDeal.transferredCommissions?.transfers || []}
                 showCollectionHistory={true}
                 showTransferHistory={true}
               />

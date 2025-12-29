@@ -220,6 +220,62 @@ export interface Media {
   updatedAt: string;
 }
 
+// Collection object for new API structure
+export interface CollectionItem {
+  id: string;
+  amount: number;
+  collectionDate: string;
+  source: {
+    id: string;
+    name: string;
+  };
+  collectionType: {
+    id: string;
+    name: string;
+  };
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Collected Commissions object for new API structure
+export interface CollectedCommissions {
+  collections: CollectionItem[];
+  totalCollected: number;
+}
+
+// Transfer object for new API structure
+export interface TransferItem {
+  id: string;
+  amount: number;
+  fromAccount: string;
+  toAccount: string;
+  toUser: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  transferType: {
+    id: string;
+    name: string;
+  } | null;
+  status: {
+    id: string;
+    name: string;
+  };
+  comment: string | null;
+  initiatedAt: string;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Transferred Commissions object for new API structure
+export interface TransferredCommissions {
+  transfers: TransferItem[];
+  totalTransferred: number;
+}
+
 // Deal Media File (from GET /api/media/deal/{dealId})
 export interface DealMediaFile {
   id: string;
@@ -294,6 +350,8 @@ export interface Deal {
   unit?: Unit;
   totalCommission?: TotalCommission;
   agentCommissions?: AgentCommissions;
+  collectedCommissions?: CollectedCommissions; // Collections from buyer/seller/developer
+  transferredCommissions?: TransferredCommissions; // Transfers to agents/managers
   downpayment?: number; // Downpayment field added in new API
   media?: Media[]; // Media attachments array added in new API
   // Helper getters (computed from arrays)

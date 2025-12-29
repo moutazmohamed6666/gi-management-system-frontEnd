@@ -5,17 +5,11 @@ import { Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import type { Deal } from "@/lib/deals";
 import { dealsApi } from "@/lib/deals";
-import {
-  commissionsApi,
-  type DealCollection,
-  type CommissionSummary,
-} from "@/lib/commissions";
 import { filtersApi } from "@/lib/filters";
 import { CollectCommissionModal } from "./CollectCommissionModal";
 import { TransferCommissionModal } from "./TransferCommissionModal";
 import { FinanceReviewHeader } from "./finance/FinanceReviewHeader";
 import { ApprovalStatusBadge } from "./finance/ApprovalStatusBadge";
-import { CommissionSummaryCards } from "./finance/CommissionSummaryCards";
 import { CommissionActionsCard } from "./finance/CommissionActionsCard";
 import { DealOverviewSection } from "./finance/DealOverviewSection";
 import { DealMediaSection } from "./finance/DealMediaSection";
@@ -47,9 +41,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
 
   // Commission data
-  const [, setCollections] = useState<DealCollection[]>([]);
-  const [commissionSummary, setCommissionSummary] =
-    useState<CommissionSummary | null>(null);
+  const [expectedCommission, setExpectedCommission] = useState<number>(0);
 
   // Initialize state with deal data when deal is loaded
   const [dealOverview, setDealOverview] = useState<DealOverview>({
@@ -101,80 +93,22 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
       const dealData = await dealsApi.getDealById(dealId);
       setDeal(dealData);
 
-      // Fetch collections for this deal
-      try {
-        const collectionsData = await commissionsApi.getDealCollections(dealId);
-        setCollections(collectionsData);
-
-        // Calculate commission summary - handle both old and new structures
-        let commissionsForSummary: Array<{
-          expectedAmount: string;
-          paidAmount: string;
-        }> = [];
-
-        // New structure: convert agentCommissions to commissions format
-        if (dealData.agentCommissions) {
-          // Use mainAgent and additionalAgents to build commissions array
-          const mainAgent = dealData.agentCommissions.mainAgent;
-          if (mainAgent) {
-            commissionsForSummary.push({
-              expectedAmount: String(mainAgent.expectedAmount || 0),
-              paidAmount: String(mainAgent.paidAmount || 0),
-            });
-          }
-          // Add additional agents
-          dealData.agentCommissions.additionalAgents?.forEach((agent) => {
-            // Additional agents might not have expectedAmount/paidAmount, use commissionValue
-            commissionsForSummary.push({
-              expectedAmount: String(agent.commissionValue || 0),
-              paidAmount: "0", // Additional agents typically don't have paidAmount
-            });
-          });
-        } else if (dealData.commissions) {
-          // Old structure: use commissions array directly
-          commissionsForSummary = dealData.commissions;
-        }
-
-        const summary = commissionsApi.calculateSummary(
-          commissionsForSummary,
-          collectionsData
+      // Calculate expected commission from deal data
+      let totalExpected = 0;
+      if (dealData.totalCommission) {
+        totalExpected =
+          dealData.totalCommission.commissionValue ||
+          dealData.totalCommission.value ||
+          0;
+      } else if (dealData.agentCommissions) {
+        totalExpected = dealData.agentCommissions.totalExpected || 0;
+      } else if (dealData.commissions) {
+        totalExpected = dealData.commissions.reduce(
+          (sum, c) => sum + parseFloat(c.expectedAmount || "0"),
+          0
         );
-        setCommissionSummary(summary);
-      } catch (err) {
-        // Collections API might not be available, use deal data
-        console.error("Error fetching collections:", err);
-        setCollections([]);
-
-        // Build commissions array for summary calculation
-        let commissionsForSummary: Array<{
-          expectedAmount: string;
-          paidAmount: string;
-        }> = [];
-
-        if (dealData.agentCommissions) {
-          const mainAgent = dealData.agentCommissions.mainAgent;
-          if (mainAgent) {
-            commissionsForSummary.push({
-              expectedAmount: String(mainAgent.expectedAmount || 0),
-              paidAmount: String(mainAgent.paidAmount || 0),
-            });
-          }
-          dealData.agentCommissions.additionalAgents?.forEach((agent) => {
-            commissionsForSummary.push({
-              expectedAmount: String(agent.commissionValue || 0),
-              paidAmount: "0",
-            });
-          });
-        } else if (dealData.commissions) {
-          commissionsForSummary = dealData.commissions;
-        }
-
-        const summary = commissionsApi.calculateSummary(
-          commissionsForSummary,
-          []
-        );
-        setCommissionSummary(summary);
       }
+      setExpectedCommission(totalExpected);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to load deal";
@@ -592,13 +526,29 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
 
       {isDealApproved && <ApprovalStatusBadge />}
 
-      {commissionSummary && (
-        <CommissionSummaryCards summary={commissionSummary} />
+      {/* Commission Summary - Expected, Collected, Transferred, Remaining */}
+      {deal && (
+        <CommissionCollectionSummary
+          expectedCommissions={expectedCommission}
+          collectedCommissions={deal.collectedCommissions?.totalCollected || 0}
+          transferredCommissions={deal.transferredCommissions?.totalTransferred || 0}
+          collections={deal.collectedCommissions?.collections || []}
+          transfers={deal.transferredCommissions?.transfers || []}
+          showCollectionHistory={true}
+          showTransferHistory={true}
+        />
       )}
 
       {isDealApproved && (
         <CommissionActionsCard
-          commissionSummary={commissionSummary}
+          commissionSummary={{
+            totalExpected: expectedCommission,
+            totalCollected: deal?.collectedCommissions?.totalCollected || 0,
+            pendingTransfers: 0,
+            remainingToCollect: Math.max(0, expectedCommission - (deal?.collectedCommissions?.totalCollected || 0)),
+            remainingToTransfer: 0,
+            status: (deal?.collectedCommissions?.totalCollected || 0) >= expectedCommission && expectedCommission > 0 ? "Paid" : (deal?.collectedCommissions?.totalCollected || 0) > 0 ? "Partially Paid" : "Pending",
+          }}
           onCollect={() => setIsCollectModalOpen(true)}
           onTransfer={() => setIsTransferModalOpen(true)}
           onRefresh={fetchDeal}
@@ -611,17 +561,6 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
         dealOverview={dealOverview}
         onOverviewChange={handleOverviewChange}
       />
-
-      {/* Commission Collection & Transfer Summary */}
-      {deal && (
-        <CommissionCollectionSummary
-          dealId={deal.id}
-          collectedCommissions={parseFloat(deal.collected_commissions || "0")}
-          transferredCommissions={deal.agentCommissions?.totalPaid || 0}
-          showCollectionHistory={true}
-          showTransferHistory={true}
-        />
-      )}
 
       {/* Deal Media Files Section */}
       {deal && <DealMediaSection dealId={deal.id} />}
