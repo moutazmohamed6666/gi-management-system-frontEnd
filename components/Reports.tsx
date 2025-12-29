@@ -37,7 +37,7 @@ export function Reports() {
   const [selectedAgent, setSelectedAgent] = useState("all");
   const [selectedPurchaseStatus, setSelectedPurchaseStatus] = useState("all");
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodType | "custom">(
-    "month"
+    "custom"
   );
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -50,17 +50,8 @@ export function Reports() {
     null
   );
 
-  // Set default date range on mount
-  useEffect(() => {
-    const { from_date, to_date } = reportsApi.getDateRangeForPeriod("month");
-    setStartDate(from_date);
-    setEndDate(to_date);
-  }, []);
-
   // Fetch analytics data
   const fetchAnalytics = useCallback(async () => {
-    if (!startDate || !endDate) return;
-
     setIsLoading(true);
     setError(null);
 
@@ -172,8 +163,8 @@ export function Reports() {
         // Use regular reports endpoint for other roles
         response = await reportsApi.getAnalytics({
           report_type: reportType,
-          from_date: startDate,
-          to_date: endDate,
+          from_date: startDate || undefined,
+          to_date: endDate || undefined,
           developer_id:
             selectedDeveloper !== "all" ? selectedDeveloper : undefined,
           agent_id: selectedAgent !== "all" ? selectedAgent : undefined,
@@ -207,10 +198,19 @@ export function Reports() {
 
   // Fetch data when filters change
   useEffect(() => {
-    if (startDate && endDate) {
-      fetchAnalytics();
-    }
-  }, [fetchAnalytics, startDate, endDate]);
+    fetchAnalytics();
+  }, [fetchAnalytics]);
+
+  // Clear all filters
+  const handleClearFilters = () => {
+    setSelectedDeveloper("all");
+    setSelectedAgent("all");
+    setSelectedPurchaseStatus("all");
+    setSelectedPeriod("custom");
+    setStartDate("");
+    setEndDate("");
+    // Note: fetchAnalytics will be triggered by useEffect when state updates
+  };
 
   const handlePeriodChange = (period: PeriodType | "custom") => {
     setSelectedPeriod(period);
@@ -309,6 +309,7 @@ export function Reports() {
         onPeriodChange={handlePeriodChange}
         onStartDateChange={handleStartDateChange}
         onEndDateChange={handleEndDateChange}
+        onClearFilters={handleClearFilters}
       />
 
       {isLoading && <ReportsLoadingState />}

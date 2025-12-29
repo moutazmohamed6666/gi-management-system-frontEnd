@@ -9,8 +9,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { Filter } from "lucide-react";
+import { Filter, X } from "lucide-react";
 import { Label } from "../ui/label";
+import { Button } from "../ui/button";
 import type { PeriodType } from "@/lib/reports";
 
 interface FilterOption {
@@ -34,6 +35,7 @@ interface ReportsFiltersProps {
   onPeriodChange: (period: PeriodType | "custom") => void;
   onStartDateChange: (date: string) => void;
   onEndDateChange: (date: string) => void;
+  onClearFilters: () => void;
 }
 
 export function ReportsFilters({
@@ -52,7 +54,17 @@ export function ReportsFilters({
   onPeriodChange,
   onStartDateChange,
   onEndDateChange,
+  onClearFilters,
 }: ReportsFiltersProps) {
+  // Check if any filters are active
+  const hasActiveFilters =
+    selectedDeveloper !== "all" ||
+    selectedAgent !== "all" ||
+    selectedPurchaseStatus !== "all" ||
+    startDate !== "" ||
+    endDate !== "" ||
+    selectedPeriod !== "custom";
+
   return (
     <Card className="border-0 shadow-lg">
       <CardHeader className="pb-4 px-4 sm:px-6">
@@ -65,8 +77,8 @@ export function ReportsFilters({
             </CardTitle>
           </div>
 
-          {/* Quick Period Filters */}
-          <div className="flex flex-wrap gap-1.5 sm:gap-2">
+          {/* Quick Period Filters and Clear Button */}
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             {(["today", "week", "month", "quarter", "year"] as const).map(
               (period) => (
                 <button
@@ -81,6 +93,17 @@ export function ReportsFilters({
                   {period.charAt(0).toUpperCase() + period.slice(1)}
                 </button>
               )
+            )}
+            {hasActiveFilters && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onClearFilters}
+                className="text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 h-auto"
+              >
+                <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                Clear Filters
+              </Button>
             )}
           </div>
         </div>
