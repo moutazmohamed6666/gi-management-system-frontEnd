@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { dealsApi, type Deal, type BuyerSeller } from "@/lib/deals";
-import { Loader2, AlertCircle, ArrowLeft } from "lucide-react";
+import { Loader2, AlertCircle, ArrowLeft, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { CEODealHeader } from "./ceo/CEODealHeader";
 import { CEODealInfo } from "./ceo/CEODealInfo";
@@ -24,6 +24,7 @@ export function ComplianceDealView({ dealId, onBack }: ComplianceDealViewProps) 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const [isCompleting, setIsCompleting] = useState(false);
 
   const fetchDeal = useCallback(async () => {
     if (!dealId) {
@@ -59,6 +60,31 @@ export function ComplianceDealView({ dealId, onBack }: ComplianceDealViewProps) 
   const handleMediaUploadBack = () => {
     // Stay on the same page, just switch to overview tab
     setActiveTab("overview");
+  };
+
+  const handleCompleteCompliance = async () => {
+    if (!deal) return;
+
+    setIsCompleting(true);
+    try {
+      await dealsApi.completeCompliance(deal.id);
+      
+      toast.success("Compliance Completed", {
+        description: `Deal ${deal.dealNumber} has been marked as compliance completed.`,
+        duration: 3000,
+      });
+
+      // Refresh deal data to get updated status
+      await fetchDeal();
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to complete compliance";
+      toast.error("Compliance Failed", {
+        description: errorMessage,
+      });
+    } finally {
+      setIsCompleting(false);
+    }
   };
 
   if (isLoading) {
@@ -105,25 +131,59 @@ export function ComplianceDealView({ dealId, onBack }: ComplianceDealViewProps) 
 
   return (
     <div className="space-y-6">
-      {/* Header - similar to CEO but without approve/reject actions */}
-      <div className="flex items-center justify-between">
-        <div>
-          <Button variant="ghost" onClick={handleBackToDeals}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Deals
+      {/* Header with compliance action button */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        {/* Back button and Deal ID */}
+        <div className="flex items-center gap-2 lg:gap-4">
+          <Button
+            variant="ghost"
+            onClick={handleBackToDeals}
+            size="sm"
+            className="lg:size-default shrink-0"
+          >
+            <ArrowLeft className="h-4 w-4 lg:mr-2" />
+            <span className="hidden lg:inline">Back to Deals</span>
           </Button>
+          <div className="hidden sm:block text-sm text-gray-600 dark:text-gray-400">
+            <span className="hidden lg:inline">Deal ID: </span>
+            <span className="font-mono text-xs lg:text-sm">{deal.id}</span>
+          </div>
         </div>
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          Deal ID: <span className="font-mono">{deal.id}</span>
+
+        {/* Completed button */}
+        <div className="flex justify-end shrink-0">
+          {isCompleting ? (
+            <Button
+              variant="default"
+              disabled
+              size="sm"
+              className="flex items-center gap-1 lg:gap-2 bg-green-600 hover:bg-green-700 lg:size-default w-full sm:w-auto"
+            >
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="hidden sm:inline">Completing...</span>
+              <span className="sm:hidden">Completing</span>
+            </Button>
+          ) : (
+            <Button
+              variant="default"
+              onClick={handleCompleteCompliance}
+              size="sm"
+              className="flex items-center gap-1 lg:gap-2 bg-green-600 hover:bg-green-700 text-white lg:size-default w-full sm:w-auto"
+            >
+              <CheckCircle className="h-4 w-4" />
+              <span className="hidden sm:inline">Completed</span>
+              <span className="sm:hidden">Complete</span>
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Deal Number and Basic Info */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Deal {deal.dealNumber}</span>
-            <span className="text-sm font-normal text-gray-600 dark:text-gray-400">
+          <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <span className="text-lg sm:text-xl">Deal {deal.dealNumber}</span>
+            <span className="text-sm font-normal text-gray-600 dark:text-gray-400 truncate">
               {deal.project?.name || "No Project"}
             </span>
           </CardTitle>

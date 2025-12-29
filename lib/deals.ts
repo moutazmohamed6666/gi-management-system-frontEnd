@@ -790,4 +790,11 @@ export const dealsApi = {
       method: "DELETE",
     });
   },
+
+  // Complete compliance for a deal
+  completeCompliance: async (dealId: string): Promise<{ message: string }> => {
+    return apiClient<{ message: string }>(`/api/deals/${dealId}/compliance`, {
+      method: "POST",
+    });
+  },
 };
