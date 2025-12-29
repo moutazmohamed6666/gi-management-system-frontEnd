@@ -31,7 +31,12 @@ export function CEODealHeader({
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         {/* Back button and title */}
         <div className="flex items-center gap-2 lg:gap-4">
-          <Button variant="ghost" onClick={onBack} size="sm" className="lg:size-default shrink-0">
+          <Button
+            variant="ghost"
+            onClick={onBack}
+            size="sm"
+            className="lg:size-default shrink-0"
+          >
             <ArrowLeft className="h-4 w-4 lg:mr-2" />
             <span className="hidden lg:inline">Back to Deals</span>
           </Button>
@@ -44,7 +49,7 @@ export function CEODealHeader({
             </p>
           </div>
         </div>
-        
+
         {/* Action buttons */}
         {showActions && (
           <div className="flex gap-2 justify-end shrink-0">
@@ -96,4 +101,3 @@ export function CEODealHeader({
     </div>
   );
 }
-

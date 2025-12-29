@@ -60,7 +60,9 @@ export function ReportsFilters({
           {/* Title */}
           <div className="flex items-center gap-2 shrink-0">
             <Filter className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-            <CardTitle className="text-base sm:text-lg">Report Filters</CardTitle>
+            <CardTitle className="text-base sm:text-lg">
+              Report Filters
+            </CardTitle>
           </div>
 
           {/* Quick Period Filters */}
@@ -86,7 +88,9 @@ export function ReportsFilters({
       <CardContent className="px-4 sm:px-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
           <div>
-            <Label htmlFor="developer" className="text-xs sm:text-sm">Developer</Label>
+            <Label htmlFor="developer" className="text-xs sm:text-sm">
+              Developer
+            </Label>
             <Select value={selectedDeveloper} onValueChange={onDeveloperChange}>
               <SelectTrigger className="w-full mt-1 h-9 sm:h-10 text-xs sm:text-sm">
                 <SelectValue placeholder="Select developer" />
@@ -102,7 +106,9 @@ export function ReportsFilters({
             </Select>
           </div>
           <div>
-            <Label htmlFor="agent" className="text-xs sm:text-sm">Agent</Label>
+            <Label htmlFor="agent" className="text-xs sm:text-sm">
+              Agent
+            </Label>
             <Select value={selectedAgent} onValueChange={onAgentChange}>
               <SelectTrigger className="w-full mt-1 h-9 sm:h-10 text-xs sm:text-sm">
                 <SelectValue placeholder="Select agent" />
@@ -118,7 +124,9 @@ export function ReportsFilters({
             </Select>
           </div>
           <div>
-            <Label htmlFor="purchaseStatus" className="text-xs sm:text-sm">Purchase Status</Label>
+            <Label htmlFor="purchaseStatus" className="text-xs sm:text-sm">
+              Purchase Status
+            </Label>
             <Select
               value={selectedPurchaseStatus}
               onValueChange={onPurchaseStatusChange}
@@ -157,4 +165,3 @@ export function ReportsFilters({
     </Card>
   );
 }
-

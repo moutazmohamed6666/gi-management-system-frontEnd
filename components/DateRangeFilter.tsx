@@ -1,27 +1,41 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "./ui/button";
 import { StyledDatePicker } from "./StyledDatePicker";
 import { Calendar } from "lucide-react";
 
 interface DateRangeFilterProps {
   onDateChange: (startDate: string, endDate: string) => void;
+  startDate?: string;
+  endDate?: string;
 }
 
-export function DateRangeFilter({ onDateChange }: DateRangeFilterProps) {
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+export function DateRangeFilter({
+  onDateChange,
+  startDate: propStartDate = "",
+  endDate: propEndDate = "",
+}: DateRangeFilterProps) {
+  const [startDate, setStartDate] = useState(propStartDate);
+  const [endDate, setEndDate] = useState(propEndDate);
   const [activeFilter, setActiveFilter] = useState<
     "today" | "week" | "month" | "year" | "custom" | null
   >(null);
+  const prevPropsRef = useRef({ propStartDate, propEndDate });
 
-  // Sync dates to parent when they change
+  // Sync with props when they change from parent (external changes)
+  // This is a valid pattern for syncing props to state when parent updates
   useEffect(() => {
-    if (startDate || endDate) {
-      onDateChange(startDate, endDate);
+    const prevProps = prevPropsRef.current;
+    // Only update if props changed from previous values (external change from parent)
+    if (prevProps.propStartDate !== propStartDate) {
+      setStartDate(propStartDate);
     }
-  }, [startDate, endDate, onDateChange]);
+    if (prevProps.propEndDate !== propEndDate) {
+      setEndDate(propEndDate);
+    }
+    prevPropsRef.current = { propStartDate, propEndDate };
+  }, [propStartDate, propEndDate]);
 
   const handleClearFilter = () => {
     setStartDate("");
@@ -41,7 +55,7 @@ export function DateRangeFilter({ onDateChange }: DateRangeFilterProps) {
   const handleQuickFilter = (type: "today" | "week" | "month" | "year") => {
     const today = new Date();
     let start = new Date();
-    let end = today;
+    const end = today;
 
     switch (type) {
       case "today":

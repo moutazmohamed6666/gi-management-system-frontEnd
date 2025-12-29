@@ -255,7 +255,9 @@ export function CEODealView({ dealId, onBack }: CEODealViewProps) {
           0
         }
         collectedCommissions={deal.collectedCommissions?.totalCollected || 0}
-        transferredCommissions={deal.transferredCommissions?.totalTransferred || 0}
+        transferredCommissions={
+          deal.transferredCommissions?.totalTransferred || 0
+        }
         collections={deal.collectedCommissions?.collections || []}
         transfers={deal.transferredCommissions?.transfers || []}
         showCollectionHistory={true}

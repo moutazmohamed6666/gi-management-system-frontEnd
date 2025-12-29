@@ -501,7 +501,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
     <div className="space-y-6">
       {/* Spacer for fixed header on mobile/tablet */}
       <div className="h-28 lg:h-0" />
-      
+
       <FinanceReviewHeader
         dealNumber={deal.dealNumber}
         project={dealOverview.project}
@@ -531,7 +531,9 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
         <CommissionCollectionSummary
           expectedCommissions={expectedCommission}
           collectedCommissions={deal.collectedCommissions?.totalCollected || 0}
-          transferredCommissions={deal.transferredCommissions?.totalTransferred || 0}
+          transferredCommissions={
+            deal.transferredCommissions?.totalTransferred || 0
+          }
           collections={deal.collectedCommissions?.collections || []}
           transfers={deal.transferredCommissions?.transfers || []}
           showCollectionHistory={true}
@@ -545,9 +547,19 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
             totalExpected: expectedCommission,
             totalCollected: deal?.collectedCommissions?.totalCollected || 0,
             pendingTransfers: 0,
-            remainingToCollect: Math.max(0, expectedCommission - (deal?.collectedCommissions?.totalCollected || 0)),
+            remainingToCollect: Math.max(
+              0,
+              expectedCommission -
+                (deal?.collectedCommissions?.totalCollected || 0)
+            ),
             remainingToTransfer: 0,
-            status: (deal?.collectedCommissions?.totalCollected || 0) >= expectedCommission && expectedCommission > 0 ? "Paid" : (deal?.collectedCommissions?.totalCollected || 0) > 0 ? "Partially Paid" : "Pending",
+            status:
+              (deal?.collectedCommissions?.totalCollected || 0) >=
+                expectedCommission && expectedCommission > 0
+                ? "Paid"
+                : (deal?.collectedCommissions?.totalCollected || 0) > 0
+                ? "Partially Paid"
+                : "Pending",
           }}
           onCollect={() => setIsCollectModalOpen(true)}
           onTransfer={() => setIsTransferModalOpen(true)}

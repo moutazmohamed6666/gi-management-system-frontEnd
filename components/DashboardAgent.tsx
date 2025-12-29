@@ -1,59 +1,21 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { DateRangeFilter } from "./DateRangeFilter";
 import type { Deal } from "@/lib/deals";
 import { dealsApi } from "@/lib/deals";
-import {
-  DollarSign,
-  Home,
-  Building2,
-  CheckCircle2,
-  Clock,
-  ArrowUpRight,
-  Loader2,
-  AlertCircle,
-  BarChart3,
-} from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { financeApi } from "@/lib/finance";
 import type {
   AgentMetricsResponse,
   AgentMyPerformanceResponse,
   AgentMonthlyPerformanceResponse,
 } from "@/lib/finance";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
-
-// Hook to detect mobile screen size
-function useIsMobile(breakpoint: number = 640) {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < breakpoint);
-    };
-
-    // Check on mount
-    checkMobile();
-
-    // Listen for resize events
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, [breakpoint]);
-
-  return isMobile;
-}
+import { DashboardHeader } from "./dashboard-agent/DashboardHeader";
+import { MetricsCards } from "./dashboard-agent/MetricsCards";
+import { MonthlyPerformanceChart } from "./dashboard-agent/MonthlyPerformanceChart";
+import { DealStatusBreakdown } from "./dashboard-agent/DealStatusBreakdown";
+import { RecentDeals } from "./dashboard-agent/RecentDeals";
 
 export function DashboardAgent() {
   const [startDate, setStartDate] = useState("");
@@ -70,7 +32,6 @@ export function DashboardAgent() {
     useState<AgentMonthlyPerformanceResponse | null>(null);
   const [metricsLoading, setMetricsLoading] = useState(true);
   const [metricsError, setMetricsError] = useState<string | null>(null);
-  const isMobile = useIsMobile();
 
   const handleDateChange = (start: string, end: string) => {
     setStartDate(start);
@@ -231,31 +192,6 @@ export function DashboardAgent() {
         .filter((name) => name !== "")
     ).size;
 
-  // Use monthly performance data from API
-  const monthlyData = useMemo(() => {
-    if (!monthlyPerformance?.data) {
-      return [];
-    }
-
-    return monthlyPerformance.data.map((item) => {
-      // Format month from "2025-12" to "Dec" or "Dec 2025"
-      let monthLabel = item.month;
-      try {
-        const [year, month] = item.month.split("-");
-        const date = new Date(parseInt(year), parseInt(month) - 1);
-        monthLabel = date.toLocaleString("en-US", { month: "short" });
-      } catch {
-        // If parsing fails, use the original value
-      }
-
-      return {
-        month: monthLabel,
-        deals: 0, // Not provided in API response
-        commission: item.totalCommission || 0,
-      };
-    });
-  }, [monthlyPerformance]);
-
   // Status breakdown - use API data from agentMetrics.deal_status_breakdown
   const statusData = useMemo(() => {
     // Use API data if available
@@ -328,16 +264,11 @@ export function DashboardAgent() {
   const hasStatusData = totalStatusValue > 0;
 
   // Check if monthly data has any non-zero values
-  const hasMonthlyData =
-    monthlyData.length > 0 &&
-    monthlyData.some((item) => item.commission > 0 || item.deals > 0);
-
-  const currentUser =
-    typeof window !== "undefined"
-      ? sessionStorage.getItem("username") ||
-        sessionStorage.getItem("name") ||
-        ""
-      : "";
+  const hasMonthlyData = Boolean(
+    monthlyPerformance?.data &&
+      monthlyPerformance.data.length > 0 &&
+      monthlyPerformance.data.some((item) => (item.totalCommission || 0) > 0)
+  );
 
   if (metricsLoading) {
     return (
@@ -369,425 +300,46 @@ export function DashboardAgent() {
   return (
     <div className="space-y-6">
       {/* Header Section */}
-      <div className="relative overflow-hidden rounded-2xl gi-bg-dark-green p-8 text-white shadow-xl">
-        {/* Decorative elements */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -mr-32 -mt-32"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-5 rounded-full blur-3xl -ml-24 -mb-24"></div>
-
-        <div className="relative z-10">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-white/80 mb-2">Welcome back,</p>
-              <h2 className="text-white mb-1">{currentUser || "Agent"}</h2>
-              <p className="text-white/70">Real Estate Agent</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <DashboardHeader />
 
       {/* Date Range Filter */}
-      <DateRangeFilter onDateChange={handleDateChange} />
+      <DateRangeFilter
+        onDateChange={handleDateChange}
+        startDate={startDate}
+        endDate={endDate}
+      />
 
       {/* Key Metrics - Modern Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* Units Sold */}
-        <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-linear-to-br from-blue-50 to-white dark:from-blue-950/30 dark:to-gray-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm text-gray-700 dark:text-gray-300">
-              Units Sold
-            </CardTitle>
-            <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-              <Home className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline gap-2">
-              <div className="text-3xl text-gray-900 dark:text-gray-100">
-                {agentMetrics.units_sold.value}
-              </div>
-              <div className="flex items-center gap-1 text-green-600 dark:text-green-400 text-sm">
-                <ArrowUpRight className="h-4 w-4" />
-                <span>
-                  {agentMetrics.units_sold.trend >= 0 ? "+" : ""}
-                  {agentMetrics.units_sold.trend}%
-                </span>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {agentMetrics.units_sold.period}
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Total Commission */}
-        <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-linear-to-br from-green-50 to-white dark:from-green-950/30 dark:to-gray-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm text-gray-700 dark:text-gray-300">
-              Total Commission
-            </CardTitle>
-            <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
-              <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline gap-2">
-              <div className="text-2xl text-gray-900 dark:text-gray-100">
-                {agentMetrics.total_commission.value}
-                {agentMetrics.total_commission.currency}{" "}
-              </div>
-              <div className="flex items-center gap-1 text-green-600 dark:text-green-400 text-sm">
-                <ArrowUpRight className="h-4 w-4" />
-                <span>
-                  {agentMetrics.total_commission.trend >= 0 ? "+" : ""}
-                  {agentMetrics.total_commission.trend}%
-                </span>
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {agentMetrics.total_commission.status}
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Commission Paid */}
-        <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-linear-to-br from-emerald-50 to-white dark:from-emerald-950/30 dark:to-gray-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm text-gray-700 dark:text-gray-300">
-              Paid
-            </CardTitle>
-            <div className="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
-              <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline gap-2">
-              <div className="text-2xl text-gray-900 dark:text-gray-100">
-                AED {commissionPaid}
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Received
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Pending Payment */}
-        <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-linear-to-br from-orange-50 to-white dark:from-orange-950/30 dark:to-gray-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm text-gray-700 dark:text-gray-300">
-              Pending
-            </CardTitle>
-            <div className="h-10 w-10 rounded-full bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center">
-              <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline gap-2">
-              <div className="text-2xl text-gray-900 dark:text-gray-100">
-                AED {`${commissionUnpaid}`}
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Awaiting
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Developers */}
-        <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-300 bg-linear-to-br from-purple-50 to-white dark:from-purple-950/30 dark:to-gray-800">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm text-gray-700 dark:text-gray-300">
-              Developers
-            </CardTitle>
-            <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
-              <Building2 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline gap-2">
-              <div className="text-3xl text-gray-900 dark:text-gray-100">
-                {developersClosed}
-              </div>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Partners
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <MetricsCards
+        agentMetrics={agentMetrics}
+        commissionPaid={commissionPaid}
+        commissionUnpaid={commissionUnpaid}
+        developersClosed={developersClosed}
+      />
 
       {/* Charts - Modern Design */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Monthly Performance */}
-        <Card className="border-0 shadow-lg">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <CardTitle>Monthly Performance</CardTitle>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <div
-                  className="h-3 w-3 rounded-full"
-                  style={{ backgroundColor: "var(--gi-dark-green)" }}
-                ></div>
-                <span>Commission</span>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {!hasMonthlyData ? (
-              <div className="flex flex-col items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
-                <BarChart3 className="h-12 w-12 mb-4 opacity-50" />
-                <p className="text-lg font-medium mb-1">No Data Available</p>
-                <p className="text-sm text-center">
-                  No commission data available for the selected period
-                </p>
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={monthlyData}>
-                  <defs>
-                    <linearGradient
-                      id="colorCommission"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop
-                        offset="5%"
-                        stopColor="var(--gi-dark-green)"
-                        stopOpacity={0.9}
-                      />
-                      <stop
-                        offset="95%"
-                        stopColor="var(--gi-dark-green)"
-                        stopOpacity={0.6}
-                      />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis
-                    dataKey="month"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "#6b7280", fontSize: 12 }}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "#6b7280", fontSize: 12 }}
-                    tickFormatter={(value) => `${value}`}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "white",
-                      border: "none",
-                      borderRadius: "8px",
-                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                    }}
-                    formatter={(value: number) => [
-                      `${
-                        monthlyPerformance?.currency || "AED"
-                      } ${value.toLocaleString()}`,
-                      "Commission",
-                    ]}
-                  />
-                  <Bar
-                    dataKey="commission"
-                    fill="url(#colorCommission)"
-                    radius={[8, 8, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
+        <MonthlyPerformanceChart
+          monthlyPerformance={monthlyPerformance}
+          hasMonthlyData={hasMonthlyData}
+        />
 
         {/* Deal Status Breakdown */}
-        <Card className="border-0 shadow-lg">
-          <CardHeader className="pb-4">
-            <CardTitle>Deal Status Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {!hasStatusData ? (
-              <div className="flex flex-col items-center justify-center h-[200px] sm:h-[280px] text-gray-500 dark:text-gray-400">
-                <BarChart3 className="h-10 w-10 sm:h-12 sm:w-12 mb-4 opacity-50" />
-                <p className="text-base sm:text-lg font-medium mb-1">
-                  No Data Available
-                </p>
-                <p className="text-xs sm:text-sm text-center">
-                  No deal status data available for the selected period
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-center">
-                  <ResponsiveContainer
-                    width="100%"
-                    height={isMobile ? 180 : 260}
-                  >
-                    <PieChart>
-                      <defs>
-                        <filter id="shadow" height="130%">
-                          <feDropShadow
-                            dx="0"
-                            dy="2"
-                            stdDeviation="3"
-                            floodOpacity="0.3"
-                          />
-                        </filter>
-                      </defs>
-                      <Pie
-                        data={statusData.filter((item) => item.value > 0)}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ percent }) =>
-                          `${((percent ?? 0) * 100).toFixed(2)}%`
-                        }
-                        outerRadius={isMobile ? 55 : 85}
-                        fill="#8884d8"
-                        dataKey="value"
-                        style={{ filter: "url(#shadow)" }}
-                      >
-                        {statusData
-                          .filter((item) => item.value > 0)
-                          .map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "white",
-                          border: "none",
-                          borderRadius: "8px",
-                          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                        }}
-                        formatter={(value: number, name: string) => [
-                          value,
-                          name,
-                        ]}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 mt-4">
-                  {statusData
-                    .filter((item) => item.value > 0)
-                    .map((item, index) => (
-                      <div
-                        key={index}
-                        className="text-center p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50"
-                      >
-                        <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-1">
-                          <div
-                            className="h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full shrink-0"
-                            style={{ backgroundColor: item.color }}
-                          ></div>
-                          <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
-                            {item.name}
-                          </span>
-                        </div>
-                        <div className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">
-                          {item.value}
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+        <DealStatusBreakdown
+          statusData={statusData}
+          hasStatusData={hasStatusData}
+        />
       </div>
 
       {/* Recent Deals - Modern Cards */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <CardTitle>Recent Deals</CardTitle>
-            <span className="text-sm text-gray-600">
-              {totalDeals} total deals
-            </span>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {isLoading ? (
-              <div className="text-center py-8 text-gray-600 dark:text-gray-400">
-                Loading deals...
-              </div>
-            ) : agentDeals.length === 0 ? (
-              <div className="text-center py-8 text-gray-600 dark:text-gray-400">
-                No deals found
-              </div>
-            ) : (
-              agentDeals.slice(0, 5).map((deal) => (
-                <div
-                  key={deal.id}
-                  className="group relative overflow-hidden rounded-xl p-4 bg-linear-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 border border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600 hover:shadow-md dark:hover:shadow-xl dark:hover:shadow-black/20 transition-all duration-300"
-                >
-                  {/* Decorative accent */}
-                  <div
-                    className="absolute left-0 top-0 bottom-0 w-1 transition-all duration-300 group-hover:w-1.5"
-                    style={{ backgroundColor: "var(--gi-dark-green)" }}
-                  ></div>
-
-                  <div className="flex items-center justify-between pl-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
-                          <Home className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-                        </div>
-                        <div>
-                          <div className="text-gray-900 dark:text-gray-100 font-medium">
-                            {deal.project?.name || "N/A"} - Unit{" "}
-                            {deal.unitNumber || "N/A"}
-                          </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
-                            {deal.buyerSellerDetails?.find((d) => d.isBuyer)
-                              ?.name || "N/A"}{" "}
-                            • {deal.developer?.name || "N/A"}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right flex flex-col items-end gap-2">
-                      <div className="text-lg text-gray-900 dark:text-gray-100 font-semibold">
-                        AED{" "}
-                        {typeof deal.dealValue === "string"
-                          ? parseFloat(deal.dealValue)
-                          : deal.dealValue || 0}
-                      </div>
-                      {(() => {
-                        const paidAmount = getCommissionPaid(deal);
-                        const totalAmount = getCommissionTotal(deal);
-                        const status =
-                          paidAmount >= totalAmount && totalAmount > 0
-                            ? "Paid"
-                            : paidAmount > 0
-                            ? "Partially Paid"
-                            : "Pending";
-                        const statusColor =
-                          status === "Paid"
-                            ? "bg-linear-to-r from-green-600 to-green-500 dark:from-green-500 dark:to-green-400"
-                            : status === "Partially Paid"
-                            ? "bg-linear-to-r from-blue-600 to-blue-500 dark:from-blue-500 dark:to-blue-400"
-                            : "bg-linear-to-r from-orange-600 to-orange-500 dark:from-orange-500 dark:to-orange-400";
-                        return (
-                          <div
-                            className={`inline-flex px-3 py-1 rounded-full text-sm text-white ${statusColor}`}
-                          >
-                            {status}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <RecentDeals
+        agentDeals={agentDeals}
+        totalDeals={totalDeals}
+        isLoading={isLoading}
+        getCommissionPaid={getCommissionPaid}
+        getCommissionTotal={getCommissionTotal}
+      />
     </div>
   );
 }

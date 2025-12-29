@@ -67,12 +67,16 @@ export function StyledDatePicker({
   }, [value]);
 
   const handleChange = (date: DateObject | null) => {
-    setDateValue(date);
+    // Only update and call onChange if the date actually changed
+    let newDateString = "";
     if (date) {
-      const formattedDate = dateToString(date);
-      onChange(formattedDate);
-    } else {
-      onChange("");
+      newDateString = dateToString(date);
+    }
+
+    // Compare with current value - only update if different
+    if (newDateString !== value) {
+      setDateValue(date);
+      onChange(newDateString);
     }
   };
 

@@ -2,7 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
 import { FileText, Plus, Building2, CheckCircle } from "lucide-react";
 
 export function DashboardSalesAdmin() {
@@ -31,7 +37,8 @@ export function DashboardSalesAdmin() {
         </div>
 
         {/* Create Deal Card */}
-        <Card className="border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-[var(--gi-dark-green)] dark:hover:border-green-500 transition-all duration-300 cursor-pointer group"
+        <Card
+          className="border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-[var(--gi-dark-green)] dark:hover:border-green-500 transition-all duration-300 cursor-pointer group"
           onClick={handleCreateDeal}
         >
           <CardHeader className="text-center pb-2">
@@ -48,7 +55,7 @@ export function DashboardSalesAdmin() {
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center pb-8">
-            <Button 
+            <Button
               onClick={handleCreateDeal}
               className="gi-bg-dark-green hover:opacity-90 text-white px-8 py-6 text-lg font-medium"
             >
@@ -63,7 +70,9 @@ export function DashboardSalesAdmin() {
           <div className="flex items-start gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
             <CheckCircle className="h-5 w-5 gi-text-dark-green dark:text-green-400 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">Quick Submission</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                Quick Submission
+              </p>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Submit deals with all required details in one form
               </p>
@@ -72,7 +81,9 @@ export function DashboardSalesAdmin() {
           <div className="flex items-start gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
             <CheckCircle className="h-5 w-5 gi-text-dark-green dark:text-green-400 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">Document Upload</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                Document Upload
+              </p>
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Attach supporting documents after deal creation
               </p>
@@ -83,4 +94,3 @@ export function DashboardSalesAdmin() {
     </div>
   );
 }
-

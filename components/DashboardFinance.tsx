@@ -327,7 +327,11 @@ export function DashboardFinance() {
       <Card className="border-0 shadow-lg">
         <CardContent className="pt-6 space-y-4">
           {/* Date Range Filter */}
-          <DateRangeFilter onDateChange={handleDateChange} />
+          <DateRangeFilter
+            onDateChange={handleDateChange}
+            startDate={dateRange.fromDate}
+            endDate={dateRange.toDate}
+          />
 
           {/* Divider */}
           <div className="border-t border-gray-200 dark:border-gray-700"></div>

@@ -1,14 +1,7 @@
 "use client";
 
 import { Button } from "../ui/button";
-import {
-  ArrowLeft,
-  Save,
-  CheckCircle,
-  Edit2,
-  X,
-  Loader2,
-} from "lucide-react";
+import { ArrowLeft, Save, CheckCircle, Edit2, X, Loader2 } from "lucide-react";
 
 interface FinanceReviewHeaderProps {
   dealNumber: string;
@@ -46,7 +39,12 @@ export function FinanceReviewHeader({
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         {/* Back button and title */}
         <div className="flex items-center gap-2 lg:gap-4">
-          <Button variant="ghost" onClick={onBack} size="sm" className="lg:size-default shrink-0">
+          <Button
+            variant="ghost"
+            onClick={onBack}
+            size="sm"
+            className="lg:size-default shrink-0"
+          >
             <ArrowLeft className="h-4 w-4 lg:mr-2" />
             <span className="hidden lg:inline">Back to Deals</span>
           </Button>
@@ -59,7 +57,7 @@ export function FinanceReviewHeader({
             </p>
           </div>
         </div>
-        
+
         {/* Action buttons */}
         <div className="flex gap-2 justify-end flex-wrap shrink-0">
           {isEditingOverview ? (
@@ -108,7 +106,9 @@ export function FinanceReviewHeader({
                   className="flex items-center gap-1 lg:gap-2 bg-green-600 hover:bg-green-700 lg:size-default"
                 >
                   <CheckCircle className="h-4 w-4" />
-                  <span className="hidden sm:inline">Approve Deal Overview</span>
+                  <span className="hidden sm:inline">
+                    Approve Deal Overview
+                  </span>
                   <span className="sm:hidden">Approve</span>
                 </Button>
               ) : (
@@ -150,4 +150,3 @@ export function FinanceReviewHeader({
     </div>
   );
 }
-

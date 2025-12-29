@@ -119,7 +119,11 @@ export function DashboardCEO() {
       <CEOHeader ceoMetrics={ceoMetrics} />
 
       {/* Date Range Filter */}
-      <DateRangeFilter onDateChange={handleDateChange} />
+      <DateRangeFilter
+        onDateChange={handleDateChange}
+        startDate={startDate}
+        endDate={endDate}
+      />
 
       {/* Error Display */}
       {metricsError && (

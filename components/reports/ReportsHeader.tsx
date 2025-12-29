@@ -27,13 +27,17 @@ export function ReportsHeader({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           {/* Title section */}
           <div className="min-w-0">
-            <p className="text-white/80 text-sm sm:text-base mb-1 sm:mb-2">Business Intelligence</p>
-            <h2 className="text-white text-xl sm:text-2xl lg:text-3xl font-bold mb-1">Reports & Analytics</h2>
+            <p className="text-white/80 text-sm sm:text-base mb-1 sm:mb-2">
+              Business Intelligence
+            </p>
+            <h2 className="text-white text-xl sm:text-2xl lg:text-3xl font-bold mb-1">
+              Reports & Analytics
+            </h2>
             <p className="text-white/70 text-sm sm:text-base">
               Generate comprehensive business reports
             </p>
           </div>
-          
+
           {/* Action buttons */}
           <div className="flex flex-wrap gap-2 shrink-0">
             <Button
@@ -88,4 +92,3 @@ export function ReportsHeader({
     </div>
   );
 }
-
