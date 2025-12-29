@@ -142,6 +142,9 @@ export function DealsTable({
                       <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
                         Status
                       </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Compliance
+                      </th>
                       <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-tr-lg">
                         Actions
                       </th>

@@ -185,6 +185,13 @@ export function useDealLoader({ dealId, reset }: UseDealLoaderProps) {
           ? String((deal as unknown as { downpayment: number }).downpayment)
           : "";
 
+        // Extract topup data
+        const topup = deal.topup
+          ? String(deal.topup)
+          : (deal as unknown as { topUp?: number })?.topUp
+          ? String((deal as unknown as { topUp: number }).topUp)
+          : "";
+
         // Reset form with deal data
         reset({
           // Deal Information
@@ -240,6 +247,7 @@ export function useDealLoader({ dealId, reset }: UseDealLoaderProps) {
           // Additional Agents (array)
           additionalAgents: mappedAdditionalAgents,
 
+          topup: topup,
           notes: "",
         });
 

@@ -368,6 +368,9 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
                       <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
                         Status
                       </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Compliance
+                      </th>
                       <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-tr-lg">
                         Actions
                       </th>
@@ -529,6 +532,17 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
                                 ?.mainAgent?.status?.name ||
                               deal.statusId ||
                               "Pending"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                              deal.compliance
+                                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                                : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400"
+                            }`}
+                          >
+                            {deal.compliance ? "Yes" : "No"}
                           </span>
                         </td>
                         <td className="py-3 px-4">

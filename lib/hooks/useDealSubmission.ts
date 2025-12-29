@@ -185,7 +185,7 @@ export function useDealSubmission({
                     }
               )
             : undefined,
-        topUp: data.topUp ? parseFloat(data.topUp) : undefined,
+        topup: data.topup ? parseFloat(data.topup) : undefined,
       };
 
       const payload: CreateDealRequest = isAgentCreating

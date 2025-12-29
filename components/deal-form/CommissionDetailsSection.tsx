@@ -130,18 +130,18 @@ export function CommissionDetailsSection({
               )}
             </div>
             <div className="flex-1">
-              <Label htmlFor="topUp">Top Up (Optional)</Label>
+              <Label htmlFor="topup">Top Up (Optional)</Label>
               <Input
-                id="topUp"
+                id="topup"
                 type="text"
-                {...register("topUp", {
+                {...register("topup", {
                   onChange: (e) => {
                     let numericValue = e.target.value.replace(/[^0-9.]/g, "");
                     const parts = numericValue.split(".");
                     if (parts.length > 2) {
                       numericValue = parts[0] + "." + parts.slice(1).join("");
                     }
-                    setValue("topUp", numericValue, {
+                    setValue("topup", numericValue, {
                       shouldValidate: true,
                     });
                   },

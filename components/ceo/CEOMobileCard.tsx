@@ -290,6 +290,22 @@ export function CEOMobileCard({
           </div>
         </div>
 
+        {/* Compliance */}
+        <div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+            Compliance
+          </div>
+          <span
+            className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+              deal.compliance
+                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400"
+            }`}
+          >
+            {deal.compliance ? "Yes" : "No"}
+          </span>
+        </div>
+
         {/* Actions */}
         <div
           className="pt-2 border-t border-gray-200 dark:border-gray-700"

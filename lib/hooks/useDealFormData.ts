@@ -65,7 +65,7 @@ export type DealFormData = {
   totalCommissionValue: string;
   additionalAgents: AdditionalAgent[];
 
-  topUp: string; // Top up optional field
+  topup: string; // Top up optional field
   notes: string;
 };
 
@@ -114,7 +114,7 @@ const defaultFormValues: DealFormData = {
   totalCommissionValue: "",
   additionalAgents: [],
 
-  topUp: "",
+  topup: "",
   notes: "",
 };
 

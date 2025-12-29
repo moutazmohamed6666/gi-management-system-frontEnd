@@ -353,6 +353,8 @@ export interface Deal {
   collectedCommissions?: CollectedCommissions; // Collections from buyer/seller/developer
   transferredCommissions?: TransferredCommissions; // Transfers to agents/managers
   downpayment?: number; // Downpayment field added in new API
+  topup?: number; // Top up optional field
+  compliance?: boolean; // Compliance status field
   media?: Media[]; // Media attachments array added in new API
   // Helper getters (computed from arrays)
   // buyer?: BuyerSellerDetail | null;
@@ -458,7 +460,7 @@ export interface CreateDealRequest {
   additionalAgents?: AdditionalAgent[]; // Now supports multiple external agents
   statusId?: string;
   purchaseStatusId?: string;
-  topUp?: number; // Top up optional field
+  topup?: number; // Top up optional field
 }
 
 // Create Deal Response
