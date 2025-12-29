@@ -641,7 +641,9 @@ export function DashboardAgent() {
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ percent }) => `${(percent ?? 0) * 100}%`}
+                        label={({ percent }) =>
+                          `${((percent ?? 0) * 100).toFixed(2)}%`
+                        }
                         outerRadius={isMobile ? 55 : 85}
                         fill="#8884d8"
                         dataKey="value"

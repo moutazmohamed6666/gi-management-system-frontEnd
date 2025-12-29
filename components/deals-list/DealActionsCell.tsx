@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "../ui/button";
 import { Eye, Edit2, X, MoreVertical, DollarSign, Send } from "lucide-react";
@@ -13,26 +12,7 @@ import {
   DrawerTrigger,
 } from "../ui/drawer";
 import type { Deal } from "@/lib/deals";
-
-// Custom hook for mobile/tablet detection (< 1024px = lg breakpoint)
-const TABLET_BREAKPOINT = 1024;
-
-function useIsMobileOrTablet() {
-  const [isMobileOrTablet, setIsMobileOrTablet] =
-    React.useState<boolean>(false);
-
-  React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${TABLET_BREAKPOINT - 1}px)`);
-    const onChange = () => {
-      setIsMobileOrTablet(window.innerWidth < TABLET_BREAKPOINT);
-    };
-    mql.addEventListener("change", onChange);
-    setIsMobileOrTablet(window.innerWidth < TABLET_BREAKPOINT);
-    return () => mql.removeEventListener("change", onChange);
-  }, []);
-
-  return isMobileOrTablet;
-}
+import { useIsMobileOrTablet } from "@/lib/useIsMobileOrTablet";
 
 interface DealActionsCellProps {
   deal: Deal;

@@ -1,3 +1,5 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Loader2, AlertCircle } from "lucide-react";
 import type { Deal } from "@/lib/deals";
@@ -5,6 +7,7 @@ import { DealRow } from "./DealRow";
 import { DealsPagination } from "./DealsPagination";
 import { useFilters } from "@/lib/useFilters";
 import { DealMobileCard } from "./DealMobileCard";
+import { useIsMobileOrTablet } from "@/lib/useIsMobileOrTablet";
 
 interface DealsTableProps {
   deals: Deal[];
@@ -52,6 +55,7 @@ export function DealsTable({
   onPageSizeChange,
 }: DealsTableProps) {
   const { statuses, isLoading: filtersLoading } = useFilters();
+  const isMobileView = useIsMobileOrTablet();
 
   return (
     <Card className="border-0 shadow-lg">
@@ -83,91 +87,91 @@ export function DealsTable({
           </div>
         ) : (
           <>
-            {/* Mobile Card View - visible on small screens, hidden on lg+ */}
-            <div className="lg:hidden space-y-3">
-              {deals.map((deal) => (
-                <DealMobileCard
-                  key={deal.id}
-                  deal={deal}
-                  role={role}
-                  statuses={statuses}
-                  editingDealId={editingDealId}
-                  editingStatus={editingStatus}
-                  isUpdating={isUpdating}
-                  filtersLoading={filtersLoading}
-                  openPopoverId={openPopoverId}
-                  onEditClick={onEditClick}
-                  onCancelEdit={onCancelEdit}
-                  onStatusChange={onStatusChange}
-                  onViewDeal={onViewDeal}
-                  onCollectCommissionClick={onCollectCommissionClick}
-                  onTransferCommissionClick={onTransferCommissionClick}
-                  onOpenPopoverChange={onOpenPopoverChange}
-                />
-              ))}
-            </div>
-
-            {/* Desktop Table View - hidden on small screens, visible on lg+ */}
-            <div className="hidden lg:block overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-tl-lg">
-                      Deal ID
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      Property
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      Buyer
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      Seller
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      Agent
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      Price
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      Commission
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      Agent Commission
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      Status
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-tr-lg">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {deals.map((deal) => (
-                    <DealRow
-                      key={deal.id}
-                      deal={deal}
-                      role={role}
-                      statuses={statuses}
-                      editingDealId={editingDealId}
-                      editingStatus={editingStatus}
-                      isUpdating={isUpdating}
-                      filtersLoading={filtersLoading}
-                      openPopoverId={openPopoverId}
-                      onEditClick={onEditClick}
-                      onCancelEdit={onCancelEdit}
-                      onStatusChange={onStatusChange}
-                      onViewDeal={onViewDeal}
-                      onCollectCommissionClick={onCollectCommissionClick}
-                      onTransferCommissionClick={onTransferCommissionClick}
-                      onOpenPopoverChange={onOpenPopoverChange}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {isMobileView ? (
+              <div className="space-y-3">
+                {deals.map((deal) => (
+                  <DealMobileCard
+                    key={deal.id}
+                    deal={deal}
+                    role={role}
+                    statuses={statuses}
+                    editingDealId={editingDealId}
+                    editingStatus={editingStatus}
+                    isUpdating={isUpdating}
+                    filtersLoading={filtersLoading}
+                    openPopoverId={openPopoverId}
+                    onEditClick={onEditClick}
+                    onCancelEdit={onCancelEdit}
+                    onStatusChange={onStatusChange}
+                    onViewDeal={onViewDeal}
+                    onCollectCommissionClick={onCollectCommissionClick}
+                    onTransferCommissionClick={onTransferCommissionClick}
+                    onOpenPopoverChange={onOpenPopoverChange}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-800">
+                    <tr>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-tl-lg">
+                        Deal ID
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Property
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Buyer
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Seller
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Agent
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Price
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Commission
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Agent Commission
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        Status
+                      </th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-tr-lg">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {deals.map((deal) => (
+                      <DealRow
+                        key={deal.id}
+                        deal={deal}
+                        role={role}
+                        statuses={statuses}
+                        editingDealId={editingDealId}
+                        editingStatus={editingStatus}
+                        isUpdating={isUpdating}
+                        filtersLoading={filtersLoading}
+                        openPopoverId={openPopoverId}
+                        onEditClick={onEditClick}
+                        onCancelEdit={onCancelEdit}
+                        onStatusChange={onStatusChange}
+                        onViewDeal={onViewDeal}
+                        onCollectCommissionClick={onCollectCommissionClick}
+                        onTransferCommissionClick={onTransferCommissionClick}
+                        onOpenPopoverChange={onOpenPopoverChange}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             <DealsPagination
               total={total}
