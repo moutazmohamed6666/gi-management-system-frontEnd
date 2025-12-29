@@ -50,8 +50,8 @@ export function CEOCommissionDetails({
   }
 
   // Calculate paid amounts for deal commission
-  // Use collected_commissions from API response for deal commission
-  const dealCommissionPaid = parseFloat(deal.collected_commissions || "0") || 0;
+  // Use collectedCommissions.totalCollected from API response for deal commission
+  const dealCommissionPaid = deal.collectedCommissions?.totalCollected || 0;
 
   // Calculate remaining amounts
   const dealCommissionRemaining = dealCommission - dealCommissionPaid;

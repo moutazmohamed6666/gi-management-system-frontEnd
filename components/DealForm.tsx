@@ -230,7 +230,26 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
           </div>
         </div>
       )}
-
+      {isEditMode && loadedDeal && (
+        <CommissionCollectionSummary
+          expectedCommissions={
+            loadedDeal.totalCommission?.commissionValue ||
+            loadedDeal.totalCommission?.value ||
+            loadedDeal.agentCommissions?.totalExpected ||
+            0
+          }
+          collectedCommissions={
+            loadedDeal.collectedCommissions?.totalCollected || 0
+          }
+          transferredCommissions={
+            loadedDeal.transferredCommissions?.totalTransferred || 0
+          }
+          collections={loadedDeal.collectedCommissions?.collections || []}
+          transfers={loadedDeal.transferredCommissions?.transfers || []}
+          showCollectionHistory={true}
+          showTransferHistory={true}
+        />
+      )}
       <form id="deal-form" onSubmit={handleSubmit(handleFormSubmit)}>
         <fieldset
           disabled={isReadOnly || isSubmitting}
@@ -315,22 +334,6 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
             />
 
             {/* Commission Summary - Only show for existing deals in view mode */}
-            {isEditMode && loadedDeal && (
-              <CommissionCollectionSummary
-                expectedCommissions={
-                  loadedDeal.totalCommission?.commissionValue ||
-                  loadedDeal.totalCommission?.value ||
-                  loadedDeal.agentCommissions?.totalExpected ||
-                  0
-                }
-                collectedCommissions={loadedDeal.collectedCommissions?.totalCollected || 0}
-                transferredCommissions={loadedDeal.transferredCommissions?.totalTransferred || 0}
-                collections={loadedDeal.collectedCommissions?.collections || []}
-                transfers={loadedDeal.transferredCommissions?.transfers || []}
-                showCollectionHistory={true}
-                showTransferHistory={true}
-              />
-            )}
           </div>
         </fieldset>
       </form>
