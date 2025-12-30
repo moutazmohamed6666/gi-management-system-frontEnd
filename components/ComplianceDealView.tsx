@@ -7,7 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { dealsApi, type Deal, type BuyerSeller } from "@/lib/deals";
 import { Loader2, AlertCircle, ArrowLeft, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
-import { CEODealHeader } from "./ceo/CEODealHeader";
 import { CEODealInfo } from "./ceo/CEODealInfo";
 import { CEOCommissionDetails } from "./ceo/CEOCommissionDetails";
 import { CEOPropertyDetails } from "./ceo/CEOPropertyDetails";
@@ -19,7 +18,10 @@ interface ComplianceDealViewProps {
   onBack: () => void;
 }
 
-export function ComplianceDealView({ dealId, onBack }: ComplianceDealViewProps) {
+export function ComplianceDealView({
+  dealId,
+  onBack,
+}: ComplianceDealViewProps) {
   const [deal, setDeal] = useState<Deal | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +70,7 @@ export function ComplianceDealView({ dealId, onBack }: ComplianceDealViewProps) 
     setIsCompleting(true);
     try {
       await dealsApi.completeCompliance(deal.id);
-      
+
       toast.success("Compliance Completed", {
         description: `Deal ${deal.dealNumber} has been marked as compliance completed.`,
         duration: 3000,
@@ -203,7 +205,10 @@ export function ComplianceDealView({ dealId, onBack }: ComplianceDealViewProps) 
           <CEODealInfo deal={deal} />
 
           {/* Commission Details - Summary only (Breakdown hidden) */}
-          <CEOCommissionDetails deal={deal} commissions={deal.commissions || []} />
+          <CEOCommissionDetails
+            deal={deal}
+            commissions={deal.commissions || []}
+          />
 
           {/* Commission Summary */}
           <CommissionCollectionSummary
@@ -213,8 +218,12 @@ export function ComplianceDealView({ dealId, onBack }: ComplianceDealViewProps) 
               deal.agentCommissions?.totalExpected ||
               0
             }
-            collectedCommissions={deal.collectedCommissions?.totalCollected || 0}
-            transferredCommissions={deal.transferredCommissions?.totalTransferred || 0}
+            collectedCommissions={
+              deal.collectedCommissions?.totalCollected || 0
+            }
+            transferredCommissions={
+              deal.transferredCommissions?.totalTransferred || 0
+            }
             collections={deal.collectedCommissions?.collections || []}
             transfers={deal.transferredCommissions?.transfers || []}
             showCollectionHistory={true}
@@ -481,10 +490,13 @@ export function ComplianceDealView({ dealId, onBack }: ComplianceDealViewProps) 
                       </div>
                       <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
                         <div>File: {mediaItem.filename}</div>
-                        <div>Size: {(mediaItem.fileSize / 1024).toFixed(2)} KB</div>
+                        <div>
+                          Size: {(mediaItem.fileSize / 1024).toFixed(2)} KB
+                        </div>
                         <div>Uploaded by: {mediaItem.uploadedBy.name}</div>
                         <div>
-                          Date: {new Date(mediaItem.createdAt).toLocaleDateString()}
+                          Date:{" "}
+                          {new Date(mediaItem.createdAt).toLocaleDateString()}
                         </div>
                       </div>
                     </div>
@@ -503,4 +515,3 @@ export function ComplianceDealView({ dealId, onBack }: ComplianceDealViewProps) 
     </div>
   );
 }
-

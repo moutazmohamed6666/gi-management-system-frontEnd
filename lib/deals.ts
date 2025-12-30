@@ -795,6 +795,9 @@ export const dealsApi = {
   completeCompliance: async (dealId: string): Promise<{ message: string }> => {
     return apiClient<{ message: string }>(`/api/deals/${dealId}/compliance`, {
       method: "POST",
+      body: JSON.stringify({
+        compliance: true,
+      }),
     });
   },
 };
