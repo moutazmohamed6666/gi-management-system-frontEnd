@@ -18,17 +18,11 @@ import { ReportsSummaryCards } from "./reports/ReportsSummaryCards";
 import { ReportsCommissionBreakdown } from "./reports/ReportsCommissionBreakdown";
 import { ReportsCommissionOverview } from "./reports/ReportsCommissionOverview";
 import { ReportsChart } from "./reports/ReportsChart";
-import { ReportsDataTable } from "./reports/ReportsDataTable";
 import { ReportsLoadingState } from "./reports/ReportsLoadingState";
 import { ReportsErrorState } from "./reports/ReportsErrorState";
 
 export function Reports() {
   // Get user role from sessionStorage
-  const [userRole, setUserRole] = useState<string | null>(null);
-
-  useEffect(() => {
-    setUserRole(sessionStorage.getItem("userRole"));
-  }, []);
 
   // Filters
   const { developers, agents, purchaseStatuses } = useFilters();
@@ -56,124 +50,106 @@ export function Reports() {
     setError(null);
 
     try {
-      let response: AnalyticsResponse;
-
       // Use comprehensive endpoint for finance and CEO roles
-      if (userRole === "finance" || userRole === "ceo") {
-        const compData = await financeApi.getComprehensiveData({
-          from_date: startDate || undefined,
-          to_date: endDate || undefined,
-          developer_id:
-            selectedDeveloper !== "all" ? selectedDeveloper : undefined,
-          agent_id: selectedAgent !== "all" ? selectedAgent : undefined,
-        });
 
-        // Type for monthly revenue items (all optional since API shape varies)
-        interface MonthlyRevenueItem {
-          month: string;
-          dealClosed?: number;
-          commissionCollected?: number;
-          pendingCommission?: number;
-          totalCommission?: number;
-          grossRevenue?: number;
-          externalAgentCommissions?: number;
-          agentCommission?: number;
-          managerCommission?: number;
-          netRevenue?: number;
-          revenue?: number;
-          numberOfDeals?: number;
-          numberOfUnits?: number;
-        }
+      const compData = await financeApi.getComprehensiveData({
+        from_date: startDate || undefined,
+        to_date: endDate || undefined,
+        developer_id:
+          selectedDeveloper !== "all" ? selectedDeveloper : undefined,
+        agent_id: selectedAgent !== "all" ? selectedAgent : undefined,
+      });
 
-        // Calculate totals from monthlyRevenue array
-        const monthlyRevenue = (compData.monthlyRevenue ||
-          []) as MonthlyRevenueItem[];
-        const totalDeals = monthlyRevenue.reduce(
-          (sum, item) => sum + (item.dealClosed || 0),
-          0
-        );
-        const totalCollected = monthlyRevenue.reduce(
-          (sum, item) => sum + (item.commissionCollected || 0),
-          0
-        );
-        const totalPending = monthlyRevenue.reduce(
-          (sum, item) => sum + (item.pendingCommission || 0),
-          0
-        );
-        const totalCommission = monthlyRevenue.reduce(
-          (sum, item) => sum + (item.totalCommission || 0),
-          0
-        );
-        const totalGrossRevenue = monthlyRevenue.reduce(
-          (sum, item) => sum + (item.grossRevenue || 0),
-          0
-        );
-        const totalExternalAgentCommissions = monthlyRevenue.reduce(
-          (sum, item) => sum + (item.externalAgentCommissions || 0),
-          0
-        );
-        const totalAgentCommission = monthlyRevenue.reduce(
-          (sum, item) => sum + (item.agentCommission || 0),
-          0
-        );
-        const totalManagerCommission = monthlyRevenue.reduce(
-          (sum, item) => sum + (item.managerCommission || 0),
-          0
-        );
-        const totalNetRevenue = monthlyRevenue.reduce(
-          (sum, item) => sum + (item.netRevenue || 0),
-          0
-        );
-
-        // Transform the comprehensive response to AnalyticsResponse format
-        response = {
-          report_type: "monthly_revenue",
-          data: monthlyRevenue.map((item) => ({
-            month: item.month,
-            revenue: item.grossRevenue || 0,
-            deals: item.dealClosed || 0,
-            dealClosed: item.dealClosed || 0,
-            commissionCollected: item.commissionCollected || 0,
-            pendingCommission: item.pendingCommission || 0,
-            totalCommission: item.totalCommission || 0,
-            grossRevenue: item.grossRevenue || 0,
-            externalAgentCommissions: item.externalAgentCommissions || 0,
-            agentCommission: item.agentCommission || 0,
-            managerCommission: item.managerCommission || 0,
-            netRevenue: item.netRevenue || 0,
-          })),
-          summary: {
-            total_revenue: totalGrossRevenue,
-            total_deals: totalDeals,
-            total_collected: totalCollected,
-            total_pending: totalPending,
-            total_transferred: compData.commissionOverview?.transferred || 0,
-            total_expected: compData.commissionOverview?.expected || 0,
-            collection_rate:
-              compData.commissionOverview?.collectionProgress || 0,
-            total_commission: totalCommission,
-            gross_revenue: totalGrossRevenue,
-            external_agent_commissions: totalExternalAgentCommissions,
-            agent_commission: totalAgentCommission,
-            manager_commission: totalManagerCommission,
-            net_revenue: totalNetRevenue,
-          },
-        };
-      } else {
-        // Use regular reports endpoint for other roles
-        response = await reportsApi.getAnalytics({
-          report_type: reportType,
-          from_date: startDate || undefined,
-          to_date: endDate || undefined,
-          developer_id:
-            selectedDeveloper !== "all" ? selectedDeveloper : undefined,
-          agent_id: selectedAgent !== "all" ? selectedAgent : undefined,
-          purchase_status_id:
-            selectedPurchaseStatus !== "all"
-              ? selectedPurchaseStatus
-              : undefined,
-        });
+      // Type for monthly revenue items (all optional since API shape varies)
+      interface MonthlyRevenueItem {
+        month: string;
+        dealClosed?: number;
+        commissionCollected?: number;
+        pendingCommission?: number;
+        totalCommission?: number;
+        grossRevenue?: number;
+        externalAgentCommissions?: number;
+        agentCommission?: number;
+        managerCommission?: number;
+        netRevenue?: number;
+        revenue?: number;
+        numberOfDeals?: number;
+        numberOfUnits?: number;
       }
+
+      // Calculate totals from monthlyRevenue array
+      const monthlyRevenue = (compData.monthlyRevenue ||
+        []) as MonthlyRevenueItem[];
+      const totalDeals = monthlyRevenue.reduce(
+        (sum, item) => sum + (item.dealClosed || 0),
+        0
+      );
+      const totalCollected = monthlyRevenue.reduce(
+        (sum, item) => sum + (item.commissionCollected || 0),
+        0
+      );
+      const totalPending = monthlyRevenue.reduce(
+        (sum, item) => sum + (item.pendingCommission || 0),
+        0
+      );
+      const totalCommission = monthlyRevenue.reduce(
+        (sum, item) => sum + (item.totalCommission || 0),
+        0
+      );
+      const totalGrossRevenue = monthlyRevenue.reduce(
+        (sum, item) => sum + (item.grossRevenue || 0),
+        0
+      );
+      const totalExternalAgentCommissions = monthlyRevenue.reduce(
+        (sum, item) => sum + (item.externalAgentCommissions || 0),
+        0
+      );
+      const totalAgentCommission = monthlyRevenue.reduce(
+        (sum, item) => sum + (item.agentCommission || 0),
+        0
+      );
+      const totalManagerCommission = monthlyRevenue.reduce(
+        (sum, item) => sum + (item.managerCommission || 0),
+        0
+      );
+      const totalNetRevenue = monthlyRevenue.reduce(
+        (sum, item) => sum + (item.netRevenue || 0),
+        0
+      );
+
+      // Transform the comprehensive response to AnalyticsResponse format
+      const response: AnalyticsResponse = {
+        report_type: "monthly_revenue",
+        data: monthlyRevenue.map((item) => ({
+          month: item.month,
+          revenue: item.grossRevenue || 0,
+          deals: item.dealClosed || 0,
+          dealClosed: item.dealClosed || 0,
+          commissionCollected: item.commissionCollected || 0,
+          pendingCommission: item.pendingCommission || 0,
+          totalCommission: item.totalCommission || 0,
+          grossRevenue: item.grossRevenue || 0,
+          externalAgentCommissions: item.externalAgentCommissions || 0,
+          agentCommission: item.agentCommission || 0,
+          managerCommission: item.managerCommission || 0,
+          netRevenue: item.netRevenue || 0,
+        })),
+        summary: {
+          total_revenue: totalGrossRevenue,
+          total_deals: totalDeals,
+          total_collected: totalCollected,
+          total_pending: totalPending,
+          total_transferred: compData.commissionOverview?.transferred || 0,
+          total_expected: compData.commissionOverview?.expected || 0,
+          collection_rate: compData.commissionOverview?.collectionProgress || 0,
+          total_commission: totalCommission,
+          gross_revenue: totalGrossRevenue,
+          external_agent_commissions: totalExternalAgentCommissions,
+          agent_commission: totalAgentCommission,
+          manager_commission: totalManagerCommission,
+          net_revenue: totalNetRevenue,
+        },
+      };
 
       setAnalyticsData(response);
     } catch (err) {
@@ -186,15 +162,7 @@ export function Reports() {
     } finally {
       setIsLoading(false);
     }
-  }, [
-    reportType,
-    startDate,
-    endDate,
-    selectedDeveloper,
-    selectedAgent,
-    selectedPurchaseStatus,
-    userRole,
-  ]);
+  }, [startDate, endDate, selectedDeveloper, selectedAgent]);
 
   // Fetch data when filters change
   useEffect(() => {
@@ -348,7 +316,7 @@ export function Reports() {
             <ReportsChart reportType={reportType} chartData={chartData} />
           </div>
 
-          <ReportsDataTable reportType={reportType} chartData={chartData} />
+          {/* <ReportsDataTable reportType={reportType} chartData={chartData} /> */}
         </>
       )}
     </div>

@@ -21,6 +21,7 @@ import {
 } from "../ui/select";
 import { Plus, X } from "lucide-react";
 import { AdditionalAgent, DealFormData } from "@/lib/hooks/useDealFormData";
+import { memo, useCallback, useMemo, useState, useEffect } from "react";
 
 interface CommissionDetailsSectionProps {
   control: Control<DealFormData>;
@@ -40,6 +41,414 @@ interface CommissionDetailsSectionProps {
   filtersLoading: boolean;
 }
 
+interface AdditionalAgentItemProps {
+  index: number;
+  agent: AdditionalAgent;
+  control: Control<DealFormData>;
+  commissionTypes: Array<{ id: string; name: string }>;
+  allAgents: Array<{ id: string; name: string }>;
+  filtersLoading: boolean;
+  onRemove: (index: number) => void;
+}
+
+// Memoized component for individual additional agent item
+const AdditionalAgentItem = memo<AdditionalAgentItemProps>(
+  ({
+    index,
+    agent,
+    control,
+    commissionTypes,
+    allAgents,
+    filtersLoading,
+    onRemove,
+  }) => {
+    const handleRemove = useCallback(() => {
+      onRemove(index);
+    }, [index, onRemove]);
+
+    return (
+      <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        {/* Header with Remove Button */}
+        <div className="flex items-center justify-between">
+          <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Agent #{index + 1}
+          </h5>
+          <Button
+            type="button"
+            onClick={handleRemove}
+            size="sm"
+            variant="ghost"
+            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Agent Type Selection */}
+        <div>
+          <Label className="mb-2 block">Agent Type</Label>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Controller
+                name={`additionalAgents.${index}.type`}
+                control={control}
+                render={({ field }) => (
+                  <input
+                    type="radio"
+                    name={`additionalAgentType-${index}`}
+                    value="internal"
+                    checked={field.value === "internal"}
+                    onChange={() => field.onChange("internal")}
+                    className="w-4 h-4"
+                  />
+                )}
+              />
+              <span className="text-sm">Internal Agent</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Controller
+                name={`additionalAgents.${index}.type`}
+                control={control}
+                render={({ field }) => (
+                  <input
+                    type="radio"
+                    name={`additionalAgentType-${index}`}
+                    value="external"
+                    checked={field.value === "external"}
+                    onChange={() => field.onChange("external")}
+                    className="w-4 h-4"
+                  />
+                )}
+              />
+              <span className="text-sm">External Agent</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Internal Agent Selection */}
+        {agent.type === "internal" && (
+          <div>
+            <Label htmlFor={`additionalAgentId-${index}`}>Select Agent</Label>
+            <Controller
+              name={`additionalAgents.${index}.agentId`}
+              control={control}
+              render={({ field }) => (
+                <div className="relative mt-1">
+                  <Select
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                    disabled={filtersLoading}
+                  >
+                    <SelectTrigger
+                      className={`w-full ${field.value ? "pr-10" : ""}`}
+                    >
+                      <SelectValue placeholder="Select internal agent" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allAgents.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {field.value && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      onClick={() => field.onChange("")}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            />
+          </div>
+        )}
+
+        {/* External Agent Name */}
+        {agent.type === "external" && (
+          <div>
+            <Label htmlFor={`agencyName-${index}`}>Agency/Agent Name</Label>
+            <Controller
+              name={`additionalAgents.${index}.agencyName`}
+              control={control}
+              render={({ field }) => (
+                <Input
+                  id={`agencyName-${index}`}
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  placeholder="Enter agency or agent name"
+                  className="mt-1"
+                />
+              )}
+            />
+          </div>
+        )}
+
+        {/* Commission Type */}
+        <div>
+          <Label htmlFor={`commissionTypeId-${index}`}>Commission Type</Label>
+          <Controller
+            name={`additionalAgents.${index}.commissionTypeId`}
+            control={control}
+            render={({ field }) => (
+              <div className="relative mt-1">
+                <Select
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                  disabled={filtersLoading}
+                >
+                  <SelectTrigger
+                    className={`w-full ${field.value ? "pr-10" : ""}`}
+                  >
+                    <SelectValue placeholder="Select commission type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {commissionTypes.map((type) => (
+                      <SelectItem key={type.id} value={type.id}>
+                        {type.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {field.value && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    onClick={() => field.onChange("")}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            )}
+          />
+        </div>
+
+        {/* Commission Value */}
+        <div>
+          <Label htmlFor={`commissionValue-${index}`}>Commission Rate</Label>
+          <Controller
+            name={`additionalAgents.${index}.commissionValue`}
+            control={control}
+            render={({ field }) => (
+              <DebouncedCommissionInput
+                id={`commissionValue-${index}`}
+                value={field.value || ""}
+                onChange={field.onChange}
+                onClear={() => field.onChange("")}
+                disabled={filtersLoading}
+                commissionTypes={commissionTypes}
+                commissionTypeId={agent.commissionTypeId}
+              />
+            )}
+          />
+        </div>
+      </div>
+    );
+  }
+);
+
+AdditionalAgentItem.displayName = "AdditionalAgentItem";
+
+// Optimized input component with debouncing
+interface DebouncedCommissionInputProps {
+  value: string;
+  onChange: (value: string) => void;
+  onClear: () => void;
+  disabled: boolean;
+  id: string;
+  commissionTypes: Array<{ id: string; name: string }>;
+  commissionTypeId: string;
+}
+
+const DebouncedCommissionInput = memo<DebouncedCommissionInputProps>(
+  ({
+    value,
+    onChange,
+    onClear,
+    disabled,
+    id,
+    commissionTypes,
+    commissionTypeId,
+  }) => {
+    const [localValue, setLocalValue] = useState(value);
+
+    // Sync local state with external value changes
+    useEffect(() => {
+      setLocalValue(value);
+    }, [value]);
+
+    // Debounced update
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        if (localValue !== value) {
+          onChange(localValue);
+        }
+      }, 0);
+
+      return () => clearTimeout(timer);
+    }, [localValue, value, onChange]);
+
+    const sanitizeValue = useCallback((input: string) => {
+      let numericValue = input.replace(/[^0-9.]/g, "");
+      const parts = numericValue.split(".");
+      if (parts.length > 2) {
+        numericValue = parts[0] + "." + parts.slice(1).join("");
+      }
+      return numericValue;
+    }, []);
+
+    const handleChange = useCallback(
+      (input: string) => {
+        const sanitized = sanitizeValue(input);
+        setLocalValue(sanitized);
+      },
+      [sanitizeValue]
+    );
+
+    const handleClear = useCallback(() => {
+      setLocalValue("");
+      onClear();
+    }, [onClear]);
+
+    // Get commission type name
+    const commissionTypeName = useMemo(() => {
+      const type = commissionTypes.find((t) => t.id === commissionTypeId);
+      return type?.name || "";
+    }, [commissionTypes, commissionTypeId]);
+
+    const isPercentage = commissionTypeName
+      .toLowerCase()
+      .includes("percentage");
+
+    return (
+      <>
+        <div className="relative mt-1">
+          <Input
+            id={id}
+            type="text"
+            value={localValue}
+            onChange={(e) => handleChange(e.target.value)}
+            disabled={disabled}
+            placeholder="Enter commission rate"
+            className={localValue ? "pr-10" : ""}
+          />
+          {localValue && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+              onClick={handleClear}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        {localValue && commissionTypeId && (
+          <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded text-sm">
+            <p className="text-blue-900 dark:text-blue-100 font-semibold">
+              Commission: {localValue}
+              {isPercentage ? "%" : ` (${commissionTypeName})`}
+            </p>
+          </div>
+        )}
+      </>
+    );
+  }
+);
+
+DebouncedCommissionInput.displayName = "DebouncedCommissionInput";
+
+// Simple debounced input without commission type display
+interface SimpleDebouncedInputProps {
+  value: string;
+  onChange: (value: string) => void;
+  onClear: () => void;
+  disabled: boolean;
+  id: string;
+  placeholder: string;
+  className?: string;
+}
+
+const SimpleDebouncedInput = memo<SimpleDebouncedInputProps>(
+  ({ value, onChange, onClear, disabled, id, placeholder, className }) => {
+    const [localValue, setLocalValue] = useState(value);
+
+    // Sync local state with external value changes
+    useEffect(() => {
+      setLocalValue(value);
+    }, [value]);
+
+    // Debounced update
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        if (localValue !== value) {
+          onChange(localValue);
+        }
+      }, 0);
+
+      return () => clearTimeout(timer);
+    }, [localValue, value, onChange]);
+
+    const sanitizeValue = useCallback((input: string) => {
+      let numericValue = input.replace(/[^0-9.]/g, "");
+      const parts = numericValue.split(".");
+      if (parts.length > 2) {
+        numericValue = parts[0] + "." + parts.slice(1).join("");
+      }
+      return numericValue;
+    }, []);
+
+    const handleChange = useCallback(
+      (input: string) => {
+        const sanitized = sanitizeValue(input);
+        setLocalValue(sanitized);
+      },
+      [sanitizeValue]
+    );
+
+    const handleClear = useCallback(() => {
+      setLocalValue("");
+      onClear();
+    }, [onClear]);
+
+    return (
+      <div className="relative">
+        <Input
+          id={id}
+          type="text"
+          value={localValue}
+          onChange={(e) => handleChange(e.target.value)}
+          disabled={disabled}
+          placeholder={placeholder}
+          className={className}
+        />
+        {localValue && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+            onClick={handleClear}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+    );
+  }
+);
+
+SimpleDebouncedInput.displayName = "SimpleDebouncedInput";
+
 export function CommissionDetailsSection({
   control,
   register,
@@ -51,45 +460,38 @@ export function CommissionDetailsSection({
   currentRole,
   filtersLoading,
 }: CommissionDetailsSectionProps) {
-  const addAdditionalAgent = () => {
-    // Find percentage commission type
+  // Memoize percentage type lookup
+  const percentageTypeId = useMemo(() => {
     const percentageType = commissionTypes.find((type) =>
       type.name.toLowerCase().includes("percentage")
     );
+    return percentageType?.id || "";
+  }, [commissionTypes]);
 
+  const addAdditionalAgent = useCallback(() => {
     const newAgent: AdditionalAgent = {
       type: "external",
       agentId: "",
       agencyName: "",
       commissionValue: "",
-      commissionTypeId: percentageType?.id || "",
+      commissionTypeId: percentageTypeId,
     };
     setValue("additionalAgents", [...watchedAdditionalAgents, newAgent], {
       shouldValidate: true,
       shouldDirty: true,
     });
-  };
+  }, [watchedAdditionalAgents, setValue, percentageTypeId]);
 
-  const removeAdditionalAgent = (index: number) => {
-    const updated = watchedAdditionalAgents.filter((_, i) => i !== index);
-    setValue("additionalAgents", updated, {
-      shouldValidate: true,
-      shouldDirty: true,
-    });
-  };
-
-  const updateAdditionalAgent = (
-    index: number,
-    field: keyof AdditionalAgent,
-    value: string
-  ) => {
-    const updated = [...watchedAdditionalAgents];
-    updated[index] = { ...updated[index], [field]: value };
-    setValue("additionalAgents", updated, {
-      shouldValidate: true,
-      shouldDirty: true,
-    });
-  };
+  const removeAdditionalAgent = useCallback(
+    (index: number) => {
+      const updated = watchedAdditionalAgents.filter((_, i) => i !== index);
+      setValue("additionalAgents", updated, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+    },
+    [watchedAdditionalAgents, setValue]
+  );
 
   return (
     <Card>
@@ -357,61 +759,23 @@ export function CommissionDetailsSection({
                 <Controller
                   name="commRate"
                   control={control}
-                  render={({ field }) => {
-                    const percentageType = commissionTypes.find((type) =>
-                      type.name.toLowerCase().includes("percentage")
-                    );
-
-                    const handleRateChange = (value: string) => {
-                      let numericValue = value.replace(/[^0-9.]/g, "");
-                      const parts = numericValue.split(".");
-                      if (parts.length > 2) {
-                        numericValue = parts[0] + "." + parts.slice(1).join("");
-                      }
-
-                      field.onChange(numericValue);
-
-                      setValue(
-                        "agentCommissionTypeId",
-                        numericValue ? percentageType?.id || "" : "",
-                        {
+                  render={({ field }) => (
+                    <SimpleDebouncedInput
+                      id="commRate"
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      onClear={() => {
+                        field.onChange("");
+                        setValue("agentCommissionTypeId", "", {
                           shouldValidate: true,
                           shouldDirty: true,
-                        }
-                      );
-                    };
-
-                    return (
-                      <div className="relative">
-                        <Input
-                          id="commRate"
-                          type="text"
-                          value={field.value || ""}
-                          onChange={(e) => handleRateChange(e.target.value)}
-                          disabled={filtersLoading}
-                          placeholder="Enter commission rate"
-                          className={`mt-1 ${field.value ? "pr-10" : ""}`}
-                        />
-                        {field.value && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
-                            onClick={() => {
-                              field.onChange("");
-                              setValue("agentCommissionTypeId", "", {
-                                shouldValidate: true,
-                                shouldDirty: true,
-                              });
-                            }}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    );
-                  }}
+                        });
+                      }}
+                      disabled={filtersLoading}
+                      placeholder="Enter commission rate"
+                      className={`mt-1 ${field.value ? "pr-10" : ""}`}
+                    />
+                  )}
                 />
               </div>
             </div>
@@ -445,263 +809,18 @@ export function CommissionDetailsSection({
               </div>
             ) : (
               <div className="space-y-4">
-                {watchedAdditionalAgents.map((agent, index) => {
-                  const percentageTypeId =
-                    commissionTypes.find((type) =>
-                      type.name.toLowerCase().includes("percentage")
-                    )?.id || "";
-
-                  const sanitizeCommissionRate = (value: string) => {
-                    let numericValue = value.replace(/[^0-9.]/g, "");
-                    const parts = numericValue.split(".");
-                    if (parts.length > 2) {
-                      numericValue = parts[0] + "." + parts.slice(1).join("");
-                    }
-                    return numericValue;
-                  };
-
-                  const updateAgentCommission = (
-                    value: string,
-                    typeId: string
-                  ) => {
-                    const updated = [...watchedAdditionalAgents];
-                    updated[index] = {
-                      ...updated[index],
-                      commissionValue: value,
-                      commissionTypeId: typeId,
-                    };
-                    setValue("additionalAgents", updated, {
-                      shouldValidate: true,
-                      shouldDirty: true,
-                    });
-                  };
-
-                  const handleRateChange = (value: string) => {
-                    const numericValue = sanitizeCommissionRate(value);
-                    updateAgentCommission(
-                      numericValue,
-                      numericValue ? percentageTypeId : ""
-                    );
-                  };
-
-                  const handleClearRate = () => {
-                    updateAgentCommission("", percentageTypeId);
-                  };
-
-                  return (
-                    <div
-                      key={index}
-                      className="space-y-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
-                    >
-                      {/* Header with Remove Button */}
-                      <div className="flex items-center justify-between">
-                        <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Agent #{index + 1}
-                        </h5>
-                        <Button
-                          type="button"
-                          onClick={() => removeAdditionalAgent(index)}
-                          size="sm"
-                          variant="ghost"
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-
-                      {/* Agent Type Selection */}
-                      <div>
-                        <Label className="mb-2 block">Agent Type</Label>
-                        <div className="flex gap-4">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="radio"
-                              name={`additionalAgentType-${index}`}
-                              value="internal"
-                              checked={agent.type === "internal"}
-                              onChange={() =>
-                                updateAdditionalAgent(index, "type", "internal")
-                              }
-                              className="w-4 h-4"
-                            />
-                            <span className="text-sm">Internal Agent</span>
-                          </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="radio"
-                              name={`additionalAgentType-${index}`}
-                              value="external"
-                              checked={agent.type === "external"}
-                              onChange={() =>
-                                updateAdditionalAgent(index, "type", "external")
-                              }
-                              className="w-4 h-4"
-                            />
-                            <span className="text-sm">External Agent</span>
-                          </label>
-                        </div>
-                      </div>
-
-                      {/* Internal Agent Selection */}
-                      {agent.type === "internal" && (
-                        <div>
-                          <Label htmlFor={`additionalAgentId-${index}`}>
-                            Select Agent
-                          </Label>
-                          <div className="relative">
-                            <Select
-                              value={agent.agentId}
-                              onValueChange={(value) =>
-                                updateAdditionalAgent(index, "agentId", value)
-                              }
-                              disabled={filtersLoading}
-                            >
-                              <SelectTrigger
-                                className={`w-full mt-1 ${
-                                  agent.agentId ? "pr-10" : ""
-                                }`}
-                              >
-                                <SelectValue placeholder="Select internal agent" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {allAgents.map((a) => (
-                                  <SelectItem key={a.id} value={a.id}>
-                                    {a.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            {agent.agentId && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                onClick={() =>
-                                  updateAdditionalAgent(index, "agentId", "")
-                                }
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* External Agent Name */}
-                      {agent.type === "external" && (
-                        <div>
-                          <Label htmlFor={`agencyName-${index}`}>
-                            Agency/Agent Name
-                          </Label>
-                          <Input
-                            id={`agencyName-${index}`}
-                            value={agent.agencyName}
-                            onChange={(e) =>
-                              updateAdditionalAgent(
-                                index,
-                                "agencyName",
-                                e.target.value
-                              )
-                            }
-                            placeholder="Enter agency or agent name"
-                            className="mt-1"
-                          />
-                        </div>
-                      )}
-
-                      {/* Commission Type */}
-                      <div>
-                        <Label htmlFor={`commissionTypeId-${index}`}>
-                          Commission Type
-                        </Label>
-                        <div className="relative">
-                          <Select
-                            value={agent.commissionTypeId}
-                            onValueChange={(value) =>
-                              updateAdditionalAgent(
-                                index,
-                                "commissionTypeId",
-                                value
-                              )
-                            }
-                            disabled={filtersLoading}
-                          >
-                            <SelectTrigger
-                              className={`w-full mt-1 ${
-                                agent.commissionTypeId ? "pr-10" : ""
-                              }`}
-                            >
-                              <SelectValue placeholder="Select commission type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {commissionTypes.map((type) => (
-                                <SelectItem key={type.id} value={type.id}>
-                                  {type.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {agent.commissionTypeId && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
-                              onClick={() =>
-                                updateAdditionalAgent(
-                                  index,
-                                  "commissionTypeId",
-                                  ""
-                                )
-                              }
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Commission Value */}
-                      <div>
-                        <Label htmlFor={`commissionValue-${index}`}>
-                          Commission Rate
-                        </Label>
-                        <div className="relative">
-                          <Input
-                            id={`commissionValue-${index}`}
-                            type="text"
-                            value={agent.commissionValue || ""}
-                            onChange={(e) => handleRateChange(e.target.value)}
-                            disabled={filtersLoading}
-                            placeholder="Enter commission rate"
-                            className={`mt-1 ${
-                              agent.commissionValue ? "pr-10" : ""
-                            }`}
-                          />
-                          {agent.commissionValue && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
-                              onClick={handleClearRate}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                        {agent.commissionValue && agent.commissionTypeId && (
-                          <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded text-sm">
-                            <p className="text-blue-900 dark:text-blue-100 font-semibold">
-                              Commission: {agent.commissionValue}%
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                {watchedAdditionalAgents.map((agent, index) => (
+                  <AdditionalAgentItem
+                    key={index}
+                    index={index}
+                    agent={agent}
+                    control={control}
+                    commissionTypes={commissionTypes}
+                    allAgents={allAgents}
+                    filtersLoading={filtersLoading}
+                    onRemove={removeAdditionalAgent}
+                  />
+                ))}
               </div>
             )}
           </div>

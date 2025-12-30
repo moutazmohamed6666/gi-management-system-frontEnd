@@ -17,6 +17,7 @@ interface UseDealPreviewProps {
   bedrooms: FilterOption[];
   commissionTypes: FilterOption[];
   allAgents: FilterOption[];
+  currentRole?: string;
 }
 
 export function useDealPreview({
@@ -32,6 +33,7 @@ export function useDealPreview({
   bedrooms,
   commissionTypes,
   allAgents,
+  currentRole,
 }: UseDealPreviewProps) {
   const previewData = useMemo(() => {
     if (!pendingFormData) return null;
@@ -99,6 +101,14 @@ export function useDealPreview({
     };
 
     const getMainAgentName = () => {
+      // For sales admin, use the selected agent from the form
+      if (currentRole === "SALES_ADMIN" && pendingFormData.agentId) {
+        const selectedAgent = allAgents.find(
+          (a) => a.id === pendingFormData.agentId
+        );
+        return selectedAgent?.name || "N/A";
+      }
+      // For other roles, use the logged-in user
       return sessionStorage.getItem("username") || "Current Agent";
     };
 
@@ -184,6 +194,7 @@ export function useDealPreview({
     bedrooms,
     commissionTypes,
     allAgents,
+    currentRole,
   ]);
 
   return previewData;

@@ -114,6 +114,7 @@ export function DealForm({ dealId, onBack, onSave }: DealFormProps) {
     bedrooms,
     commissionTypes,
     allAgents,
+    currentRole,
   });
 
   // Validation functions
