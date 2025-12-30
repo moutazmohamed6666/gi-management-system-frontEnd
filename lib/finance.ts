@@ -260,6 +260,34 @@ export interface CEOMetricsResponse {
     quarter_trend: string;
     period: string;
   };
+  total_revenue: {
+    value: number;
+    currency: string;
+    label: string;
+  };
+  avg_deal_size: {
+    value: number;
+    currency: string;
+    label: string;
+  };
+  active_agents: {
+    value: number;
+    label: string;
+  };
+  developers: {
+    value: number;
+    label: string;
+  };
+}
+
+// CEO Metrics Parameters
+export interface GetCEOMetricsParams {
+  from_date?: string; // YYYY-MM-DD format
+  to_date?: string; // YYYY-MM-DD format
+  developer_id?: string;
+  agent_id?: string;
+  project_id?: string;
+  status?: string; // Deal status
 }
 
 // Admin Metrics Response
@@ -628,8 +656,36 @@ export const financeApi = {
   },
 
   // Get CEO dashboard metrics
-  getCEOMetrics: async (): Promise<CEOMetricsResponse> => {
-    return apiClient<CEOMetricsResponse>("/api/finance-dashboard/ceo-metrics");
+  getCEOMetrics: async (
+    params?: GetCEOMetricsParams
+  ): Promise<CEOMetricsResponse> => {
+    const queryParams = new URLSearchParams();
+
+    if (params?.from_date) {
+      queryParams.append("from_date", params.from_date);
+    }
+    if (params?.to_date) {
+      queryParams.append("to_date", params.to_date);
+    }
+    if (params?.developer_id) {
+      queryParams.append("developer_id", params.developer_id);
+    }
+    if (params?.agent_id) {
+      queryParams.append("agent_id", params.agent_id);
+    }
+    if (params?.project_id) {
+      queryParams.append("project_id", params.project_id);
+    }
+    if (params?.status) {
+      queryParams.append("status", params.status);
+    }
+
+    const queryString = queryParams.toString();
+    const endpoint = `/api/finance-dashboard/ceo-metrics${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    return apiClient<CEOMetricsResponse>(endpoint);
   },
 
   // Get admin dashboard metrics

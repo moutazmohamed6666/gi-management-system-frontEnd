@@ -134,70 +134,74 @@ export function ReportsDataTable({
                     {reportType === "monthly_revenue" && (
                       <>
                         <td className="py-3 px-4 text-gray-900 dark:text-gray-100 font-medium">
-                          {(row as { month: string }).month}
+                          {(row as { month: string })?.month}
                         </td>
                         <td className="py-3 px-4 text-right text-gray-900 dark:text-gray-100">
-                          {(row as { dealClosed: number }).dealClosed}
+                          {(row as { dealClosed: number })?.dealClosed}
                         </td>
                         <td className="py-3 px-4 text-right text-green-600 dark:text-green-400 font-medium">
                           AED{" "}
                           {(
                             row as { commissionCollected: number }
-                          ).commissionCollected.toLocaleString()}
+                          )?.commissionCollected?.toLocaleString()}
                         </td>
                         <td className="py-3 px-4 text-right text-orange-600 dark:text-orange-400 font-medium">
                           AED{" "}
                           {(
                             row as { pendingCommission: number }
-                          ).pendingCommission.toLocaleString()}
+                          )?.pendingCommission?.toLocaleString()}
                         </td>
                         <td className="py-3 px-4 text-right text-purple-600 dark:text-purple-400 font-medium">
                           AED{" "}
                           {(
                             row as { totalCommission: number }
-                          ).totalCommission.toLocaleString()}
+                          )?.totalCommission?.toLocaleString()}
                         </td>
                         <td className="py-3 px-4 text-right text-gray-900 dark:text-gray-100 font-medium">
                           AED{" "}
-                          {(row as { grossRevenue: number }).grossRevenue.toLocaleString()}
+                          {(
+                            row as { grossRevenue: number }
+                          )?.grossRevenue?.toLocaleString()}
                         </td>
                         <td className="py-3 px-4 text-right text-blue-600 dark:text-blue-400">
                           AED{" "}
                           {(
                             row as { agentCommission: number }
-                          ).agentCommission.toLocaleString()}
+                          )?.agentCommission?.toLocaleString()}
                         </td>
                         <td className="py-3 px-4 text-right text-pink-600 dark:text-pink-400">
                           AED{" "}
                           {(
                             row as { managerCommission: number }
-                          ).managerCommission.toLocaleString()}
+                          )?.managerCommission?.toLocaleString()}
                         </td>
                         <td className="py-3 px-4 text-right text-teal-600 dark:text-teal-400 font-medium">
                           AED{" "}
-                          {(row as { netRevenue: number }).netRevenue.toLocaleString()}
+                          {(
+                            row as { netRevenue: number }
+                          )?.netRevenue?.toLocaleString()}
                         </td>
                       </>
                     )}
                     {reportType === "agent_performance" && (
                       <>
                         <td className="py-3 px-4 text-gray-900 dark:text-gray-100 font-medium">
-                          {(row as { agent_name: string }).agent_name}
+                          {(row as { agent_name: string })?.agent_name}
                         </td>
                         <td className="py-3 px-4 text-gray-900 dark:text-gray-100">
-                          {(row as { deals_count: number }).deals_count}
+                          {(row as { deals_count: number })?.deals_count}
                         </td>
                         <td className="py-3 px-4 text-right text-gray-900 dark:text-gray-100">
                           AED{" "}
                           {(
                             row as { total_commission: number }
-                          ).total_commission.toLocaleString()}
+                          )?.total_commission?.toLocaleString()}
                         </td>
                         <td className="py-3 px-4 text-right text-green-600 dark:text-green-400 font-medium">
                           AED{" "}
                           {(
                             row as { paid_commission: number }
-                          ).paid_commission.toLocaleString()}
+                          )?.paid_commission?.toLocaleString()}
                         </td>
                         <td className="py-3 px-4 text-right text-gray-900 dark:text-gray-100">
                           <div className="flex items-center justify-end gap-2">
@@ -210,7 +214,7 @@ export function ReportsDataTable({
                                       row as {
                                         payment_percentage: number;
                                       }
-                                    ).payment_percentage
+                                    )?.payment_percentage || 0
                                   }%`,
                                 }}
                               ></div>
@@ -218,7 +222,7 @@ export function ReportsDataTable({
                             <span>
                               {(
                                 row as { payment_percentage: number }
-                              ).payment_percentage.toFixed(1)}
+                              )?.payment_percentage?.toFixed(1)}
                               %
                             </span>
                           </div>
@@ -228,42 +232,50 @@ export function ReportsDataTable({
                     {reportType === "commission_summary" && (
                       <>
                         <td className="py-3 px-4 text-gray-900 dark:text-gray-100 font-medium">
-                          {(row as { category: string }).category}
+                          {(row as { category: string })?.category}
                         </td>
                         <td className="py-3 px-4 text-right text-gray-900 dark:text-gray-100">
                           AED{" "}
-                          {(row as { expected: number }).expected.toLocaleString()}
+                          {(
+                            row as { expected: number }
+                          )?.expected?.toLocaleString()}
                         </td>
                         <td className="py-3 px-4 text-right text-green-600 dark:text-green-400 font-medium">
                           AED{" "}
-                          {(row as { collected: number }).collected.toLocaleString()}
+                          {(
+                            row as { collected: number }
+                          )?.collected?.toLocaleString()}
                         </td>
                         <td className="py-3 px-4 text-right text-blue-600 dark:text-blue-400">
                           AED{" "}
-                          {(row as { transferred: number }).transferred.toLocaleString()}
+                          {(
+                            row as { transferred: number }
+                          )?.transferred?.toLocaleString()}
                         </td>
                         <td className="py-3 px-4 text-right text-orange-600 dark:text-orange-400 font-medium">
                           AED{" "}
-                          {(row as { pending: number }).pending.toLocaleString()}
+                          {(
+                            row as { pending: number }
+                          )?.pending?.toLocaleString()}
                         </td>
                       </>
                     )}
                     {reportType === "deal_pipeline" && (
                       <>
                         <td className="py-3 px-4 text-gray-900 dark:text-gray-100 font-medium">
-                          {(row as { stage: string }).stage}
+                          {(row as { stage: string })?.stage}
                         </td>
                         <td className="py-3 px-4 text-gray-900 dark:text-gray-100">
-                          {(row as { count: number }).count}
+                          {(row as { count: number })?.count}
                         </td>
                         <td className="py-3 px-4 text-right text-gray-900 dark:text-gray-100">
                           AED{" "}
-                          {(row as { value: number }).value.toLocaleString()}
+                          {(row as { value: number })?.value?.toLocaleString()}
                         </td>
                         <td className="py-3 px-4 text-right text-gray-900 dark:text-gray-100">
-                          {(
-                            row as { percentage: number }
-                          ).percentage.toFixed(1)}
+                          {(row as { percentage: number })?.percentage?.toFixed(
+                            1
+                          )}
                           %
                         </td>
                       </>
@@ -282,4 +294,3 @@ export function ReportsDataTable({
     </Card>
   );
 }
-

@@ -44,7 +44,8 @@ export function CEOMetricsCards({
         <CardContent>
           <div className="flex items-baseline gap-2">
             <div className="text-2xl text-gray-900">
-              {ceoMetrics?.total_pipeline?.currency || "AED"} {totalPipeline}
+              {ceoMetrics?.total_pipeline?.currency || "AED"}{" "}
+              {totalPipeline.toLocaleString()}
             </div>
             {ceoMetrics?.total_pipeline?.trend !== undefined && (
               <div className="flex items-center gap-1 text-green-600 text-sm">
@@ -87,9 +88,14 @@ export function CEOMetricsCards({
         </CardHeader>
         <CardContent>
           <div className="flex items-baseline gap-2">
-            <div className="text-2xl text-gray-900">AED {totalRevenue}</div>
+            <div className="text-2xl text-gray-900">
+              {ceoMetrics?.total_revenue?.currency || "AED"}{" "}
+              {totalRevenue.toLocaleString()}
+            </div>
           </div>
-          <p className="text-sm text-gray-600 mt-1">Commission earned</p>
+          <p className="text-sm text-gray-600 mt-1">
+            {ceoMetrics?.total_revenue?.label || "Commission earned"}
+          </p>
         </CardContent>
       </Card>
 
@@ -103,9 +109,14 @@ export function CEOMetricsCards({
         </CardHeader>
         <CardContent>
           <div className="flex items-baseline gap-2">
-            <div className="text-2xl text-gray-900">AED {avgDealSize}</div>
+            <div className="text-2xl text-gray-900">
+              {ceoMetrics?.avg_deal_size?.currency || "AED"}{" "}
+              {avgDealSize.toLocaleString()}
+            </div>
           </div>
-          <p className="text-sm text-gray-600 mt-1">Per transaction</p>
+          <p className="text-sm text-gray-600 mt-1">
+            {ceoMetrics?.avg_deal_size?.label || "Per transaction"}
+          </p>
         </CardContent>
       </Card>
 
@@ -121,7 +132,9 @@ export function CEOMetricsCards({
           <div className="flex items-baseline gap-2">
             <div className="text-3xl text-gray-900">{activeAgents}</div>
           </div>
-          <p className="text-sm text-gray-600 mt-1">Producing</p>
+          <p className="text-sm text-gray-600 mt-1">
+            {ceoMetrics?.active_agents?.label || "Producing"}
+          </p>
         </CardContent>
       </Card>
 
@@ -137,7 +150,9 @@ export function CEOMetricsCards({
           <div className="flex items-baseline gap-2">
             <div className="text-3xl text-gray-900">{activeDevelopers}</div>
           </div>
-          <p className="text-sm text-gray-600 mt-1">Active partnerships</p>
+          <p className="text-sm text-gray-600 mt-1">
+            {ceoMetrics?.developers?.label || "Active partnerships"}
+          </p>
         </CardContent>
       </Card>
     </div>

@@ -39,19 +39,21 @@ export function DashboardCEO() {
         setMetricsLoading(true);
         setMetricsError(null);
 
-        // Build date parameters for getTopPerformance
-        const topPerfParams: { from_date?: string; to_date?: string } = {};
+        // Build date parameters for both API calls
+        const dateParams: { from_date?: string; to_date?: string } = {};
         if (startDate) {
-          topPerfParams.from_date = startDate;
+          dateParams.from_date = startDate;
         }
         if (endDate) {
-          topPerfParams.to_date = endDate;
+          dateParams.to_date = endDate;
         }
 
         const [metricsData, topPerfData] = await Promise.all([
-          financeApi.getCEOMetrics(),
+          financeApi.getCEOMetrics(
+            Object.keys(dateParams).length > 0 ? dateParams : undefined
+          ),
           financeApi.getTopPerformance(
-            Object.keys(topPerfParams).length > 0 ? topPerfParams : undefined
+            Object.keys(dateParams).length > 0 ? dateParams : undefined
           ),
         ]);
         setCeoMetrics(metricsData);

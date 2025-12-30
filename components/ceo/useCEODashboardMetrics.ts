@@ -34,7 +34,7 @@ export function useCEODashboardMetrics({
   topPerformance,
   filteredDeals,
 }: UseCEODashboardMetricsProps) {
-  // Calculate total pipeline (fallback to deals calculation if API data not available)
+  // Get total pipeline from API (fallback to deals calculation if API data not available)
   const totalPipeline = useMemo(() => {
     return (
       ceoMetrics?.total_pipeline?.value ||
@@ -50,7 +50,7 @@ export function useCEODashboardMetrics({
     );
   }, [ceoMetrics, filteredDeals]);
 
-  // Calculate closed deals count (fallback to deals filtering if API data not available)
+  // Get closed deals count from API (fallback to deals filtering if API data not available)
   const closedDeals = useMemo(() => {
     return (
       ceoMetrics?.closed_deals?.count ||
@@ -58,15 +58,21 @@ export function useCEODashboardMetrics({
     );
   }, [ceoMetrics, filteredDeals]);
 
-  // Calculate total revenue from deals
+  // Get total revenue from API (fallback to deals calculation if API data not available)
   const totalRevenue = useMemo(() => {
-    return filteredDeals
-      .filter((d) => d.commission?.total)
-      .reduce((sum, d) => sum + (d.commission?.total || 0), 0);
-  }, [filteredDeals]);
+    return (
+      ceoMetrics?.total_revenue?.value ||
+      filteredDeals
+        .filter((d) => d.commission?.total)
+        .reduce((sum, d) => sum + (d.commission?.total || 0), 0)
+    );
+  }, [ceoMetrics, filteredDeals]);
 
-  // Calculate average deal size
+  // Get average deal size from API (fallback to deals calculation if API data not available)
   const avgDealSize = useMemo(() => {
+    if (ceoMetrics?.avg_deal_size?.value) {
+      return ceoMetrics.avg_deal_size.value;
+    }
     return filteredDeals.length > 0
       ? filteredDeals.reduce((sum, d) => {
           const value =
@@ -76,25 +82,31 @@ export function useCEODashboardMetrics({
           return sum + (value || 0);
         }, 0) / filteredDeals.length
       : 0;
-  }, [filteredDeals]);
+  }, [ceoMetrics, filteredDeals]);
 
-  // Calculate active agents count
+  // Get active agents count from API (fallback to deals calculation if API data not available)
   const activeAgents = useMemo(() => {
+    if (ceoMetrics?.active_agents?.value) {
+      return ceoMetrics.active_agents.value;
+    }
     const uniqueAgents = new Set(
       filteredDeals.map((d) => d.agent?.id).filter((id): id is string => !!id)
     );
     return uniqueAgents.size;
-  }, [filteredDeals]);
+  }, [ceoMetrics, filteredDeals]);
 
-  // Calculate active developers count
+  // Get active developers count from API (fallback to deals calculation if API data not available)
   const activeDevelopers = useMemo(() => {
+    if (ceoMetrics?.developers?.value) {
+      return ceoMetrics.developers.value;
+    }
     const uniqueDevelopers = new Set(
       filteredDeals
         .map((d) => d.developer?.id)
         .filter((id): id is string => !!id)
     );
     return uniqueDevelopers.size;
-  }, [filteredDeals]);
+  }, [ceoMetrics, filteredDeals]);
 
   // Transform agent performance from API
   const agentPerformance: AgentPerformanceData[] = useMemo(() => {

@@ -20,6 +20,7 @@ import { ReportsCommissionOverview } from "./reports/ReportsCommissionOverview";
 import { ReportsChart } from "./reports/ReportsChart";
 import { ReportsLoadingState } from "./reports/ReportsLoadingState";
 import { ReportsErrorState } from "./reports/ReportsErrorState";
+import { ReportsDataTable } from "./reports/ReportsDataTable";
 
 export function Reports() {
   // Get user role from sessionStorage
@@ -316,7 +317,7 @@ export function Reports() {
             <ReportsChart reportType={reportType} chartData={chartData} />
           </div>
 
-          {/* <ReportsDataTable reportType={reportType} chartData={chartData} /> */}
+          <ReportsDataTable reportType={reportType} chartData={chartData} />
         </>
       )}
     </div>
