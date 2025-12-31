@@ -310,6 +310,7 @@ export interface GetComprehensiveDataParams {
   to_date?: string; // YYYY-MM-DD format
   developer_id?: string;
   agent_id?: string;
+  purchase_status_id?: string;
 }
 
 // Comprehensive Finance Dashboard Response (for Reports)
@@ -713,7 +714,9 @@ export const financeApi = {
     if (params?.agent_id) {
       queryParams.append("agent_id", params.agent_id);
     }
-
+    if (params?.purchase_status_id) {
+      queryParams.append("purchase_status_id", params.purchase_status_id);
+    }
     const queryString = queryParams.toString();
     const endpoint = `/api/finance-dashboard/comprehensive${
       queryString ? `?${queryString}` : ""

@@ -59,6 +59,8 @@ export function Reports() {
         developer_id:
           selectedDeveloper !== "all" ? selectedDeveloper : undefined,
         agent_id: selectedAgent !== "all" ? selectedAgent : undefined,
+        purchase_status_id:
+          selectedPurchaseStatus !== "all" ? selectedPurchaseStatus : undefined,
       });
 
       // Type for monthly revenue items (all optional since API shape varies)
@@ -163,7 +165,13 @@ export function Reports() {
     } finally {
       setIsLoading(false);
     }
-  }, [startDate, endDate, selectedDeveloper, selectedAgent]);
+  }, [
+    startDate,
+    endDate,
+    selectedDeveloper,
+    selectedAgent,
+    selectedPurchaseStatus,
+  ]);
 
   // Fetch data when filters change
   useEffect(() => {
