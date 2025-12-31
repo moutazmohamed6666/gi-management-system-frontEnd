@@ -213,14 +213,12 @@ export function Reports() {
 
     setIsExporting(format);
 
-    toast.info(`Exporting as ${format.toUpperCase()}`, {
+    toast.info("Exporting as Excel", {
       description: "Your report is being generated...",
     });
 
     try {
-      await reportsApi.exportReport({
-        format,
-        report_type: reportType,
+      await financeApi.exportComprehensiveData({
         from_date: startDate || undefined,
         to_date: endDate || undefined,
         developer_id:
@@ -231,7 +229,7 @@ export function Reports() {
       });
 
       toast.success("Export Complete", {
-        description: `Your ${format.toUpperCase()} report has been downloaded.`,
+        description: "Your Excel report has been downloaded.",
       });
     } catch (err) {
       const errorMessage =

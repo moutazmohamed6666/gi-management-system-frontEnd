@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "../ui/button";
-import { Download, FileText, Loader2, RefreshCw } from "lucide-react";
+import { Download, Loader2, RefreshCw } from "lucide-react";
 import type { ExportFormat } from "@/lib/reports";
 
 interface ReportsHeaderProps {
@@ -69,23 +69,7 @@ export function ReportsHeader({
               </span>
               <span className="sm:hidden">Excel</span>
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => onExport("pdf")}
-              disabled={isExporting !== null}
-              size="sm"
-              className="flex items-center gap-1.5 sm:gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm disabled:opacity-50 lg:size-default"
-            >
-              {isExporting === "pdf" ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <FileText className="h-4 w-4" />
-              )}
-              <span className="hidden sm:inline">
-                {isExporting === "pdf" ? "Exporting..." : "Export PDF"}
-              </span>
-              <span className="sm:hidden">PDF</span>
-            </Button>
+
           </div>
         </div>
       </div>

@@ -724,4 +724,57 @@ export const financeApi = {
 
     return apiClient<ComprehensiveFinanceResponse>(endpoint);
   },
+
+  // Export comprehensive finance dashboard data as Excel
+  exportComprehensiveData: async (
+    params?: GetComprehensiveDataParams
+  ): Promise<void> => {
+    const queryParams = new URLSearchParams();
+
+    if (params?.from_date) {
+      queryParams.append("from_date", params.from_date);
+    }
+    if (params?.to_date) {
+      queryParams.append("to_date", params.to_date);
+    }
+    if (params?.developer_id) {
+      queryParams.append("developer_id", params.developer_id);
+    }
+    if (params?.agent_id) {
+      queryParams.append("agent_id", params.agent_id);
+    }
+    if (params?.purchase_status_id) {
+      queryParams.append("purchase_status_id", params.purchase_status_id);
+    }
+    const queryString = queryParams.toString();
+    const endpoint = `/api/finance-dashboard/comprehensive/export${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    // Get the token from sessionStorage
+    const token = sessionStorage.getItem("token");
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+
+    const response = await fetch(`${baseUrl}${endpoint}`, {
+      method: "GET",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to export report");
+    }
+
+    // Get the blob and trigger download
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `finance-report-${new Date().toISOString().split("T")[0]}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  },
 };
