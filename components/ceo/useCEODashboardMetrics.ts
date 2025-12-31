@@ -1,11 +1,9 @@
 import { useMemo } from "react";
-import type { Deal } from "@/lib/deals";
 import type { CEOMetricsResponse, TopPerformanceResponse } from "@/lib/finance";
 
 interface UseCEODashboardMetricsProps {
   ceoMetrics: CEOMetricsResponse | null;
   topPerformance: TopPerformanceResponse | null;
-  filteredDeals: Deal[];
 }
 
 interface AgentPerformanceData {
@@ -32,81 +30,36 @@ interface ManagerPerformanceData {
 export function useCEODashboardMetrics({
   ceoMetrics,
   topPerformance,
-  filteredDeals,
 }: UseCEODashboardMetricsProps) {
-  // Get total pipeline from API (fallback to deals calculation if API data not available)
+  // Get total pipeline from API
   const totalPipeline = useMemo(() => {
-    return (
-      ceoMetrics?.total_pipeline?.value ||
-      filteredDeals
-        .filter((d) => d.statusId !== "Closed")
-        .reduce((sum, d) => {
-          const value =
-            typeof d.dealValue === "string"
-              ? parseFloat(d.dealValue)
-              : d.dealValue;
-          return sum + (value || 0);
-        }, 0)
-    );
-  }, [ceoMetrics, filteredDeals]);
+    return ceoMetrics?.total_pipeline?.value || 0;
+  }, [ceoMetrics]);
 
-  // Get closed deals count from API (fallback to deals filtering if API data not available)
+  // Get closed deals count from API
   const closedDeals = useMemo(() => {
-    return (
-      ceoMetrics?.closed_deals?.count ||
-      filteredDeals.filter((d) => d.statusId === "Closed").length
-    );
-  }, [ceoMetrics, filteredDeals]);
+    return ceoMetrics?.closed_deals?.count || 0;
+  }, [ceoMetrics]);
 
-  // Get total revenue from API (fallback to deals calculation if API data not available)
+  // Get total revenue from API
   const totalRevenue = useMemo(() => {
-    return (
-      ceoMetrics?.total_revenue?.value ||
-      filteredDeals
-        .filter((d) => d.commission?.total)
-        .reduce((sum, d) => sum + (d.commission?.total || 0), 0)
-    );
-  }, [ceoMetrics, filteredDeals]);
+    return ceoMetrics?.total_revenue?.value || 0;
+  }, [ceoMetrics]);
 
-  // Get average deal size from API (fallback to deals calculation if API data not available)
+  // Get average deal size from API
   const avgDealSize = useMemo(() => {
-    if (ceoMetrics?.avg_deal_size?.value) {
-      return ceoMetrics.avg_deal_size.value;
-    }
-    return filteredDeals.length > 0
-      ? filteredDeals.reduce((sum, d) => {
-          const value =
-            typeof d.dealValue === "string"
-              ? parseFloat(d.dealValue)
-              : d.dealValue;
-          return sum + (value || 0);
-        }, 0) / filteredDeals.length
-      : 0;
-  }, [ceoMetrics, filteredDeals]);
+    return ceoMetrics?.avg_deal_size?.value || 0;
+  }, [ceoMetrics]);
 
-  // Get active agents count from API (fallback to deals calculation if API data not available)
+  // Get active agents count from API
   const activeAgents = useMemo(() => {
-    if (ceoMetrics?.active_agents?.value) {
-      return ceoMetrics.active_agents.value;
-    }
-    const uniqueAgents = new Set(
-      filteredDeals.map((d) => d.agent?.id).filter((id): id is string => !!id)
-    );
-    return uniqueAgents.size;
-  }, [ceoMetrics, filteredDeals]);
+    return ceoMetrics?.active_agents?.value || 0;
+  }, [ceoMetrics]);
 
-  // Get active developers count from API (fallback to deals calculation if API data not available)
+  // Get active developers count from API
   const activeDevelopers = useMemo(() => {
-    if (ceoMetrics?.developers?.value) {
-      return ceoMetrics.developers.value;
-    }
-    const uniqueDevelopers = new Set(
-      filteredDeals
-        .map((d) => d.developer?.id)
-        .filter((id): id is string => !!id)
-    );
-    return uniqueDevelopers.size;
-  }, [ceoMetrics, filteredDeals]);
+    return ceoMetrics?.developers?.value || 0;
+  }, [ceoMetrics]);
 
   // Transform agent performance from API
   const agentPerformance: AgentPerformanceData[] = useMemo(() => {

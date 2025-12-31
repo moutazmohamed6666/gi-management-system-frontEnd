@@ -62,6 +62,10 @@ export interface CommissionTransfersResponse {
     amount: number;
   };
   avg_transfer_time_hours: number;
+  pending_external_transfers:{
+    count: number;
+    amount: number;
+  }
 }
 
 // Top Performance Response

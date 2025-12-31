@@ -16,14 +16,18 @@ export function CommissionTransfers({
         pendingAmount: commissionTransfers.pending_transfers.amount,
         completedThisMonth: commissionTransfers.completed_this_month.count,
         completedAmount: commissionTransfers.completed_this_month.amount,
-        avgTimeToTransfer: commissionTransfers.avg_transfer_time_hours / 24, // Convert hours to days
+        pendingExternalTransfersAmount:
+          commissionTransfers.pending_external_transfers.amount,
+        pendingExternalTransfersCount:
+          commissionTransfers.pending_external_transfers.count,
       }
     : {
         pendingCount: 0,
         pendingAmount: 0,
         completedThisMonth: 0,
         completedAmount: 0,
-        avgTimeToTransfer: 0,
+        pendingExternalTransfersAmount: 0,
+        pendingExternalTransfersCount: 0,
       };
 
   return (
@@ -38,7 +42,7 @@ export function CommissionTransfers({
             <div className="pl-3">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-sm text-gray-600 dark:text-gray-400">
-                  Pending Transfers
+                  Pending Transfers for Agents
                 </div>
                 <div className="text-xl text-gray-900 dark:text-white font-semibold">
                   {transferTracking.pendingCount}
@@ -76,11 +80,16 @@ export function CommissionTransfers({
           <div className="group relative overflow-hidden rounded-xl p-4 bg-linear-to-br from-blue-50 to-white dark:from-blue-900/20 dark:to-gray-800 border border-blue-100 dark:border-blue-900/30">
             <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
             <div className="pl-3">
-              <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                Average Time to Transfer
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  Pending Transfers for External Agents
+                </div>
+                <div className="text-xl text-gray-900 dark:text-white font-semibold">
+                  {transferTracking.pendingExternalTransfersCount}
+                </div>
               </div>
               <div className="text-3xl text-gray-900 dark:text-white font-semibold">
-                {transferTracking.avgTimeToTransfer.toFixed(1)} days
+                AED {transferTracking.pendingExternalTransfersAmount}
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                 Processing speed
