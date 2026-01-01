@@ -112,7 +112,6 @@ export function DashboardCEO() {
   } = useCEODashboardMetrics({
     ceoMetrics,
     topPerformance,
-    filteredDeals,
   });
 
   return (
