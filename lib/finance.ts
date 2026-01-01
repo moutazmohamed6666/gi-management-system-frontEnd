@@ -62,10 +62,10 @@ export interface CommissionTransfersResponse {
     amount: number;
   };
   avg_transfer_time_hours: number;
-  pending_external_transfers:{
+  pending_external_transfers: {
     count: number;
     amount: number;
-  }
+  };
 }
 
 // Top Performance Response
@@ -755,27 +755,18 @@ export const financeApi = {
       queryString ? `?${queryString}` : ""
     }`;
 
-    // Get the token from sessionStorage
-    const token = sessionStorage.getItem("token");
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
-
-    const response = await fetch(`${baseUrl}${endpoint}`, {
-      method: "GET",
-      headers: {
-        Authorization: token ? `Bearer ${token}` : "",
-      },
+    // Use apiClient with blob response type
+    const blob = await apiClient<Blob>(endpoint, {
+      responseType: "blob",
     });
 
-    if (!response.ok) {
-      throw new Error("Failed to export report");
-    }
-
-    // Get the blob and trigger download
-    const blob = await response.blob();
+    // Trigger download
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `finance-report-${new Date().toISOString().split("T")[0]}.xlsx`;
+    a.download = `finance-report-${
+      new Date().toISOString().split("T")[0]
+    }.xlsx`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);

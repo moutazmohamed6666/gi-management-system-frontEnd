@@ -41,17 +41,23 @@ export const removeAuthToken = (): void => {
   sessionStorage.removeItem("authToken");
 };
 
+// Extended options for apiClient
+interface ApiClientOptions extends RequestInit {
+  responseType?: "json" | "blob";
+}
+
 // API Client with authentication
 export const apiClient = async <T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: ApiClientOptions = {}
 ): Promise<T> => {
+  const { responseType = "json", ...fetchOptions } = options;
   const token = getAuthToken();
 
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-    ...((options.headers as Record<string, string>) || {}),
+    ...(responseType === "json" ? { "Content-Type": "application/json" } : {}),
+    Accept: responseType === "blob" ? "*/*" : "application/json",
+    ...((fetchOptions.headers as Record<string, string>) || {}),
   };
 
   if (token) {
@@ -64,7 +70,7 @@ export const apiClient = async <T>(
 
   try {
     const response = await fetch(url, {
-      ...options,
+      ...fetchOptions,
       headers,
     });
 
@@ -76,6 +82,10 @@ export const apiClient = async <T>(
         message: errorData.message || `HTTP error! status: ${response.status}`,
         status: response.status,
       } as ApiError;
+    }
+
+    if (responseType === "blob") {
+      return (await response.blob()) as T;
     }
 
     return await response.json();
