@@ -128,9 +128,6 @@ export function DealInformationSection({
                 <Controller
                   name="closeDate"
                   control={control}
-                  rules={{
-                    required: "Close date is required",
-                  }}
                   render={({ field }) => (
                     <StyledDatePicker
                       id="closeDate"
