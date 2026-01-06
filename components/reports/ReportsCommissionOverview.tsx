@@ -22,7 +22,7 @@ export function ReportsCommissionOverview({
             </div>
             <div className="flex items-center gap-1">
               <div className="h-3 w-3 rounded-full bg-orange-500"></div>
-              <span>Pending</span>
+              <span>Pending </span>
             </div>
           </div>
         </div>
@@ -45,9 +45,7 @@ export function ReportsCommissionOverview({
               <div
                 className="bg-green-500 h-4 rounded-full transition-all duration-500"
                 style={{
-                  width: `${
-                    analyticsData?.summary?.collection_rate || 0
-                  }%`,
+                  width: `${analyticsData?.summary?.collection_rate || 0}%`,
                 }}
               ></div>
             </div>
@@ -61,12 +59,14 @@ export function ReportsCommissionOverview({
               </p>
               <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                 AED{" "}
-                {(analyticsData?.summary?.total_collected || 0).toLocaleString()}
+                {(
+                  analyticsData?.summary?.total_collected || 0
+                ).toLocaleString()}
               </p>
             </div>
             <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Pending
+                Pending Agent Commissions
               </p>
               <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                 AED{" "}
@@ -86,7 +86,7 @@ export function ReportsCommissionOverview({
             </div>
             <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Expected
+                Expected Collection
               </p>
               <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                 AED{" "}
@@ -99,4 +99,3 @@ export function ReportsCommissionOverview({
     </Card>
   );
 }
-

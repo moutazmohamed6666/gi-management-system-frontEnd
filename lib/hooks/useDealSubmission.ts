@@ -94,6 +94,7 @@ export function useDealSubmission({
         developerId: data.developerId,
         projectId: data.projectId,
         agentId: agentId,
+        createdById: loggedInUserId || undefined,
         bookingDate: new Date(data.bookingDate).toISOString(),
         cfExpiry: data.cfExpiry
           ? new Date(data.cfExpiry).toISOString()

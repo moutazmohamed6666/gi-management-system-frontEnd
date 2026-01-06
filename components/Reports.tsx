@@ -67,6 +67,7 @@ export function Reports() {
       interface MonthlyRevenueItem {
         month: string;
         dealClosed?: number;
+        totalDeals?: number;
         commissionCollected?: number;
         pendingCommission?: number;
         totalCommission?: number;
@@ -127,7 +128,7 @@ export function Reports() {
           month: item.month,
           revenue: item.grossRevenue || 0,
           deals: item.dealClosed || 0,
-          dealClosed: item.dealClosed || 0,
+          totalDeals: item.totalDeals || 0,
           commissionCollected: item.commissionCollected || 0,
           pendingCommission: item.pendingCommission || 0,
           totalCommission: item.totalCommission || 0,

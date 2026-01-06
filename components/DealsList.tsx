@@ -82,6 +82,28 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
           const response = await dealsApi.getAgentDeals(params);
           setDeals(Array.isArray(response.data) ? response.data : []);
           setTotal(typeof response.total === "number" ? response.total : 0);
+        } else if (role === "sales_admin" || role === "SALES_ADMIN") {
+          // For sales admin, use the dedicated sales admin deals endpoint
+          const params: {
+            search?: string;
+            statusId?: string;
+            developer_id?: string;
+            project_id?: string;
+            page: number;
+            page_size: number;
+          } = {
+            search: searchTerm || undefined,
+            page,
+            page_size: pageSize,
+          };
+
+          if (statusIdFilter !== "all") params.statusId = statusIdFilter;
+          if (developerFilter !== "all") params.developer_id = developerFilter;
+          if (projectFilter !== "all") params.project_id = projectFilter;
+
+          const response = await dealsApi.getSalesAdminDeals(params);
+          setDeals(Array.isArray(response.data) ? response.data : []);
+          setTotal(typeof response.total === "number" ? response.total : 0);
         } else {
           // For other roles, use the standard deals endpoint with filters
           const params: {
@@ -165,6 +187,27 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
         if (projectFilter !== "all") params.project_id = projectFilter;
 
         const response = await dealsApi.getAgentDeals(params);
+        setDeals(Array.isArray(response.data) ? response.data : []);
+        setTotal(typeof response.total === "number" ? response.total : 0);
+      } else if (role === "sales_admin" || role === "SALES_ADMIN") {
+        const params: {
+          search?: string;
+          statusId?: string;
+          developer_id?: string;
+          project_id?: string;
+          page: number;
+          page_size: number;
+        } = {
+          search: searchTerm || undefined,
+          page,
+          page_size: pageSize,
+        };
+
+        if (statusIdFilter !== "all") params.statusId = statusIdFilter;
+        if (developerFilter !== "all") params.developer_id = developerFilter;
+        if (projectFilter !== "all") params.project_id = projectFilter;
+
+        const response = await dealsApi.getSalesAdminDeals(params);
         setDeals(Array.isArray(response.data) ? response.data : []);
         setTotal(typeof response.total === "number" ? response.total : 0);
       } else {

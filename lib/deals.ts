@@ -414,6 +414,27 @@ export interface GetAgentDealsResponse {
   page_size: number;
 }
 
+// Sales Admin Deals Parameters (for /api/deals/created-by-me endpoint)
+export interface GetSalesAdminDealsParams {
+  page?: number;
+  page_size?: number;
+  // Date range filters
+  start_date?: string; // ISO date string for filtering by closeDate
+  end_date?: string; // ISO date string for filtering by closeDate
+  // Additional filters for sales admin deals
+  search?: string;
+  statusId?: string;
+  developer_id?: string;
+  project_id?: string;
+}
+
+export interface GetSalesAdminDealsResponse {
+  data: Deal[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
 // Create Deal Request (matching actual API payload)
 export interface AdditionalAgent {
   agentId?: string;
@@ -652,6 +673,45 @@ export const dealsApi = {
     }`;
 
     return apiClient<GetAgentDealsResponse>(endpoint);
+  },
+
+  // Get sales admin's created deals (for sales_admin role)
+  getSalesAdminDeals: async (
+    params?: GetSalesAdminDealsParams
+  ): Promise<GetSalesAdminDealsResponse> => {
+    const queryParams = new URLSearchParams();
+
+    if (params?.page) {
+      queryParams.append("page", params.page.toString());
+    }
+    if (params?.page_size) {
+      queryParams.append("page_size", params.page_size.toString());
+    }
+    if (params?.start_date) {
+      queryParams.append("start_date", params.start_date);
+    }
+    if (params?.end_date) {
+      queryParams.append("end_date", params.end_date);
+    }
+    if (params?.search) {
+      queryParams.append("search", params.search);
+    }
+    if (params?.statusId) {
+      queryParams.append("statusId", params.statusId);
+    }
+    if (params?.developer_id) {
+      queryParams.append("developer_id", params.developer_id);
+    }
+    if (params?.project_id) {
+      queryParams.append("project_id", params.project_id);
+    }
+
+    const queryString = queryParams.toString();
+    const endpoint = `/api/deals/created-by-me${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    return apiClient<GetSalesAdminDealsResponse>(endpoint);
   },
 
   // Create a new deal (auto-generates deal number, auto-assigns manager)

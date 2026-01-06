@@ -180,6 +180,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         label: "Home",
         icon: LayoutDashboard,
       });
+      navItems.push({ view: "/deals", label: "Deals", icon: FileText });
     }
 
     return (

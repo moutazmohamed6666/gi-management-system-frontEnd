@@ -13,12 +13,14 @@ export default function FinanceReviewPage() {
   useEffect(() => {
     const auth = sessionStorage.getItem("isAuthenticated");
     const role = sessionStorage.getItem("userRole");
-    
+
     if (auth !== "true") {
       router.push("/login");
-    } else if (role === "sales_admin") {
-      router.push("/deals/new");
-    } else if (role !== "finance") {
+    } else if (
+      role !== "finance" &&
+      role !== "sales_admin" &&
+      role !== "SALES_ADMIN"
+    ) {
       router.push("/dashboard");
     } else {
       setIsLoading(false);
@@ -51,4 +53,3 @@ export default function FinanceReviewPage() {
     </AppLayout>
   );
 }
-
