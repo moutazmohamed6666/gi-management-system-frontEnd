@@ -232,6 +232,7 @@ export function useDealLoader({ dealId, reset }: UseDealLoaderProps) {
             typeof deal.dealValue === "number"
               ? String(deal.dealValue)
               : deal.dealValue || "",
+          agentId: deal.agent?.id || deal.agentId || "",
           agentCommissionTypeId: agentCommissionTypeId,
           commRate: agentCommissionValue,
           totalCommissionTypeId:
