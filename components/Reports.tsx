@@ -127,7 +127,7 @@ export function Reports() {
         data: monthlyRevenue.map((item) => ({
           month: item.month,
           revenue: item.grossRevenue || 0,
-          deals: item.dealClosed || 0,
+          closedDeals: item.dealClosed || 0,
           totalDeals: item.totalDeals || 0,
           commissionCollected: item.commissionCollected || 0,
           pendingCommission: item.pendingCommission || 0,

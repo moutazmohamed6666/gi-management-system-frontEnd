@@ -43,6 +43,10 @@ export function ReportsDataTable({
                       <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100 font-medium rounded-tl-lg">
                         Month
                       </th>
+
+                      <th className="text-right py-3 px-4 text-gray-900 dark:text-gray-100 font-medium">
+                        Total Deals
+                      </th>
                       <th className="text-right py-3 px-4 text-gray-900 dark:text-gray-100 font-medium">
                         Closed Deals
                       </th>
@@ -138,6 +142,9 @@ export function ReportsDataTable({
                         </td>
                         <td className="py-3 px-4 text-right text-gray-900 dark:text-gray-100">
                           {(row as { totalDeals: number })?.totalDeals}
+                        </td>
+                        <td className="py-3 px-4 text-right text-gray-900 dark:text-gray-100">
+                          {(row as { closedDeals: number })?.closedDeals}
                         </td>
                         <td className="py-3 px-4 text-right text-green-600 dark:text-green-400 font-medium">
                           AED{" "}

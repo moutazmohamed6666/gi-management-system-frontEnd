@@ -35,6 +35,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
   const [financeApproveStatusId, setFinanceApproveStatusId] = useState<
     string | null
   >(null);
+  const [userRole, setUserRole] = useState<string>("");
 
   // Commission modals
   const [isCollectModalOpen, setIsCollectModalOpen] = useState(false);
@@ -154,6 +155,14 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
     };
 
     fetchStatusIds();
+  }, []);
+
+  // Get user role from sessionStorage
+  useEffect(() => {
+    const role = sessionStorage.getItem("userRole");
+    if (role) {
+      setUserRole(role);
+    }
   }, []);
 
   useEffect(() => {
@@ -510,6 +519,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
         isEditingOverview={isEditingOverview}
         isSaving={isSaving}
         isLoading={isLoading}
+        userRole={userRole}
         onBack={onBack}
         onEdit={() => {
           // Only allow editing if deal is loaded
