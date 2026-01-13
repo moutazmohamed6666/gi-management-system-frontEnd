@@ -103,6 +103,7 @@ export function useDealSubmission({
         statusId: finalStatusId,
         areaId: data.areaId || undefined,
         teamId: data.teamId || undefined,
+        managerId: data.managerId || undefined,
         propertyName: data.propertyName || "",
         propertyTypeId: data.propertyTypeId,
         unitNumber: data.unitNumber,

@@ -21,6 +21,7 @@ interface UseFiltersReturn {
   mediaTypes: FilterOption[];
   areas: FilterOption[];
   teams: FilterOption[];
+  managers: FilterOption[];
   isLoading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -46,6 +47,7 @@ export function useFilters(): UseFiltersReturn {
     mediaTypes: [],
     areas: [],
     teams: [],
+    managers: [],
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +74,7 @@ export function useFilters(): UseFiltersReturn {
         mediaTypes,
         areas,
         teams,
+        managers,
       ] = await Promise.all([
         filtersApi.getDevelopers(),
         filtersApi.getAgents(),
@@ -89,6 +92,7 @@ export function useFilters(): UseFiltersReturn {
         filtersApi.getMediaTypes(),
         filtersApi.getAreas(),
         filtersApi.getTeams(),
+        filtersApi.getManagers(),
       ]);
 
       setFilters({
@@ -108,6 +112,7 @@ export function useFilters(): UseFiltersReturn {
         mediaTypes,
         areas,
         teams,
+        managers,
       });
     } catch (err: unknown) {
       const message =

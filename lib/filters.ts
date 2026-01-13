@@ -163,17 +163,19 @@ export const filtersApi = {
   getRoles: async (): Promise<FilterOption[]> => {
     const data = await apiClient<unknown>("/api/filters/user-roles");
     // Roles API returns { id, status } instead of { id, name }
-    const roles = ensureArray(data).map((item) => {
-      const id = item["id"] ?? item["_id"];
-      if (!id) return null;
-      const status = item["status"] ?? "";
-      return {
-        ...item,
-        id: String(id),
-        name: String(status || id), // Map status to name for consistency
-        status: String(status),
-      } satisfies FilterOption;
-    }).filter(Boolean) as FilterOption[];
+    const roles = ensureArray(data)
+      .map((item) => {
+        const id = item["id"] ?? item["_id"];
+        if (!id) return null;
+        const status = item["status"] ?? "";
+        return {
+          ...item,
+          id: String(id),
+          name: String(status || id), // Map status to name for consistency
+          status: String(status),
+        } satisfies FilterOption;
+      })
+      .filter(Boolean) as FilterOption[];
     return roles;
   },
 
@@ -210,6 +212,12 @@ export const filtersApi = {
   // Get all teams
   getTeams: async (): Promise<FilterOption[]> => {
     const data = await apiClient<unknown>("/api/filters/teams");
+    return normalizeGenericOptions(data);
+  },
+
+  // Get all managers
+  getManagers: async (): Promise<FilterOption[]> => {
+    const data = await apiClient<unknown>("/api/filters/managers");
     return normalizeGenericOptions(data);
   },
 };

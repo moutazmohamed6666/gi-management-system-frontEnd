@@ -32,6 +32,7 @@ export type DealFormData = {
   agentId: string; // New field for sales_admin
   areaId: string; // Area selection for secondary deals
   teamId: string; // Team selection
+  managerId: string; // Manager selection
 
   // Property Details
   developerId: string;
@@ -81,6 +82,7 @@ const defaultFormValues: DealFormData = {
   agentId: "",
   areaId: "",
   teamId: "",
+  managerId: "",
 
   // Property Details
   developerId: "",
