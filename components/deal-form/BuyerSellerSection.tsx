@@ -49,10 +49,14 @@ export function BuyerSellerSection({
         <CardContent>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="sellerName">Name (Optional)</Label>
+              <Label htmlFor="sellerName">
+                Name <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="sellerName"
-                {...register("sellerName")}
+                {...register("sellerName", {
+                  required: "Seller name is required",
+                })}
                 placeholder="Enter seller name"
                 className={`mt-1 ${errors.sellerName ? "border-red-500" : ""}`}
               />
@@ -64,15 +68,16 @@ export function BuyerSellerSection({
             </div>
 
             <div>
-              <Label htmlFor="sellerPhone">Phone (Optional)</Label>
+              <Label htmlFor="sellerPhone">
+                Phone <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="sellerPhone"
                 type="tel"
                 {...register("sellerPhone", {
+                  required: "Seller phone is required",
                   validate: (value) =>
-                    !value ||
-                    validatePhone(value) ||
-                    "Invalid phone number format",
+                    validatePhone(value) || "Invalid phone number format",
                 })}
                 placeholder="+971 50 123 4567"
                 className={`mt-1 ${errors.sellerPhone ? "border-red-500" : ""}`}
@@ -104,17 +109,24 @@ export function BuyerSellerSection({
             </div>
 
             <div>
-              <Label htmlFor="sellerNationalityId">Nationality</Label>
+              <Label htmlFor="sellerNationalityId">
+                Nationality <span className="text-red-500">*</span>
+              </Label>
               <Controller
                 name="sellerNationalityId"
                 control={control}
+                rules={{ required: "Seller nationality is required" }}
                 render={({ field }) => (
                   <Select
                     value={field.value}
                     onValueChange={field.onChange}
                     disabled={filtersLoading}
                   >
-                    <SelectTrigger className="w-full mt-1">
+                    <SelectTrigger
+                      className={`w-full mt-1 ${
+                        errors.sellerNationalityId ? "border-red-500" : ""
+                      }`}
+                    >
                       <SelectValue placeholder="Select nationality" />
                     </SelectTrigger>
                     <SelectContent>
@@ -127,20 +139,32 @@ export function BuyerSellerSection({
                   </Select>
                 )}
               />
+              {errors.sellerNationalityId && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.sellerNationalityId.message}
+                </p>
+              )}
             </div>
 
             <div>
-              <Label htmlFor="sellerSourceId">Source</Label>
+              <Label htmlFor="sellerSourceId">
+                Source <span className="text-red-500">*</span>
+              </Label>
               <Controller
                 name="sellerSourceId"
                 control={control}
+                rules={{ required: "Seller source is required" }}
                 render={({ field }) => (
                   <Select
                     value={field.value}
                     onValueChange={field.onChange}
                     disabled={filtersLoading}
                   >
-                    <SelectTrigger className="w-full mt-1">
+                    <SelectTrigger
+                      className={`w-full mt-1 ${
+                        errors.sellerSourceId ? "border-red-500" : ""
+                      }`}
+                    >
                       <SelectValue placeholder="Select source" />
                     </SelectTrigger>
                     <SelectContent>
@@ -153,6 +177,11 @@ export function BuyerSellerSection({
                   </Select>
                 )}
               />
+              {errors.sellerSourceId && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.sellerSourceId.message}
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
@@ -166,10 +195,14 @@ export function BuyerSellerSection({
         <CardContent>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="buyerName">Name (Optional)</Label>
+              <Label htmlFor="buyerName">
+                Name <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="buyerName"
-                {...register("buyerName")}
+                {...register("buyerName", {
+                  required: "Buyer name is required",
+                })}
                 placeholder="Enter buyer name"
                 className={`mt-1 ${errors.buyerName ? "border-red-500" : ""}`}
               />
@@ -181,15 +214,16 @@ export function BuyerSellerSection({
             </div>
 
             <div>
-              <Label htmlFor="buyerPhone">Phone (Optional)</Label>
+              <Label htmlFor="buyerPhone">
+                Phone <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="buyerPhone"
                 type="tel"
                 {...register("buyerPhone", {
+                  required: "Buyer phone is required",
                   validate: (value) =>
-                    !value ||
-                    validatePhone(value) ||
-                    "Invalid phone number format",
+                    validatePhone(value) || "Invalid phone number format",
                 })}
                 placeholder="+971 50 123 4567"
                 className={`mt-1 ${errors.buyerPhone ? "border-red-500" : ""}`}
@@ -221,17 +255,24 @@ export function BuyerSellerSection({
             </div>
 
             <div>
-              <Label htmlFor="buyerNationalityId">Nationality</Label>
+              <Label htmlFor="buyerNationalityId">
+                Nationality <span className="text-red-500">*</span>
+              </Label>
               <Controller
                 name="buyerNationalityId"
                 control={control}
+                rules={{ required: "Buyer nationality is required" }}
                 render={({ field }) => (
                   <Select
                     value={field.value}
                     onValueChange={field.onChange}
                     disabled={filtersLoading}
                   >
-                    <SelectTrigger className="w-full mt-1">
+                    <SelectTrigger
+                      className={`w-full mt-1 ${
+                        errors.buyerNationalityId ? "border-red-500" : ""
+                      }`}
+                    >
                       <SelectValue placeholder="Select nationality" />
                     </SelectTrigger>
                     <SelectContent>
@@ -244,20 +285,32 @@ export function BuyerSellerSection({
                   </Select>
                 )}
               />
+              {errors.buyerNationalityId && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.buyerNationalityId.message}
+                </p>
+              )}
             </div>
 
             <div>
-              <Label htmlFor="buyerSourceId">Source</Label>
+              <Label htmlFor="buyerSourceId">
+                Source <span className="text-red-500">*</span>
+              </Label>
               <Controller
                 name="buyerSourceId"
                 control={control}
+                rules={{ required: "Buyer source is required" }}
                 render={({ field }) => (
                   <Select
                     value={field.value}
                     onValueChange={field.onChange}
                     disabled={filtersLoading}
                   >
-                    <SelectTrigger className="w-full mt-1">
+                    <SelectTrigger
+                      className={`w-full mt-1 ${
+                        errors.buyerSourceId ? "border-red-500" : ""
+                      }`}
+                    >
                       <SelectValue placeholder="Select source" />
                     </SelectTrigger>
                     <SelectContent>
@@ -270,6 +323,11 @@ export function BuyerSellerSection({
                   </Select>
                 )}
               />
+              {errors.buyerSourceId && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.buyerSourceId.message}
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
