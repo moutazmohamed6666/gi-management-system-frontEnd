@@ -1,9 +1,6 @@
 // Reports API Types and Utilities
 
-import { apiClient, getAuthToken } from "./api";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "https://dev.shaheen-env.work";
+import { API_BASE_URL, apiClient, getAuthToken } from "./api";
 
 // ============================================================================
 // Type Definitions

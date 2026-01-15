@@ -1,6 +1,6 @@
 // Deals API Types and Utilities
 
-import { apiClient, getAuthToken } from "./api";
+import { API_BASE_URL, apiClient, getAuthToken } from "./api";
 
 // ============================================================================
 // Type Definitions
@@ -787,8 +787,6 @@ export const dealsApi = {
       typeof window !== "undefined"
         ? sessionStorage.getItem("authToken")
         : null;
-    const API_BASE_URL =
-      process.env.NEXT_PUBLIC_API_BASE_URL || "https://dev.shaheen-env.work";
 
     const response = await fetch(`${API_BASE_URL}/api/media/deal/${dealId}`, {
       method: "POST",
@@ -818,8 +816,7 @@ export const dealsApi = {
   // Download a media file
   downloadMedia: async (mediaId: string): Promise<Blob> => {
     const token = getAuthToken();
-    const API_BASE_URL =
-      process.env.NEXT_PUBLIC_API_BASE_URL || "https://dev.shaheen-env.work";
+
     const url = `${API_BASE_URL}/api/media/${mediaId}/download`;
 
     const headers: Record<string, string> = {};

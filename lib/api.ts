@@ -1,6 +1,6 @@
 // API Configuration and Client Utilities
 
-const API_BASE_URL =
+export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || "https://dev.shaheen-env.work";
 
 export interface LoginRequest {
