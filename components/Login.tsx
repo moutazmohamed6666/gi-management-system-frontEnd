@@ -15,7 +15,7 @@ import {
 import { Alert, AlertDescription } from "./ui/alert";
 import { ThemeToggle } from "./ThemeToggle";
 import { User, Lock, AlertCircle, Building2 } from "lucide-react";
-import { authApi, setAuthToken } from "@/lib/api";
+import { authApi, setAuthToken, getErrorMessage } from "@/lib/api";
 
 type UserRole =
   | "agent"
@@ -70,8 +70,8 @@ export function Login({ onLogin }: LoginProps) {
         response.token,
         response.user
       );
-    } catch (err: any) {
-      setError(err.message || "Invalid username or password");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Invalid username or password"));
     } finally {
       setIsLoading(false);
     }

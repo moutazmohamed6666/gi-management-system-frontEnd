@@ -12,6 +12,7 @@ import {
 } from "@/lib/reports";
 import { financeApi } from "@/lib/finance";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/api";
 import { ReportsHeader } from "./reports/ReportsHeader";
 import { ReportsFilters } from "./reports/ReportsFilters";
 import { ReportsSummaryCards } from "./reports/ReportsSummaryCards";
@@ -157,8 +158,7 @@ export function Reports() {
 
       setAnalyticsData(response);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to load report data";
+      const errorMessage = getErrorMessage(err, "Failed to load report data");
       setError(errorMessage);
       toast.error("Report Error", {
         description: errorMessage,
@@ -233,8 +233,7 @@ export function Reports() {
         description: "Your Excel report has been downloaded.",
       });
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to export report";
+      const errorMessage = getErrorMessage(err, "Failed to export report");
       toast.error("Export Failed", {
         description: errorMessage,
       });

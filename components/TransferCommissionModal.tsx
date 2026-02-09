@@ -19,6 +19,7 @@ import {
 } from "@/lib/commissions";
 import { dealsApi, type Deal, type GetDealAgentsResponse } from "@/lib/deals";
 import { filtersApi, type FilterOption } from "@/lib/filters";
+import { getErrorMessage } from "@/lib/api";
 
 interface TransferCommissionModalProps {
   deal: Deal;
@@ -56,7 +57,7 @@ export function TransferCommissionModal({
     } catch (error) {
       console.error("Error fetching transfer types:", error);
       toast.error("Failed to load transfer types", {
-        description: "Could not fetch transfer types",
+        description: getErrorMessage(error, "Could not fetch transfer types"),
       });
       setTransferTypes([]);
     } finally {
@@ -72,7 +73,7 @@ export function TransferCommissionModal({
     } catch (error) {
       console.error("Error fetching deal agents:", error);
       toast.error("Failed to load agents", {
-        description: "Could not fetch agents for this deal",
+        description: getErrorMessage(error, "Could not fetch agents for this deal"),
       });
       setDealAgents(null);
     } finally {
@@ -218,10 +219,7 @@ export function TransferCommissionModal({
       onSuccess(response);
       handleReset();
     } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to transfer commission";
+      const errorMessage = getErrorMessage(error, "Failed to transfer commission");
       toast.error("Transfer Failed", {
         description: errorMessage,
       });

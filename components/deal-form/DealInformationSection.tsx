@@ -411,10 +411,13 @@ export function DealInformationSection({
             </div>
 
             <div>
-              <Label htmlFor="managerId">Manager</Label>
+              <Label htmlFor="managerId">
+                Manager <span className="text-red-500">*</span>
+              </Label>
               <Controller
                 name="managerId"
                 control={control}
+                rules={{ required: "Manager is required" }}
                 render={({ field }) => (
                   <div className="relative">
                     <Select
@@ -449,6 +452,11 @@ export function DealInformationSection({
                   </div>
                 )}
               />
+              {errors.managerId && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.managerId.message}
+                </p>
+              )}
             </div>
           </div>
         </div>

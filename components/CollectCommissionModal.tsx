@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { commissionsApi, type CollectionResponse } from "@/lib/commissions";
 import { filtersApi, type FilterOption } from "@/lib/filters";
 import type { Deal } from "@/lib/deals";
+import { getErrorMessage } from "@/lib/api";
 
 interface CollectCommissionModalProps {
   deal: Deal;
@@ -179,8 +180,7 @@ export function CollectCommissionModal({
       onSuccess(response);
       handleReset();
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to record collection";
+      const errorMessage = getErrorMessage(error, "Failed to record collection");
       toast.error("Collection Failed", {
         description: errorMessage,
       });

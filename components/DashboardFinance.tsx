@@ -12,6 +12,7 @@ import {
 } from "./ui/select";
 import { TrendingUp, Loader2, AlertCircle } from "lucide-react";
 import { financeApi } from "@/lib/finance";
+import { getErrorMessage } from "@/lib/api";
 import type {
   KPIsResponse,
   DealsByStageResponse,
@@ -70,8 +71,7 @@ export function DashboardFinance() {
     {}
   );
 
-  const getErrorMessage = (err: unknown, fallback: string) =>
-    err instanceof Error ? err.message : fallback;
+  // Using getErrorMessage from @/lib/api
 
   const SectionErrorCard = ({
     title,

@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useFilters } from "@/lib/useFilters";
 import { dealsApi, type DealMediaFile } from "@/lib/deals";
+import { getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -143,8 +144,7 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
       // Refresh existing files list
       fetchExistingFiles();
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Upload failed";
+      const errorMessage = getErrorMessage(error, "Upload failed");
 
       // Update status to error
       setUploadedFiles((prev) => {
@@ -230,8 +230,7 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
       setExistingFiles((prev) => prev.filter((f) => f.id !== fileToDelete.id));
       setFileToDelete(null);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to delete file";
+      const errorMessage = getErrorMessage(err, "Failed to delete file");
       toast.error("Delete failed", {
         description: errorMessage,
       });
@@ -262,8 +261,7 @@ export function DealMediaUpload({ dealId, onBack }: DealMediaUploadProps) {
         description: `Downloading ${file.originalFilename}`,
       });
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Download failed";
+      const errorMessage = getErrorMessage(err, "Download failed");
       toast.error("Download failed", {
         description: errorMessage,
       });

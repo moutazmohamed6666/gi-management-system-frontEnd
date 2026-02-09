@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import { DateRangeFilter } from "./DateRangeFilter";
 import type { Deal } from "@/lib/deals";
 import { dealsApi } from "@/lib/deals";
+import { getErrorMessage } from "@/lib/api";
 import { Loader2, AlertCircle } from "lucide-react";
 import { financeApi } from "@/lib/finance";
 import type {
@@ -99,16 +100,13 @@ export function DashboardAgent() {
 
         // Only show error if all requests failed
         if (results.every((r) => r.status === "rejected")) {
-          const errorMessage =
-            results[0].status === "rejected" &&
-            results[0].reason instanceof Error
-              ? results[0].reason.message
+          const errorMessage = results[0].status === "rejected"
+              ? getErrorMessage(results[0].reason, "Failed to load agent metrics")
               : "Failed to load agent metrics";
           setMetricsError(errorMessage);
         }
       } catch (err: unknown) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to load agent metrics";
+        const errorMessage = getErrorMessage(err, "Failed to load agent metrics");
         setMetricsError(errorMessage);
         console.error("Error fetching agent metrics:", err);
       } finally {

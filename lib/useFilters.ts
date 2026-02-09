@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { filtersApi, FilterOption } from "./filters";
+import { getErrorMessage } from "./api";
 
 interface UseFiltersReturn {
   developers: FilterOption[];
@@ -115,8 +116,7 @@ export function useFilters(): UseFiltersReturn {
         managers,
       });
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Failed to fetch filters";
+      const message = getErrorMessage(err, "Failed to fetch filters");
       setError(message);
       console.error("Error fetching filters:", err);
     } finally {

@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Button } from "../ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Download, FileIcon, Loader2, AlertCircle, Eye, Trash2 } from "lucide-react";
+import { getErrorMessage } from "@/lib/api";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,7 +48,7 @@ export function DealMediaSection({ dealId }: DealMediaSectionProps) {
         setSelectedMediaType(firstType);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to load media files";
+      const errorMessage = getErrorMessage(err, "Failed to load media files");
       setError(errorMessage);
       console.error("Error fetching media files:", err);
     } finally {
@@ -71,7 +72,7 @@ export function DealMediaSection({ dealId }: DealMediaSectionProps) {
         description: `Downloading ${file.originalFilename || file.filename}`,
       });
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Download failed";
+      const errorMessage = getErrorMessage(err, "Download failed");
       toast.error("Download failed", {
         description: errorMessage,
       });
@@ -110,7 +111,7 @@ export function DealMediaSection({ dealId }: DealMediaSectionProps) {
       setMediaFiles((prev) => prev.filter((f) => f.id !== fileToDelete.id));
       setFileToDelete(null);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to delete file";
+      const errorMessage = getErrorMessage(err, "Failed to delete file");
       toast.error("Delete failed", {
         description: errorMessage,
       });

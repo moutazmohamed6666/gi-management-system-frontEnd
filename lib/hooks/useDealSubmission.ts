@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { dealsApi, type CreateDealRequest } from "../deals";
+import { getErrorMessage } from "../api";
 import { DealFormData, UserRole } from "./useDealFormData";
 import { FilterOption } from "../filters";
 
@@ -225,12 +226,10 @@ export function useDealSubmission({
         onSave(response.id);
       }
     } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : dealId
-          ? "Failed to update deal"
-          : "Failed to create deal";
+      const errorMessage = getErrorMessage(
+        err,
+        dealId ? "Failed to update deal" : "Failed to create deal"
+      );
       toast.error(dealId ? "Error Updating Deal" : "Error Creating Deal", {
         description: errorMessage,
       });

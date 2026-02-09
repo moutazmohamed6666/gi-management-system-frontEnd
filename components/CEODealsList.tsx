@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import type { Deal } from "@/lib/deals";
 import { dealsApi } from "@/lib/deals";
 import { filtersApi } from "@/lib/filters";
+import { getErrorMessage } from "@/lib/api";
 import { Button } from "./ui/button";
 import { Eye, CheckCircle, XCircle, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -131,11 +132,10 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
 
       setAllDeals(typedDeals);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to load deals";
+      const errorMessage = getErrorMessage(err, "Failed to load deals");
       setError(errorMessage);
       toast.error("Error loading deals", {
-        description: errorMessage || "Failed to fetch deals. Please try again.",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
@@ -194,10 +194,7 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
       });
     } catch (err) {
       setApprovingDealId(null);
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Could not approve deal. Please try again.";
+      const errorMessage = getErrorMessage(err, "Could not approve deal. Please try again.");
       toast.error("Failed to approve deal", {
         description: errorMessage,
       });
@@ -229,10 +226,7 @@ export function CEODealsList({ onViewDeal }: CEODealsListProps) {
       });
     } catch (err) {
       setRejectingDealId(null);
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Could not reject deal. Please try again.";
+      const errorMessage = getErrorMessage(err, "Could not reject deal. Please try again.");
       toast.error("Failed to reject deal", {
         description: errorMessage,
       });

@@ -49,7 +49,7 @@ interface ApiClientOptions extends RequestInit {
 // API Client with authentication
 export const apiClient = async <T>(
   endpoint: string,
-  options: ApiClientOptions = {}
+  options: ApiClientOptions = {},
 ): Promise<T> => {
   const { responseType = "json", ...fetchOptions } = options;
   const token = getAuthToken();
@@ -75,11 +75,26 @@ export const apiClient = async <T>(
     });
 
     if (!response.ok) {
-      const errorData = await response
-        .json()
-        .catch(() => ({ message: "An error occurred" }));
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage =
+          errorData.message ||
+          errorData.error ||
+          errorData.detail ||
+          JSON.stringify(errorData);
+      } catch {
+        try {
+          const textBody = await response.text();
+          if (textBody) {
+            errorMessage = textBody;
+          }
+        } catch {
+          // keep the default HTTP status message
+        }
+      }
       throw {
-        message: errorData.message || `HTTP error! status: ${response.status}`,
+        message: errorMessage,
         status: response.status,
       } as ApiError;
     }
@@ -90,14 +105,30 @@ export const apiClient = async <T>(
 
     return await response.json();
   } catch (error) {
-    if (error && typeof error === "object" && "message" in error) {
+    if (error && typeof error === "object" && "status" in error) {
       throw error;
     }
     throw {
-      message: "Network error or server unavailable",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Network error or server unavailable",
       status: 0,
     } as ApiError;
   }
+};
+
+// Extract error message from any thrown value (Error, ApiError plain object, string, etc.)
+export const getErrorMessage = (
+  error: unknown,
+  fallback: string = "An unexpected error occurred",
+): string => {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object" && "message" in error) {
+    return String((error as { message: unknown }).message);
+  }
+  if (typeof error === "string") return error;
+  return fallback;
 };
 
 // Auth API functions

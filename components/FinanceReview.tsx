@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import type { Deal } from "@/lib/deals";
 import { dealsApi } from "@/lib/deals";
 import { filtersApi } from "@/lib/filters";
+import { getErrorMessage } from "@/lib/api";
 import { CollectCommissionModal } from "./CollectCommissionModal";
 import { TransferCommissionModal } from "./TransferCommissionModal";
 import { FinanceReviewHeader } from "./finance/FinanceReviewHeader";
@@ -111,8 +112,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
       }
       setExpectedCommission(totalExpected);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to load deal";
+      const errorMessage = getErrorMessage(err, "Failed to load deal");
       setError(errorMessage);
       toast.error("Error loading deal", {
         description: errorMessage,
@@ -357,8 +357,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
       setIsEditingOverview(false);
       fetchDeal();
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to save changes";
+      const errorMessage = getErrorMessage(err, "Failed to save changes");
       toast.error("Save Failed", {
         description: errorMessage,
       });
@@ -383,8 +382,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
 
       fetchDeal();
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to save finance data";
+      const errorMessage = getErrorMessage(err, "Failed to save finance data");
       toast.error("Save Failed", {
         description: errorMessage,
       });
@@ -458,8 +456,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
         // Refresh deal data to get updated status
         await fetchDeal();
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to update deal status";
+        const errorMessage = getErrorMessage(err, "Failed to update deal status");
         toast.error("Approval Failed", {
           description: errorMessage,
         });
@@ -485,8 +482,7 @@ export function FinanceReview({ dealId, onBack, onEdit }: FinanceReviewProps) {
 
         onBack();
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to approve deal";
+        const errorMessage = getErrorMessage(err, "Failed to approve deal");
         toast.error("Approval Failed", {
           description: errorMessage,
         });

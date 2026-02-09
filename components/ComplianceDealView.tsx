@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { dealsApi, type Deal, type BuyerSeller } from "@/lib/deals";
+import { getErrorMessage } from "@/lib/api";
 import { Loader2, AlertCircle, ArrowLeft, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { CEODealInfo } from "./ceo/CEODealInfo";
@@ -40,8 +41,7 @@ export function ComplianceDealView({
       const dealData = await dealsApi.getDealById(dealId);
       setDeal(dealData);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to load deal";
+      const errorMessage = getErrorMessage(err, "Failed to load deal");
       setError(errorMessage);
       toast.error("Error loading deal", {
         description: errorMessage,
@@ -79,8 +79,7 @@ export function ComplianceDealView({
       // Refresh deal data to get updated status
       await fetchDeal();
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to complete compliance";
+      const errorMessage = getErrorMessage(err, "Failed to complete compliance");
       toast.error("Compliance Failed", {
         description: errorMessage,
       });

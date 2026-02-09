@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { dealsApi, type Deal, type BuyerSeller } from "@/lib/deals";
 import { filtersApi } from "@/lib/filters";
+import { getErrorMessage } from "@/lib/api";
 import { Loader2, AlertCircle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { CEODealHeader } from "./ceo/CEODealHeader";
@@ -75,8 +76,7 @@ export function CEODealView({ dealId, onBack }: CEODealViewProps) {
       const dealData = await dealsApi.getDealById(dealId);
       setDeal(dealData);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to load deal";
+      const errorMessage = getErrorMessage(err, "Failed to load deal");
       setError(errorMessage);
       toast.error("Error loading deal", {
         description: errorMessage,
@@ -114,8 +114,7 @@ export function CEODealView({ dealId, onBack }: CEODealViewProps) {
         onBack();
       }, 1500);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to approve deal";
+      const errorMessage = getErrorMessage(err, "Failed to approve deal");
       toast.error("Approval Failed", {
         description: errorMessage,
       });
@@ -148,8 +147,7 @@ export function CEODealView({ dealId, onBack }: CEODealViewProps) {
         onBack();
       }, 1500);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to reject deal";
+      const errorMessage = getErrorMessage(err, "Failed to reject deal");
       toast.error("Rejection Failed", {
         description: errorMessage,
       });

@@ -6,6 +6,7 @@ import { DateRangeFilter } from "./DateRangeFilter";
 import type { Deal } from "@/lib/deals";
 import { dealsApi } from "@/lib/deals";
 import { financeApi } from "@/lib/finance";
+import { getErrorMessage } from "@/lib/api";
 import type { CEOMetricsResponse, TopPerformanceResponse } from "@/lib/finance";
 import { Loader2, AlertCircle } from "lucide-react";
 import { CEOHeader } from "./ceo/CEOHeader";
@@ -59,8 +60,7 @@ export function DashboardCEO() {
         setCeoMetrics(metricsData);
         setTopPerformance(topPerfData);
       } catch (err: unknown) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to load CEO metrics";
+        const errorMessage = getErrorMessage(err, "Failed to load CEO metrics");
         setMetricsError(errorMessage);
         console.error("Error fetching CEO metrics:", err);
       } finally {

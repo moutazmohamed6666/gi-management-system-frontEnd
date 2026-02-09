@@ -342,12 +342,25 @@ export const reportsApi = {
       });
 
       if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({ message: "Export failed" }));
-        throw new Error(
-          errorData.message || `Export failed: ${response.status}`
-        );
+        let errorMessage = `Export failed: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage =
+            errorData.message ||
+            errorData.error ||
+            errorData.detail ||
+            JSON.stringify(errorData);
+        } catch {
+          try {
+            const textBody = await response.text();
+            if (textBody) {
+              errorMessage = textBody;
+            }
+          } catch {
+            // keep the default message
+          }
+        }
+        throw new Error(errorMessage);
       }
 
       // Get the filename from Content-Disposition header or generate one
@@ -381,7 +394,11 @@ export const reportsApi = {
       if (error instanceof Error) {
         throw error;
       }
-      throw new Error("Failed to export report");
+      throw new Error(
+        typeof error === "object" && error !== null && "message" in error
+          ? String((error as Record<string, unknown>).message)
+          : "Failed to export report"
+      );
     }
   },
 

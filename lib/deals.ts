@@ -797,12 +797,25 @@ export const dealsApi = {
     });
 
     if (!response.ok) {
-      const errorData = await response
-        .json()
-        .catch(() => ({ message: "Upload failed" }));
-      throw new Error(
-        errorData.message || `HTTP error! status: ${response.status}`
-      );
+      let errorMessage = `Upload failed: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage =
+          errorData.message ||
+          errorData.error ||
+          errorData.detail ||
+          JSON.stringify(errorData);
+      } catch {
+        try {
+          const textBody = await response.text();
+          if (textBody) {
+            errorMessage = textBody;
+          }
+        } catch {
+          // keep the default message
+        }
+      }
+      throw new Error(errorMessage);
     }
 
     return await response.json();
@@ -830,12 +843,25 @@ export const dealsApi = {
     });
 
     if (!response.ok) {
-      const errorData = await response
-        .json()
-        .catch(() => ({ message: "Download failed" }));
-      throw new Error(
-        errorData.message || `HTTP error! status: ${response.status}`
-      );
+      let errorMessage = `Download failed: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage =
+          errorData.message ||
+          errorData.error ||
+          errorData.detail ||
+          JSON.stringify(errorData);
+      } catch {
+        try {
+          const textBody = await response.text();
+          if (textBody) {
+            errorMessage = textBody;
+          }
+        } catch {
+          // keep the default message
+        }
+      }
+      throw new Error(errorMessage);
     }
 
     return await response.blob();

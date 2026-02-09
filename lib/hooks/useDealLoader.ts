@@ -3,6 +3,7 @@
 import { useLayoutEffect, useState } from "react";
 import { UseFormReset } from "react-hook-form";
 import { dealsApi, type Deal } from "../deals";
+import { getErrorMessage } from "../api";
 import { DealFormData } from "./useDealFormData";
 
 interface UseDealLoaderProps {
@@ -256,8 +257,7 @@ export function useDealLoader({ dealId, reset }: UseDealLoaderProps) {
         setLoadedDeal(deal);
       })
       .catch((err: unknown) => {
-        const message =
-          err instanceof Error ? err.message : "Failed to load deal";
+        const message = getErrorMessage(err, "Failed to load deal");
         setDealError(message);
         console.error("Error loading deal:", err);
       });

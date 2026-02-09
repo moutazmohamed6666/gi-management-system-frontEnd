@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { usersApi, type User } from "@/lib/users";
+import { getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
 import { Plus, AlertCircle } from "lucide-react";
 import { UserFilters } from "./user-management/UserFilters";
@@ -56,8 +57,7 @@ export function UserManagement() {
         const usersList = Array.isArray(response.data) ? response.data : [];
         setUsers(usersList);
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to load users";
+        const errorMessage = getErrorMessage(err, "Failed to load users");
         setError(errorMessage);
         toast.error("Error loading users", {
           description: errorMessage,
@@ -144,8 +144,7 @@ export function UserManagement() {
       });
       setUsers(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to create user";
+      const errorMessage = getErrorMessage(err, "Failed to create user");
       toast.error("Error Creating User", {
         description: errorMessage,
       });
@@ -232,8 +231,7 @@ export function UserManagement() {
       });
       setUsers(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to update user";
+      const errorMessage = getErrorMessage(err, "Failed to update user");
       toast.error("Error Updating User", {
         description: errorMessage,
       });
@@ -263,8 +261,7 @@ export function UserManagement() {
       });
       setUsers(Array.isArray(response.data) ? response.data : []);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to delete user";
+      const errorMessage = getErrorMessage(err, "Failed to delete user");
       toast.error("Error Deleting User", {
         description: errorMessage,
       });

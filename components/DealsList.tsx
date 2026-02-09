@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { Deal } from "@/lib/deals";
 import { dealsApi } from "@/lib/deals";
+import { getErrorMessage } from "@/lib/api";
 import { toast } from "sonner";
 import { CollectCommissionModal } from "./CollectCommissionModal";
 import { TransferCommissionModal } from "./TransferCommissionModal";
@@ -133,12 +134,10 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
           setTotal(typeof response.total === "number" ? response.total : 0);
         }
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to load deals";
+        const errorMessage = getErrorMessage(err, "Failed to load deals");
         setError(errorMessage);
         toast.error("Error loading deals", {
-          description:
-            errorMessage || "Failed to fetch deals. Please try again.",
+          description: errorMessage,
         });
       } finally {
         setIsLoading(false);
@@ -287,10 +286,7 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
       });
     } catch (err) {
       setIsUpdating(false);
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Could not update deal status. Please try again.";
+      const errorMessage = getErrorMessage(err, "Could not update deal status. Please try again.");
       toast.error("Failed to update status", {
         description: errorMessage,
       });
