@@ -38,6 +38,16 @@ export const getStatusColor = (status: string): string => {
   return "bg-gray-600";
 };
 
+export const formatDate = (dateString: string | undefined | null): string => {
+  if (!dateString) return "N/A";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
+
 export const formatDealValue = (deal: Deal | DealApiResponse): string => {
   const dealApi = deal as DealApiResponse;
   const value =

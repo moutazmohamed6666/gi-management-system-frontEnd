@@ -10,6 +10,7 @@ import {
 } from "../ui/select";
 import { Search } from "lucide-react";
 import { useFilters } from "@/lib/useFilters";
+import { StyledDatePicker } from "../StyledDatePicker";
 
 interface DealsFiltersProps {
   role: string;
@@ -23,6 +24,10 @@ interface DealsFiltersProps {
   onProjectFilterChange: (value: string) => void;
   statusIdFilter: string;
   onStatusIdFilterChange: (value: string) => void;
+  startDate: string;
+  endDate: string;
+  onStartDateChange: (value: string) => void;
+  onEndDateChange: (value: string) => void;
 }
 
 export function DealsFilters({
@@ -37,6 +42,10 @@ export function DealsFilters({
   onProjectFilterChange,
   statusIdFilter,
   onStatusIdFilterChange,
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
 }: DealsFiltersProps) {
   const {
     agents,
@@ -59,7 +68,7 @@ export function DealsFilters({
   return (
     <Card className="border-0 shadow-lg">
       <CardContent className="pt-6">
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex flex-col md:flex-row md:flex-wrap gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
@@ -152,6 +161,21 @@ export function DealsFilters({
               ))}
             </SelectContent>
           </Select>
+
+          <div className="w-full md:w-[180px]">
+            <StyledDatePicker
+              value={startDate}
+              onChange={onStartDateChange}
+              placeholder="Start date"
+            />
+          </div>
+          <div className="w-full md:w-[180px]">
+            <StyledDatePicker
+              value={endDate}
+              onChange={onEndDateChange}
+              placeholder="End date"
+            />
+          </div>
         </div>
       </CardContent>
     </Card>

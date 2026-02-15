@@ -24,6 +24,8 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
   const [agentFilter, setAgentFilter] = useState<string>("all");
   const [developerFilter, setDeveloperFilter] = useState<string>("all");
   const [projectFilter, setProjectFilter] = useState<string>("all");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
   const [total, setTotal] = useState<number>(0);
@@ -53,6 +55,8 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
     developerFilter,
     projectFilter,
     pageSize,
+    startDate,
+    endDate,
   ]);
 
   // Fetch deals from API
@@ -68,6 +72,8 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
             status_id?: string;
             developer_id?: string;
             project_id?: string;
+            start_date?: string;
+            end_date?: string;
             page: number;
             page_size: number;
           } = {
@@ -79,6 +85,8 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
           if (statusIdFilter !== "all") params.status_id = statusIdFilter;
           if (developerFilter !== "all") params.developer_id = developerFilter;
           if (projectFilter !== "all") params.project_id = projectFilter;
+          if (startDate) params.start_date = startDate;
+          if (endDate) params.end_date = endDate;
 
           const response = await dealsApi.getAgentDeals(params);
           setDeals(Array.isArray(response.data) ? response.data : []);
@@ -90,6 +98,8 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
             statusId?: string;
             developer_id?: string;
             project_id?: string;
+            start_date?: string;
+            end_date?: string;
             page: number;
             page_size: number;
           } = {
@@ -101,6 +111,8 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
           if (statusIdFilter !== "all") params.statusId = statusIdFilter;
           if (developerFilter !== "all") params.developer_id = developerFilter;
           if (projectFilter !== "all") params.project_id = projectFilter;
+          if (startDate) params.start_date = startDate;
+          if (endDate) params.end_date = endDate;
 
           const response = await dealsApi.getSalesAdminDeals(params);
           setDeals(Array.isArray(response.data) ? response.data : []);
@@ -113,6 +125,8 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
             developer_id?: string;
             project_id?: string;
             status_id?: string;
+            start_date?: string;
+            end_date?: string;
             page: number;
             page_size: number;
           } = {
@@ -128,6 +142,8 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
           if (developerFilter !== "all") params.developer_id = developerFilter;
           if (projectFilter !== "all") params.project_id = projectFilter;
           if (statusIdFilter !== "all") params.status_id = statusIdFilter;
+          if (startDate) params.start_date = startDate;
+          if (endDate) params.end_date = endDate;
 
           const response = await dealsApi.getDeals(params);
           setDeals(Array.isArray(response.data) ? response.data : []);
@@ -162,6 +178,8 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
     developerFilter,
     projectFilter,
     statusIdFilter,
+    startDate,
+    endDate,
   ]);
 
   // Helper function to refresh deals list
@@ -173,6 +191,8 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
           status_id?: string;
           developer_id?: string;
           project_id?: string;
+          start_date?: string;
+          end_date?: string;
           page: number;
           page_size: number;
         } = {
@@ -184,6 +204,8 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
         if (statusIdFilter !== "all") params.status_id = statusIdFilter;
         if (developerFilter !== "all") params.developer_id = developerFilter;
         if (projectFilter !== "all") params.project_id = projectFilter;
+        if (startDate) params.start_date = startDate;
+        if (endDate) params.end_date = endDate;
 
         const response = await dealsApi.getAgentDeals(params);
         setDeals(Array.isArray(response.data) ? response.data : []);
@@ -194,6 +216,8 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
           statusId?: string;
           developer_id?: string;
           project_id?: string;
+          start_date?: string;
+          end_date?: string;
           page: number;
           page_size: number;
         } = {
@@ -205,6 +229,8 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
         if (statusIdFilter !== "all") params.statusId = statusIdFilter;
         if (developerFilter !== "all") params.developer_id = developerFilter;
         if (projectFilter !== "all") params.project_id = projectFilter;
+        if (startDate) params.start_date = startDate;
+        if (endDate) params.end_date = endDate;
 
         const response = await dealsApi.getSalesAdminDeals(params);
         setDeals(Array.isArray(response.data) ? response.data : []);
@@ -216,6 +242,8 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
           developer_id?: string;
           project_id?: string;
           status_id?: string;
+          start_date?: string;
+          end_date?: string;
           page: number;
           page_size: number;
         } = {
@@ -231,6 +259,8 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
         if (developerFilter !== "all") params.developer_id = developerFilter;
         if (projectFilter !== "all") params.project_id = projectFilter;
         if (statusIdFilter !== "all") params.status_id = statusIdFilter;
+        if (startDate) params.start_date = startDate;
+        if (endDate) params.end_date = endDate;
 
         const response = await dealsApi.getDeals(params);
         setDeals(Array.isArray(response.data) ? response.data : []);
@@ -359,6 +389,10 @@ export function DealsList({ role, onViewDeal, onNewDeal }: DealsListProps) {
         onProjectFilterChange={setProjectFilter}
         statusIdFilter={statusIdFilter}
         onStatusIdFilterChange={setStatusIdFilter}
+        startDate={startDate}
+        endDate={endDate}
+        onStartDateChange={setStartDate}
+        onEndDateChange={setEndDate}
       />
 
       <DealsTable

@@ -1,7 +1,7 @@
 import { Card } from "../ui/card";
 import type { Deal } from "@/lib/deals";
 import type { DealApiResponse } from "./types";
-import { formatDealValue } from "./utils";
+import { formatDealValue, formatDate } from "./utils";
 import { DealStatusCell } from "./DealStatusCell";
 import { DealTotalCommissionCell } from "./DealTotalCommissionCell";
 import { DealAgentCommissionCell } from "./DealAgentCommissionCell";
@@ -107,6 +107,16 @@ export function DealMobileCard({
               onTransferCommissionClick={() => onTransferCommissionClick(deal)}
               hideViewButton={true}
             />
+          </div>
+        </div>
+
+        {/* Booking Date */}
+        <div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+            Booking Date
+          </div>
+          <div className="text-sm text-gray-900 dark:text-gray-100">
+            {formatDate(deal.bookingDate)}
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 import type { Deal } from "@/lib/deals";
 import type { DealApiResponse } from "./types";
-import { formatDealValue } from "./utils";
+import { formatDealValue, formatDate } from "./utils";
 import { DealStatusCell } from "./DealStatusCell";
 import { DealTotalCommissionCell } from "./DealTotalCommissionCell";
 import { DealAgentCommissionCell } from "./DealAgentCommissionCell";
@@ -55,6 +55,11 @@ export function DealRow({
       <td className="py-3 px-4">
         <div className="text-sm text-gray-900 dark:text-gray-100 font-medium">
           {deal.dealNumber}
+        </div>
+      </td>
+      <td className="py-3 px-4">
+        <div className="text-sm text-gray-900 dark:text-gray-100">
+          {formatDate(deal.bookingDate)}
         </div>
       </td>
       <td className="py-3 px-4">
